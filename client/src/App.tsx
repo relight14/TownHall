@@ -6,7 +6,7 @@ import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
 import { Wallet, Settings, LogIn, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
-import jalbertLogo from '@assets/Jalbert-Icon-min_1764559759452.webp';
+import indigoSoulLogo from '@assets/indigosoul_1764613870278.avif';
 
 function AppContent() {
   const { user, walletBalance, logout } = useVideoStore();
@@ -20,13 +20,13 @@ function AppContent() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
               <img 
-                src={jalbertLogo} 
-                alt="Jalbert Films" 
+                src={indigoSoulLogo} 
+                alt="Indigo Soul NYC" 
                 className="h-14 w-auto transition-transform group-hover:scale-105"
               />
               <div>
-                <span className="text-xl text-white tracking-tight block font-bold">Jalbert Films</span>
-                <span className="text-xs text-slate-400 tracking-wide font-medium">Filmmaker-led. Legacy-driven. Studio-caliber work.</span>
+                <span className="text-xl text-white tracking-tight block font-bold">Indigo Soul NYC</span>
+                <span className="text-xs text-slate-400 tracking-wide font-medium">Studios • Entertainment • Media</span>
               </div>
             </Link>
 

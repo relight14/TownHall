@@ -20,13 +20,13 @@ export default function HomePage() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-12 pt-8 animate-in slide-in-from-bottom-4 duration-700 fade-in">
           <h1 className="text-5xl md:text-6xl text-white mb-4 tracking-tight font-bold">
-            Authentic stories.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-              Inspiring journeys.
+            Nurturing artists.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-300">
+              Shaping culture.
             </span>
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl leading-relaxed">
-            Experience world-class documentaries and adventure films crafted with over 50 years of filmmaking expertise.
+            Accessible space, community, and education for artists of all levels, mediums, and backgrounds—transforming society through the power of culture.
           </p>
         </div>
 
