@@ -4,8 +4,9 @@ import HomePage from './pages/HomePage';
 import SeriesPage from './pages/SeriesPage';
 import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
-import { Video, Wallet, Settings, LogIn, LogOut, User } from 'lucide-react';
+import { Wallet, Settings, LogIn, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
+import jalbertLogo from '@assets/Jalbert-Icon-min_1764559759452.webp';
 
 function AppContent() {
   const { user, walletBalance, logout } = useVideoStore();
@@ -18,12 +19,14 @@ function AppContent() {
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all transform group-hover:scale-105">
-                <Video className="w-5 h-5 text-white" />
-              </div>
+              <img 
+                src={jalbertLogo} 
+                alt="Jalbert Films" 
+                className="h-14 w-auto transition-transform group-hover:scale-105"
+              />
               <div>
-                <span className="text-xl text-white tracking-tight block font-bold">Adventure Films</span>
-                <span className="text-xs text-slate-400 tracking-wider uppercase font-semibold">Premium Content</span>
+                <span className="text-xl text-white tracking-tight block font-bold">Jalbert Films</span>
+                <span className="text-xs text-slate-400 tracking-wide font-medium">Filmmaker-led. Legacy-driven. Studio-caliber work since 1971.</span>
               </div>
             </Link>
 
