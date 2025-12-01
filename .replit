@@ -50,3 +50,4 @@ mockupState = "FULLSTACK"
 
 [userenv.shared]
 LEDEWIRE_API_URL = "https://api.ledewire.com/v1"
+ADMIN_EMAIL = "jake@indigosoulnyc.com"

@@ -9,6 +9,33 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // ===== Admin Authentication Route =====
+  
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      const adminEmail = process.env.ADMIN_EMAIL;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      
+      if (!adminEmail || !adminPassword) {
+        console.log('[ADMIN AUTH] Admin credentials not configured');
+        return res.status(500).json({ error: 'Admin authentication not configured' });
+      }
+      
+      if (email === adminEmail && password === adminPassword) {
+        console.log('[ADMIN AUTH] Admin login successful');
+        res.json({ success: true, authenticated: true });
+      } else {
+        console.log('[ADMIN AUTH] Invalid credentials attempt');
+        res.status(401).json({ error: 'Invalid credentials' });
+      }
+    } catch (error: any) {
+      console.error('[ADMIN AUTH] Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // ===== Authentication Routes =====
   
   app.post("/api/auth/signup", async (req, res) => {

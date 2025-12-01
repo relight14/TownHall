@@ -4,7 +4,7 @@ import HomePage from './pages/HomePage';
 import SeriesPage from './pages/SeriesPage';
 import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
-import { Wallet, Settings, LogIn, LogOut, User } from 'lucide-react';
+import { Wallet, LogIn, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import indigoSoulLogo from '@assets/indigosoul_1764613870278.avif';
 
@@ -44,14 +44,6 @@ function AppContent() {
                     <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs font-bold" data-testid="text-wallet-balance">
                       ${walletBalance.toFixed(2)}
                     </span>
-                  </Link>
-                  <Link 
-                    to="/admin" 
-                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white rounded-lg transition-all border border-slate-600/50 hover:border-slate-500 font-medium"
-                    data-testid="link-admin"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Admin</span>
                   </Link>
                   <div className="flex items-center gap-3 pl-3 border-l border-slate-700">
                     <div className="flex items-center gap-2">
