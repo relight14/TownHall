@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Plus, Trash2, Video, Edit } from 'lucide-react';
+import { Plus, Trash2, Video, Edit, X } from 'lucide-react';
 
 export default function AdminPage() {
-  const { series, addSeries, addEpisode, updateSeries } = useVideoStore();
+  const { series, addSeries, addEpisode, updateSeries, deleteEpisode } = useVideoStore();
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
@@ -103,6 +103,18 @@ export default function AdminPage() {
                       <p className="text-slate-400 text-sm">{ep.description}</p>
                     </div>
                     <div className="text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full text-sm border border-blue-500/20">${ep.price}</div>
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this episode?')) {
+                          deleteEpisode(ep.id);
+                        }
+                      }}
+                      className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                      data-testid={`button-delete-episode-${ep.id}`}
+                      title="Delete episode"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>

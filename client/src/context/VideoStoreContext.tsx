@@ -32,6 +32,7 @@ interface VideoStoreContextType {
   addSeries: (series: Omit<Series, 'id' | 'episodes'>) => Promise<void>;
   addEpisode: (seriesId: string, episode: Omit<Episode, 'id'>) => Promise<void>;
   updateSeries: (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => Promise<void>;
+  deleteEpisode: (episodeId: string) => Promise<void>;
   purchasedEpisodes: string[];
   purchaseEpisode: (episodeId: string) => Promise<void>;
   checkPurchase: (episodeId: string) => Promise<boolean>;
@@ -140,6 +141,23 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       await loadSeries();
     } catch (error) {
       console.error('Failed to update series:', error);
+      throw error;
+    }
+  };
+
+  const deleteEpisode = async (episodeId: string) => {
+    try {
+      const response = await fetch(`/api/episodes/${episodeId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete episode');
+      }
+
+      await loadSeries();
+    } catch (error) {
+      console.error('Failed to delete episode:', error);
       throw error;
     }
   };
@@ -302,6 +320,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       addSeries,
       addEpisode,
       updateSeries,
+      deleteEpisode,
       purchasedEpisodes,
       purchaseEpisode,
       checkPurchase,

@@ -265,6 +265,17 @@ export async function registerRoutes(
     }
   });
   
+  app.delete("/api/episodes/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteEpisode(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Delete episode error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+  
   // ===== Purchase Routes =====
   
   app.post("/api/purchase", async (req, res) => {
