@@ -58,28 +58,37 @@ class LedewireClient {
     }
 
     if (!JALBERTFILMS_SELLER_API_KEY || !JALBERTFILMS_SELLER_API_SECRET) {
-      throw new Error('Seller API credentials not configured');
+      throw new Error('Jalbert Films seller API credentials not configured. Please provide JALBERTFILMS_SELLER_API_KEY and JALBERTFILMS_SELLER_API_SECRET.');
     }
 
-    const response = await fetch(`${LEDEWIRE_API_URL}/auth/login/api-key`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        key: JALBERTFILMS_SELLER_API_KEY,
-        secret: JALBERTFILMS_SELLER_API_SECRET,
-      }),
-    });
+    try {
+      const response = await fetch(`${LEDEWIRE_API_URL}/auth/login/api-key`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          key: JALBERTFILMS_SELLER_API_KEY,
+          secret: JALBERTFILMS_SELLER_API_SECRET,
+        }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Seller authentication failed`);
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Ledewire seller auth error:', error);
+        throw new Error('Jalbert Films seller credentials were rejected by Ledewire API. Please verify the credentials are correct.');
+      }
+
+      const data: LedewireAuthResponse = await response.json();
+      this.sellerToken = data.access_token;
+      return this.sellerToken;
+    } catch (err: any) {
+      if (err.message.includes('Jalbert Films')) {
+        throw err;
+      }
+      console.error('Seller token error:', err);
+      throw new Error('Failed to authenticate with Ledewire. Please check your seller credentials.');
     }
-
-    const data: LedewireAuthResponse = await response.json();
-    this.sellerToken = data.access_token;
-    return this.sellerToken;
   }
 
   async signupBuyer(email: string, password: string, name: string): Promise<LedewireAuthResponse> {
