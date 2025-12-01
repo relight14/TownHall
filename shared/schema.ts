@@ -45,6 +45,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertSeriesSchema = createInsertSchema(series).omit({
   id: true,
   createdAt: true,
+}).extend({
+  trailerUrl: z.string().nullable().optional(),
+  trailerType: z.string().nullable().optional(),
 });
 
 export const insertEpisodeSchema = createInsertSchema(episodes).omit({

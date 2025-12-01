@@ -141,8 +141,8 @@ function SeriesForm({ series, onClose, onSubmit }: { series?: any; onClose: () =
       title, 
       description, 
       thumbnail,
-      trailerUrl: trailerUrl || undefined,
-      trailerType: trailerUrl ? trailerType : undefined
+      trailerUrl: trailerUrl || null,
+      trailerType: trailerUrl ? trailerType : null
     });
     if (!isEditing) {
       onClose();
