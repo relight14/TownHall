@@ -22,9 +22,9 @@ export default function HomePage() {
             <span className="text-blue-300 tracking-wide uppercase text-xs font-bold">Since 1971</span>
           </div>
           <h1 className="text-5xl md:text-6xl text-white mb-4 tracking-tight font-bold">
-            Jalbert Films.<br />
+            Authentic stories.<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-              Studio-Caliber Work.
+              Inspiring journeys. Since 1971.
             </span>
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl leading-relaxed">
