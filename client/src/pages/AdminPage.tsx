@@ -36,9 +36,13 @@ export default function AdminPage() {
         <SeriesForm 
           series={series.find(s => s.id === editingSeriesId)}
           onClose={() => setEditingSeriesId(null)}
-          onSubmit={(data) => {
-            updateSeries(editingSeriesId, data);
-            setEditingSeriesId(null);
+          onSubmit={async (data) => {
+            try {
+              await updateSeries(editingSeriesId, data);
+              setEditingSeriesId(null);
+            } catch (error) {
+              console.error('Failed to update series:', error);
+            }
           }}
         />
       )}
@@ -110,13 +114,15 @@ export default function AdminPage() {
   );
 }
 
-function SeriesForm({ series, onClose, onSubmit }: { series?: any; onClose: () => void; onSubmit: (series: any) => void }) {
+function SeriesForm({ series, onClose, onSubmit }: { series?: any; onClose: () => void; onSubmit: (series: any) => void | Promise<void> }) {
   const [title, setTitle] = useState(series?.title || '');
   const [description, setDescription] = useState(series?.description || '');
   const [thumbnail, setThumbnail] = useState(series?.thumbnail || '');
   const [useFile, setUseFile] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState(series?.trailerUrl || '');
   const [trailerType, setTrailerType] = useState<'vimeo' | 'youtube'>(series?.trailerType || 'vimeo');
+  
+  const isEditing = !!series;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,19 +135,19 @@ function SeriesForm({ series, onClose, onSubmit }: { series?: any; onClose: () =
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ 
+    await onSubmit({ 
       title, 
       description, 
       thumbnail,
       trailerUrl: trailerUrl || undefined,
       trailerType: trailerUrl ? trailerType : undefined
     });
-    onClose();
+    if (!isEditing) {
+      onClose();
+    }
   };
-
-  const isEditing = !!series;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-top-2">
