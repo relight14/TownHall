@@ -1,6 +1,6 @@
 import { useVideoStore } from '../context/VideoStoreContext';
 import SeriesCard from '../components/SeriesCard';
-import austriaBackground from '@assets/austria_1764611898687.webp';
+import studioBackground from '@assets/indigostudio_1764614068955.webp';
 
 export default function HomePage() {
   const { series } = useVideoStore();
@@ -11,8 +11,8 @@ export default function HomePage() {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/50 to-slate-950/60" />
         <img 
-          src={austriaBackground}
-          alt="Mountain background"
+          src={studioBackground}
+          alt="Indigo Soul Studio"
           className="w-full h-full object-cover opacity-30 fixed"
         />
       </div>
