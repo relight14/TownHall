@@ -2,6 +2,117 @@ import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+interface PaymentFormProps {
+  clientSecret: string;
+  onSuccess: () => void;
+  onCancel: () => void;
+  amount: string;
+}
+
+function PaymentForm({ clientSecret, onSuccess, onCancel, amount }: PaymentFormProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        throw new Error(submitError.message);
+      }
+
+      const { error: paymentError } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/wallet?payment=success`,
+        },
+      });
+
+      if (paymentError) {
+        throw new Error(paymentError.message);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Payment failed');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+          <XCircle className="w-4 h-4" />
+          {error}
+        </div>
+      )}
+
+      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-4">
+        <PaymentElement 
+          options={{
+            layout: 'tabs',
+          }}
+        />
+      </div>
+
+      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-slate-400">Amount</span>
+          <span className="text-white">${parseFloat(amount || '0').toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm pt-2 border-t border-slate-700">
+          <span className="text-slate-300 font-medium">Total</span>
+          <span className="text-white font-medium">${parseFloat(amount || '0').toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors border border-slate-700 font-medium"
+          data-testid="button-cancel-payment"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading || !stripe || !elements}
+          className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+          data-testid="button-pay"
+        >
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              Processing...
+            </>
+          ) : (
+            <>
+              <CreditCard className="w-4 h-4" />
+              Pay ${parseFloat(amount || '0').toFixed(2)}
+            </>
+          )}
+        </button>
+      </div>
+
+      <p className="text-xs text-slate-500 text-center">
+        Secure payment powered by <span className="text-blue-400">Ledewire</span> & Stripe
+      </p>
+    </form>
+  );
+}
 
 export default function WalletPage() {
   const { walletBalance, user, createPaymentSession, refreshWalletBalance } = useVideoStore();
@@ -11,6 +122,10 @@ export default function WalletPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [location] = useLocation();
+  
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -40,21 +155,39 @@ export default function WalletPage() {
       }
       
       const session = await createPaymentSession(amountCents);
+      console.log('Payment session response:', session);
       
-      if (session.checkout_url) {
+      if (session.client_secret && session.public_key) {
+        setStripePromise(loadStripe(session.public_key));
+        setClientSecret(session.client_secret);
+        setShowPaymentForm(true);
+        setLoading(false);
+      } else if (session.checkout_url) {
         window.location.href = session.checkout_url;
       } else if (session.url) {
         window.location.href = session.url;
-      } else if (session.session_url) {
-        window.location.href = session.session_url;
       } else {
-        console.log('Payment session response:', session);
         throw new Error('Payment checkout not available. Please try again later.');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to create payment session');
       setLoading(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentForm(false);
+    setShowAddFunds(false);
+    setClientSecret(null);
+    setSuccessMessage('Payment successful! Your wallet has been topped up.');
+    refreshWalletBalance();
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPaymentForm(false);
+    setShowAddFunds(false);
+    setClientSecret(null);
+    setStripePromise(null);
   };
 
   const presetAmounts = [5, 10, 25, 50];
@@ -129,7 +262,7 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {showAddFunds && (
+      {showAddFunds && !showPaymentForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl">
             <h2 className="text-2xl text-white mb-6 font-bold">Add Funds</h2>
@@ -223,6 +356,39 @@ export default function WalletPage() {
                 Secure payment powered by <span className="text-blue-400">Ledewire</span> & Stripe
               </p>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showPaymentForm && clientSecret && stripePromise && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <h2 className="text-2xl text-white mb-6 font-bold">Complete Payment</h2>
+            
+            <Elements 
+              stripe={stripePromise} 
+              options={{
+                clientSecret,
+                appearance: {
+                  theme: 'night',
+                  variables: {
+                    colorPrimary: '#3b82f6',
+                    colorBackground: '#1e293b',
+                    colorText: '#e2e8f0',
+                    colorDanger: '#ef4444',
+                    fontFamily: 'system-ui, sans-serif',
+                    borderRadius: '8px',
+                  },
+                },
+              }}
+            >
+              <PaymentForm 
+                clientSecret={clientSecret}
+                onSuccess={handlePaymentSuccess}
+                onCancel={handlePaymentCancel}
+                amount={amount}
+              />
+            </Elements>
           </div>
         </div>
       )}
