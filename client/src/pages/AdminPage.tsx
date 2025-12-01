@@ -93,6 +93,8 @@ function SeriesForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (ser
   const [description, setDescription] = useState('');
   const [thumbnail, setThumbnail] = useState('');
   const [useFile, setUseFile] = useState(false);
+  const [trailerUrl, setTrailerUrl] = useState('');
+  const [trailerType, setTrailerType] = useState<'vimeo' | 'youtube'>('vimeo');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,7 +109,13 @@ function SeriesForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (ser
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ title, description, thumbnail });
+    onSubmit({ 
+      title, 
+      description, 
+      thumbnail,
+      trailerUrl: trailerUrl || undefined,
+      trailerType: trailerUrl ? trailerType : undefined
+    });
     onClose();
   };
 
@@ -183,6 +191,31 @@ function SeriesForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (ser
                   <img src={thumbnail} alt="Preview" className="w-32 h-20 object-cover rounded-lg border border-slate-700" />
                 </div>
               )}
+            </div>
+          )}
+        </div>
+        <div>
+          <label className="block text-slate-300 mb-2 text-sm font-medium">Series Trailer (Optional)</label>
+          <div>
+            <input
+              type="url"
+              value={trailerUrl}
+              onChange={(e) => setTrailerUrl(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all mb-2"
+              placeholder="https://vimeo.com/... or https://youtube.com/..."
+            />
+          </div>
+          {trailerUrl && (
+            <div>
+              <label className="block text-slate-300 mb-2 text-sm font-medium">Trailer Type</label>
+              <select
+                value={trailerType}
+                onChange={(e) => setTrailerType(e.target.value as 'vimeo' | 'youtube')}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              >
+                <option value="vimeo">Vimeo</option>
+                <option value="youtube">YouTube</option>
+              </select>
             </div>
           )}
         </div>

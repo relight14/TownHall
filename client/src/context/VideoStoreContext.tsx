@@ -16,6 +16,8 @@ interface Series {
   title: string;
   description: string;
   thumbnail: string;
+  trailerUrl?: string;
+  trailerType?: 'vimeo' | 'youtube';
   episodes: Episode[];
 }
 

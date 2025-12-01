@@ -18,6 +18,8 @@ export const series = pgTable("series", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   thumbnail: text("thumbnail").notNull(),
+  trailerUrl: text("trailer_url"),
+  trailerType: text("trailer_type"), // 'vimeo' | 'youtube'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

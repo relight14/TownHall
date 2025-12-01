@@ -3,6 +3,7 @@ import { useVideoStore } from '../context/VideoStoreContext';
 import EpisodeCard from '../components/EpisodeCard';
 import { ArrowLeft } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
+import { VideoEmbed } from '../components/VideoEmbed';
 
 export default function SeriesPage() {
   const { seriesId } = useParams<{ seriesId: string }>();
@@ -37,6 +38,13 @@ export default function SeriesPage() {
         </Link>
 
         <div className="mb-12">
+          {currentSeries.trailerUrl && currentSeries.trailerType ? (
+            <div className="mb-8 max-w-4xl">
+              <h2 className="text-xl text-white font-semibold mb-4">Series Trailer</h2>
+              <VideoEmbed url={currentSeries.trailerUrl} type={currentSeries.trailerType} title={currentSeries.title} />
+            </div>
+          ) : null}
+          
           <div className="relative rounded-2xl overflow-hidden mb-8 aspect-video max-w-4xl shadow-2xl shadow-black/50 border border-slate-800">
             <ImageWithFallback 
               src={currentSeries.thumbnail} 
