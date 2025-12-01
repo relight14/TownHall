@@ -1,12 +1,12 @@
-const LEDEWIRE_API_URL = 'https://api.ledewire.com/v1';
+const LEDEWIRE_API_URL = process.env.LEDEWIRE_API_URL || 'https://api.ledewire.com/v1';
 
 // Buyer credentials (for customer authentication)
 const LEDEWIRE_API_KEY = process.env.LEDEWIRE_API_KEY;
 const LEDEWIRE_API_SECRET = process.env.LEDEWIRE_API_SECRET;
 
 // Seller credentials (for content registration - NEVER expose these)
-const JALBERTFILMS_SELLER_API_KEY = process.env.JALBERTFILMS_SELLER_API_KEY;
-const JALBERTFILMS_SELLER_API_SECRET = process.env.JALBERTFILMS_SELLER_API_SECRET;
+const INDIGO_SELLER_API_KEY = process.env.INDIGO_SELLER_API_KEY;
+const INDIGO_SELLER_API_SECRET = process.env.INDIGO_SELLER_API_SECRET;
 
 interface LedewireAuthResponse {
   access_token: string;
@@ -57,10 +57,12 @@ class LedewireClient {
       return this.sellerToken;
     }
 
-    if (!JALBERTFILMS_SELLER_API_KEY || !JALBERTFILMS_SELLER_API_SECRET) {
-      throw new Error('Jalbert Films seller API credentials not configured. Please provide JALBERTFILMS_SELLER_API_KEY and JALBERTFILMS_SELLER_API_SECRET.');
+    if (!INDIGO_SELLER_API_KEY || !INDIGO_SELLER_API_SECRET) {
+      throw new Error('Indigo Soul seller API credentials not configured. Please provide INDIGO_SELLER_API_KEY and INDIGO_SELLER_API_SECRET.');
     }
 
+    console.log('Attempting Ledewire auth to:', `${LEDEWIRE_API_URL}/auth/login/api-key`);
+    
     try {
       const response = await fetch(`${LEDEWIRE_API_URL}/auth/login/api-key`, {
         method: 'POST',
@@ -68,22 +70,23 @@ class LedewireClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          key: JALBERTFILMS_SELLER_API_KEY,
-          secret: JALBERTFILMS_SELLER_API_SECRET,
+          key: INDIGO_SELLER_API_KEY,
+          secret: INDIGO_SELLER_API_SECRET,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
         console.error('Ledewire seller auth error:', error);
-        throw new Error('Jalbert Films seller credentials were rejected by Ledewire API. Please verify the credentials are correct.');
+        console.error('API URL used:', LEDEWIRE_API_URL);
+        throw new Error('Indigo Soul seller credentials were rejected by Ledewire API. Please verify the credentials are correct and you are using the correct API server.');
       }
 
       const data: LedewireAuthResponse = await response.json();
       this.sellerToken = data.access_token;
       return this.sellerToken;
     } catch (err: any) {
-      if (err.message.includes('Jalbert Films')) {
+      if (err.message.includes('Indigo Soul')) {
         throw err;
       }
       console.error('Seller token error:', err);
