@@ -1,5 +1,6 @@
 import { useVideoStore } from '../context/VideoStoreContext';
 import SeriesCard from '../components/SeriesCard';
+import austriaBackground from '@assets/austria_1764611898687.webp';
 
 export default function HomePage() {
   const { series } = useVideoStore();
@@ -10,7 +11,7 @@ export default function HomePage() {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/85 to-slate-950" />
         <img 
-          src="https://images.unsplash.com/photo-1620578640780-e7a89eeaef9f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHNraWluZyUyMGFkdmVudHVyZXxlbnwxfHx8fDE3NjQ1MzI1MTZ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+          src={austriaBackground}
           alt="Mountain background"
           className="w-full h-full object-cover opacity-30 fixed"
         />
