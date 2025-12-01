@@ -29,7 +29,7 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl leading-relaxed">
-            Filmmaker-led. Legacy-driven. Experience world-class documentaries and adventure films crafted with over 50 years of filmmaking expertise.
+            Experience world-class documentaries and adventure films crafted with over 50 years of filmmaking expertise.
           </p>
         </div>
 
