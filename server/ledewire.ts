@@ -343,21 +343,41 @@ class LedewireClient {
     return data;
   }
 
-  async createPaymentSession(userToken: string, amountCents: number): Promise<any> {
+  async createPaymentSession(userToken: string, amountCents: number, options?: { success_url?: string; cancel_url?: string }): Promise<any> {
+    const requestBody: any = {
+      amount_cents: amountCents,
+      currency: 'usd',
+    };
+    
+    if (options?.success_url) {
+      requestBody.success_url = options.success_url;
+    }
+    if (options?.cancel_url) {
+      requestBody.cancel_url = options.cancel_url;
+    }
+    
+    logLedewire('PAYMENT_SESSION_REQUEST', {
+      endpoint: `${LEDEWIRE_API_URL}/wallet/payment-session`,
+      amountCents,
+      hasSuccessUrl: !!options?.success_url,
+      hasCancelUrl: !!options?.cancel_url,
+    });
+    
     const response = await fetch(`${LEDEWIRE_API_URL}/wallet/payment-session`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`,
       },
-      body: JSON.stringify({
-        amount_cents: amountCents,
-        currency: 'usd',
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
+      logLedewire('PAYMENT_SESSION_ERROR', {
+        status: response.status,
+        error: errorMsg,
+      });
       throw new Error(`Failed to create payment session: ${errorMsg}`);
     }
 
@@ -365,6 +385,14 @@ class LedewireClient {
     if (!data) {
       throw new Error('Payment session response was empty');
     }
+    
+    logLedewire('PAYMENT_SESSION_SUCCESS', {
+      hasCheckoutUrl: !!data.checkout_url,
+      hasUrl: !!data.url,
+      hasSessionUrl: !!data.session_url,
+      responseKeys: Object.keys(data),
+    });
+    
     return data;
   }
 }

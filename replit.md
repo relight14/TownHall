@@ -68,12 +68,18 @@ Preferred communication style: Simple, everyday language.
 - Content registration (episodes as purchasable items)
 - Purchase verification and transaction processing
 - Wallet balance tracking
+- **Wallet Top-ups via Stripe**: Ledewire handles Stripe integration internally. The `/wallet/payment-session` endpoint creates a Stripe Checkout session with success/cancel URLs, returning a `checkout_url` for redirect.
 
 **Integration Points**:
 - `server/ledewire.ts` - API client wrapper for Ledewire endpoints
 - Buyer credentials (API key/secret) for customer operations
 - Seller credentials (separate API key/secret) for content registration
 - Security: Seller credentials never exposed to frontend
+
+**Authentication Methods**:
+- Email/password authentication via Ledewire
+- Google SSO via Replit Auth (`server/replitAuth.ts`) - automatically creates Ledewire wallet for new SSO users
+- SSO sessions managed via express-session with PostgreSQL storage
 
 **Neon Database**: Serverless PostgreSQL provider using `@neondatabase/serverless` driver for edge-compatible database connections.
 

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Wallet, CreditCard, ArrowUpRight, Clock, Plus } from 'lucide-react';
+import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 export default function WalletPage() {
   const { walletBalance, user, createPaymentSession, refreshWalletBalance } = useVideoStore();
@@ -8,35 +9,61 @@ export default function WalletPage() {
   const [amount, setAmount] = useState('10.00');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [location] = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment');
+    
+    if (paymentStatus === 'success') {
+      setSuccessMessage('Payment successful! Your wallet has been topped up.');
+      refreshWalletBalance();
+      window.history.replaceState({}, '', '/wallet');
+    } else if (paymentStatus === 'cancelled') {
+      setError('Payment was cancelled.');
+      window.history.replaceState({}, '', '/wallet');
+    }
+  }, [location, refreshWalletBalance]);
 
   const handleAddFunds = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       const amountCents = Math.round(parseFloat(amount) * 100);
+      
+      if (amountCents < 100) {
+        throw new Error('Minimum amount is $1.00');
+      }
+      
       const session = await createPaymentSession(amountCents);
       
-      // In a production app, you would use Stripe Elements here
-      // For now, we just show success and refresh balance
-      alert(`Payment session created: ${session.session_id}\n\nIn production, this would open a Stripe payment form.`);
-      
-      await refreshWalletBalance();
-      setShowAddFunds(false);
-      setAmount('10.00');
+      if (session.checkout_url) {
+        window.location.href = session.checkout_url;
+      } else if (session.url) {
+        window.location.href = session.url;
+      } else if (session.session_url) {
+        window.location.href = session.session_url;
+      } else {
+        console.log('Payment session response:', session);
+        throw new Error('Payment checkout not available. Please try again later.');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create payment session');
-    } finally {
       setLoading(false);
     }
   };
+
+  const presetAmounts = [5, 10, 25, 50];
 
   if (!user) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-white">
         <div className="text-center py-20 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
-          <p className="text-slate-400 text-xl">Please login to view your wallet</p>
+          <p className="text-slate-400 text-xl">Please sign in to view your wallet</p>
         </div>
       </div>
     );
@@ -49,6 +76,20 @@ export default function WalletPage() {
         <p className="text-slate-400">Manage your funds and transaction history</p>
       </div>
 
+      {successMessage && (
+        <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center gap-3" data-testid="text-success">
+          <CheckCircle className="w-5 h-5 text-green-400" />
+          <span className="text-green-300">{successMessage}</span>
+        </div>
+      )}
+
+      {error && !showAddFunds && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3" data-testid="text-error">
+          <XCircle className="w-5 h-5 text-red-400" />
+          <span className="text-red-300">{error}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 border border-blue-500/30 shadow-xl">
           <div className="flex items-start justify-between mb-4">
@@ -59,7 +100,11 @@ export default function WalletPage() {
           </div>
           <div className="text-4xl font-bold mb-2" data-testid="text-balance">${walletBalance.toFixed(2)}</div>
           <button 
-            onClick={() => setShowAddFunds(true)}
+            onClick={() => {
+              setShowAddFunds(true);
+              setError('');
+              setSuccessMessage('');
+            }}
             className="w-full py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
             data-testid="button-add-funds"
           >
@@ -78,7 +123,7 @@ export default function WalletPage() {
               Your wallet is powered by <span className="text-blue-400 font-semibold">Ledewire</span>
             </div>
             <div className="text-sm text-slate-400">
-              Secure micropayment system for content purchases
+              Secure micropayment system for content purchases. Add funds using your credit or debit card.
             </div>
           </div>
         </div>
@@ -90,48 +135,93 @@ export default function WalletPage() {
             <h2 className="text-2xl text-white mb-6 font-bold">Add Funds</h2>
             
             {error && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+                <XCircle className="w-4 h-4" />
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleAddFunds} className="space-y-4">
+            <form onSubmit={handleAddFunds} className="space-y-6">
               <div>
-                <label className="block text-slate-300 mb-2 text-sm font-medium">Amount ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                  required
-                  data-testid="input-amount"
-                />
+                <label className="block text-slate-300 mb-3 text-sm font-medium">Select Amount</label>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {presetAmounts.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setAmount(preset.toFixed(2))}
+                      className={`py-2 rounded-lg text-sm font-medium transition-colors ${
+                        parseFloat(amount) === preset
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                      }`}
+                      data-testid={`button-preset-${preset}`}
+                    >
+                      ${preset}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-4 py-3 text-white text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                    required
+                    data-testid="input-amount"
+                  />
+                </div>
               </div>
 
-              <div className="bg-blue-500/10 border border-blue-400/20 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">
-                  In production, this would open a Stripe payment form to securely add funds to your wallet.
-                </p>
+              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-slate-400">Amount</span>
+                  <span className="text-white">${parseFloat(amount || '0').toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t border-slate-700">
+                  <span className="text-slate-300 font-medium">Total</span>
+                  <span className="text-white font-medium">${parseFloat(amount || '0').toFixed(2)}</span>
+                </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddFunds(false)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg transition-colors border border-slate-700 font-medium"
+                  onClick={() => {
+                    setShowAddFunds(false);
+                    setError('');
+                  }}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors border border-slate-700 font-medium"
+                  data-testid="button-cancel"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20 disabled:opacity-50"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                  data-testid="button-continue"
                 >
-                  {loading ? 'Processing...' : 'Continue'}
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4" />
+                      Continue to Payment
+                    </>
+                  )}
                 </button>
               </div>
+
+              <p className="text-xs text-slate-500 text-center">
+                Secure payment powered by <span className="text-blue-400">Ledewire</span> & Stripe
+              </p>
             </form>
           </div>
         </div>

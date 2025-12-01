@@ -255,7 +255,33 @@ export async function registerRoutes(
       const token = authHeader.replace('Bearer ', '');
       const { amount_cents } = req.body;
       
-      const session = await ledewire.createPaymentSession(token, amount_cents);
+      // Validate amount
+      if (!amount_cents || typeof amount_cents !== 'number' || amount_cents < 100) {
+        return res.status(400).json({ error: 'Invalid amount. Minimum is $1.00 (100 cents).' });
+      }
+      
+      // Use trusted domain from environment (Replit-managed)
+      // REPLIT_DOMAINS contains comma-separated list of valid domains
+      const replitDomains = process.env.REPLIT_DOMAINS;
+      const replitDevDomain = process.env.REPLIT_DEV_DOMAIN;
+      
+      let baseUrl: string;
+      if (replitDomains) {
+        // Use the first production domain
+        const primaryDomain = replitDomains.split(',')[0];
+        baseUrl = `https://${primaryDomain}`;
+      } else if (replitDevDomain) {
+        // Fallback to dev domain
+        baseUrl = `https://${replitDevDomain}`;
+      } else {
+        // Final fallback for local development
+        baseUrl = 'http://localhost:5000';
+      }
+      
+      const session = await ledewire.createPaymentSession(token, amount_cents, {
+        success_url: `${baseUrl}/wallet?payment=success`,
+        cancel_url: `${baseUrl}/wallet?payment=cancelled`,
+      });
       
       res.json(session);
     } catch (error: any) {
