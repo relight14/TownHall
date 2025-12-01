@@ -265,47 +265,6 @@ export async function registerRoutes(
     }
   });
   
-  // Re-register episode content with Ledewire (for switching between staging/production)
-  app.post("/api/episodes/:id/reregister", async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      // Get existing episode
-      const episode = await storage.getEpisode(id);
-      if (!episode) {
-        return res.status(404).json({ error: 'Episode not found' });
-      }
-      
-      // Register content with Ledewire using current API URL
-      const ledewireContent = await ledewire.registerContent(
-        episode.title,
-        episode.price,
-        {
-          description: episode.description,
-          video_url: episode.videoUrl,
-          video_type: episode.videoType,
-          thumbnail: episode.thumbnail,
-        }
-      );
-      
-      // Update episode with new Ledewire content ID
-      const updatedEpisode = await storage.updateEpisode(id, {
-        ledewireContentId: ledewireContent.id,
-      });
-      
-      console.log(`Re-registered episode ${id} with new Ledewire content ID: ${ledewireContent.id}`);
-      
-      res.json({
-        ...updatedEpisode,
-        price: updatedEpisode!.price / 100,
-        newLedewireContentId: ledewireContent.id,
-      });
-    } catch (error: any) {
-      console.error('Re-register episode error:', error);
-      res.status(400).json({ error: error.message });
-    }
-  });
-  
   // ===== Purchase Routes =====
   
   app.post("/api/purchase", async (req, res) => {
