@@ -74,10 +74,6 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
           >
             Sign In
           </button>
-
-          <p className="text-slate-500 mt-4 text-center text-sm">
-            Demo: Use any email and password
-          </p>
         </form>
 
         <div className="px-6 pb-4 pt-2 border-t border-slate-800">
