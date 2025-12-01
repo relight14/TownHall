@@ -1,8 +1,69 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ledewire } from "./ledewire";
 import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema } from "@shared/schema";
+import crypto from "crypto";
+
+// Generate a secure admin session token
+const generateAdminToken = () => crypto.randomBytes(32).toString('hex');
+let currentAdminToken: string | null = null;
+let adminTokenExpiry: number | null = null;
+const ADMIN_TOKEN_TTL = 4 * 60 * 60 * 1000; // 4 hours
+
+// Rate limiting for admin login
+const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const attempts = loginAttempts.get(ip);
+  
+  if (!attempts) {
+    loginAttempts.set(ip, { count: 1, lastAttempt: now });
+    return true;
+  }
+  
+  // Reset if lockout period has passed
+  if (now - attempts.lastAttempt > LOCKOUT_DURATION) {
+    loginAttempts.set(ip, { count: 1, lastAttempt: now });
+    return true;
+  }
+  
+  // Check if locked out
+  if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
+    return false;
+  }
+  
+  attempts.count++;
+  attempts.lastAttempt = now;
+  return true;
+}
+
+function resetRateLimit(ip: string): void {
+  loginAttempts.delete(ip);
+}
+
+// Admin authentication middleware
+function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
+  const adminToken = req.headers['x-admin-token'] as string;
+  
+  if (!adminToken || !currentAdminToken || adminToken !== currentAdminToken) {
+    console.log('[ADMIN AUTH] Unauthorized access attempt to admin route');
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  
+  // Check token expiry
+  if (adminTokenExpiry && Date.now() > adminTokenExpiry) {
+    currentAdminToken = null;
+    adminTokenExpiry = null;
+    console.log('[ADMIN AUTH] Admin token expired');
+    return res.status(401).json({ error: 'Admin session expired' });
+  }
+  
+  next();
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -13,6 +74,14 @@ export async function registerRoutes(
   
   app.post("/api/admin/login", async (req, res) => {
     try {
+      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      
+      // Check rate limit
+      if (!checkRateLimit(clientIp)) {
+        console.log(`[ADMIN AUTH] Rate limit exceeded for IP: ${clientIp}`);
+        return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+      }
+      
       const { email, password } = req.body;
       
       const adminEmail = process.env.ADMIN_EMAIL;
@@ -24,8 +93,15 @@ export async function registerRoutes(
       }
       
       if (email === adminEmail && password === adminPassword) {
+        // Reset rate limit on successful login
+        resetRateLimit(clientIp);
+        
+        // Generate new admin token
+        currentAdminToken = generateAdminToken();
+        adminTokenExpiry = Date.now() + ADMIN_TOKEN_TTL;
+        
         console.log('[ADMIN AUTH] Admin login successful');
-        res.json({ success: true, authenticated: true });
+        res.json({ success: true, authenticated: true, adminToken: currentAdminToken });
       } else {
         console.log('[ADMIN AUTH] Invalid credentials attempt');
         res.status(401).json({ error: 'Invalid credentials' });
@@ -220,7 +296,7 @@ export async function registerRoutes(
     }
   });
   
-  app.post("/api/series", async (req, res) => {
+  app.post("/api/series", requireAdminAuth, async (req, res) => {
     try {
       const validated = insertSeriesSchema.parse(req.body);
       const series = await storage.createSeries(validated);
@@ -232,7 +308,7 @@ export async function registerRoutes(
     }
   });
 
-  app.put("/api/series/:id", async (req, res) => {
+  app.put("/api/series/:id", requireAdminAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const validated = insertSeriesSchema.partial().parse(req.body);
@@ -251,7 +327,7 @@ export async function registerRoutes(
   
   // ===== Episode Routes =====
   
-  app.post("/api/episodes", async (req, res) => {
+  app.post("/api/episodes", requireAdminAuth, async (req, res) => {
     try {
       const { title, description, videoUrl, videoType, price, thumbnail, seriesId } = req.body;
       
@@ -292,7 +368,7 @@ export async function registerRoutes(
     }
   });
   
-  app.delete("/api/episodes/:id", async (req, res) => {
+  app.delete("/api/episodes/:id", requireAdminAuth, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deleteEpisode(id);

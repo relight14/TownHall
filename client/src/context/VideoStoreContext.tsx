@@ -44,6 +44,7 @@ interface VideoStoreContextType {
   walletBalance: number;
   refreshWalletBalance: () => Promise<void>;
   createPaymentSession: (amountCents: number) => Promise<any>;
+  setAdminToken: (token: string) => void;
 }
 
 const VideoStoreContext = createContext<VideoStoreContextType | undefined>(undefined);
@@ -54,6 +55,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [ledewireToken, setLedewireToken] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [adminToken, setAdminToken] = useState<string | null>(null);
 
   // Load series on mount
   useEffect(() => {
@@ -80,17 +82,22 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const addSeries = async (newSeries: Omit<Series, 'id' | 'episodes'>) => {
+    if (!adminToken) {
+      throw new Error('Admin authentication required');
+    }
     try {
       const response = await fetch('/api/series', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify(newSeries),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create series');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create series');
       }
 
       await loadSeries();
@@ -101,11 +108,15 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const addEpisode = async (seriesId: string, newEpisode: Omit<Episode, 'id'>) => {
+    if (!adminToken) {
+      throw new Error('Admin authentication required');
+    }
     try {
       const response = await fetch('/api/episodes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify({
           ...newEpisode,
@@ -114,7 +125,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create episode');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create episode');
       }
 
       await loadSeries();
@@ -125,17 +137,22 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const updateSeries = async (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => {
+    if (!adminToken) {
+      throw new Error('Admin authentication required');
+    }
     try {
       const response = await fetch(`/api/series/${seriesId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify(updates),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update series');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update series');
       }
 
       await loadSeries();
@@ -146,13 +163,20 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteEpisode = async (episodeId: string) => {
+    if (!adminToken) {
+      throw new Error('Admin authentication required');
+    }
     try {
       const response = await fetch(`/api/episodes/${episodeId}`, {
         method: 'DELETE',
+        headers: {
+          'X-Admin-Token': adminToken,
+        },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete episode');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete episode');
       }
 
       await loadSeries();
@@ -340,6 +364,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       walletBalance,
       refreshWalletBalance,
       createPaymentSession,
+      setAdminToken,
     }}>
       {children}
     </VideoStoreContext.Provider>

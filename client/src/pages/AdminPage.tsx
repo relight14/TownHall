@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { Plus, Trash2, Video, Edit, X, Lock } from 'lucide-react';
 
-function AdminLoginGate({ onAuthenticated }: { onAuthenticated: () => void }) {
+function AdminLoginGate({ onAuthenticated }: { onAuthenticated: (token: string) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,8 +25,10 @@ function AdminLoginGate({ onAuthenticated }: { onAuthenticated: () => void }) {
         throw new Error(data.error || 'Authentication failed');
       }
 
+      const data = await response.json();
       sessionStorage.setItem('adminAuthenticated', 'true');
-      onAuthenticated();
+      sessionStorage.setItem('adminToken', data.adminToken);
+      onAuthenticated(data.adminToken);
     } catch (err: any) {
       setError(err.message || 'Invalid credentials');
     } finally {
@@ -93,7 +95,7 @@ function AdminLoginGate({ onAuthenticated }: { onAuthenticated: () => void }) {
 }
 
 export default function AdminPage() {
-  const { series, addSeries, addEpisode, updateSeries, deleteEpisode } = useVideoStore();
+  const { series, addSeries, addEpisode, updateSeries, deleteEpisode, setAdminToken } = useVideoStore();
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
@@ -101,13 +103,18 @@ export default function AdminPage() {
 
   useEffect(() => {
     const auth = sessionStorage.getItem('adminAuthenticated');
-    if (auth === 'true') {
+    const token = sessionStorage.getItem('adminToken');
+    if (auth === 'true' && token) {
       setIsAuthenticated(true);
+      setAdminToken(token);
     }
-  }, []);
+  }, [setAdminToken]);
 
   if (!isAuthenticated) {
-    return <AdminLoginGate onAuthenticated={() => setIsAuthenticated(true)} />;
+    return <AdminLoginGate onAuthenticated={(token) => {
+      setIsAuthenticated(true);
+      setAdminToken(token);
+    }} />;
   }
 
   return (

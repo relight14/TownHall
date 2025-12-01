@@ -50,7 +50,15 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        // Redact sensitive data from logs
+        const safeResponse = { ...capturedJsonResponse };
+        const sensitiveKeys = ['ledewireToken', 'access_token', 'refresh_token', 'password', 'ledewireAccessToken', 'ledewireRefreshToken', 'adminToken'];
+        sensitiveKeys.forEach(key => {
+          if (key in safeResponse) {
+            safeResponse[key] = '[REDACTED]';
+          }
+        });
+        logLine += ` :: ${JSON.stringify(safeResponse)}`;
       }
 
       log(logLine);
