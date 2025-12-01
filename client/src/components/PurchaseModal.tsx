@@ -105,6 +105,12 @@ export default function PurchaseModal({ episode, onClose, onSuccess }: PurchaseM
               )}
             </button>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-800">
+            <p className="text-slate-500 text-xs text-center">
+              powered by <span className="text-blue-400">ledewire</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
