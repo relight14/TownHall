@@ -1,128 +1,38 @@
 import { Link } from 'react-router-dom';
 import { Play, BookOpen } from 'lucide-react';
 import { ImageWithFallback } from './ui/image-with-fallback';
-import { useState, useRef, useMemo } from 'react';
-
-interface Episode {
-  id: string;
-  videoUrl: string;
-  videoType: string;
-}
 
 interface Series {
   id: string;
   title: string;
   description: string;
   thumbnail: string;
-  trailerUrl?: string | null;
-  trailerType?: string | null;
-  episodes: Episode[];
+  episodes: any[];
 }
 
 interface SeriesCardProps {
   series: Series;
 }
 
-function getVimeoEmbedUrl(url: string): string {
-  const videoId = url.split('/').pop()?.split('?')[0];
-  return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&background=1&loop=1&quality=auto`;
-}
-
-function getYouTubeEmbedUrl(url: string): string {
-  let videoId = '';
-  if (url.includes('youtu.be')) {
-    videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
-  } else if (url.includes('youtube.com')) {
-    videoId = url.split('v=')[1]?.split('&')[0] || '';
-  }
-  return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1`;
-}
-
 export default function SeriesCard({ series }: SeriesCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [showPlayer, setShowPlayer] = useState(false);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  const previewVideo = useMemo(() => {
-    if (series.trailerUrl && series.trailerType) {
-      return { url: series.trailerUrl, type: series.trailerType };
-    }
-    if (series.episodes && series.episodes.length > 0) {
-      const firstEpisode = series.episodes[0];
-      return { url: firstEpisode.videoUrl, type: firstEpisode.videoType };
-    }
-    return null;
-  }, [series.trailerUrl, series.trailerType, series.episodes]);
-  
-  const hasPreview = previewVideo !== null;
-  
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-    if (hasPreview) {
-      hoverTimeoutRef.current = setTimeout(() => {
-        setShowPlayer(true);
-      }, 300);
-    }
-  };
-  
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setShowPlayer(false);
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-  };
-  
-  const getEmbedUrl = () => {
-    if (!previewVideo) return '';
-    if (previewVideo.type === 'vimeo') {
-      return getVimeoEmbedUrl(previewVideo.url);
-    } else {
-      return getYouTubeEmbedUrl(previewVideo.url);
-    }
-  };
-
   return (
     <Link to={`/series/${series.id}`}>
       <div 
         className="group relative bg-slate-900/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-800 hover:border-blue-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-1"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         data-testid={`card-series-${series.id}`}
       >
         <div className="relative aspect-video overflow-hidden">
           <ImageWithFallback 
             src={series.thumbnail} 
             alt={series.title}
-            className={`w-full h-full object-cover transition-all duration-500 ${isHovered ? 'scale-110' : ''} ${showPlayer ? 'opacity-0' : 'opacity-100'}`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
-          
-          {showPlayer && hasPreview && (
-            <iframe
-              src={getEmbedUrl()}
-              className="absolute inset-0 w-full h-full"
-              allow="autoplay; fullscreen"
-              frameBorder="0"
-              title={`${series.title} preview`}
-            />
-          )}
-          
-          <div className={`absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent transition-opacity ${showPlayer ? 'opacity-0' : isHovered ? 'opacity-40' : 'opacity-60'}`} />
-          
-          {!showPlayer && (
-            <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50">
-                <Play className="w-8 h-8 text-white ml-1" fill="white" />
-              </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50">
+              <Play className="w-8 h-8 text-white ml-1" fill="white" />
             </div>
-          )}
-          
-          {showPlayer && hasPreview && (
-            <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-xs text-white/80 backdrop-blur-sm">
-              Preview
-            </div>
-          )}
+          </div>
         </div>
 
         <div className="p-6">
