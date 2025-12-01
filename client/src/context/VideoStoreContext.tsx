@@ -177,13 +177,21 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ episodeId }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Purchase failed');
+        throw new Error(data.error || 'Purchase failed');
       }
 
-      setPurchasedEpisodes(prev => [...prev, episodeId]);
-      await refreshWalletBalance();
+      // Only unlock content if the server confirmed the purchase was verified
+      if (data.unlocked === true) {
+        setPurchasedEpisodes(prev => [...prev, episodeId]);
+        await refreshWalletBalance();
+      } else {
+        // Purchase was not verified - don't unlock
+        console.error('Purchase not verified by server:', data);
+        throw new Error('Purchase could not be verified. Content not unlocked.');
+      }
     } catch (error) {
       console.error('Purchase failed:', error);
       throw error;

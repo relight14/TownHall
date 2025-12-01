@@ -8,6 +8,11 @@ const LEDEWIRE_API_SECRET = process.env.LEDEWIRE_API_SECRET;
 const INDIGO_SELLER_API_KEY = process.env.INDIGO_SELLER_API_KEY;
 const INDIGO_SELLER_API_SECRET = process.env.INDIGO_SELLER_API_SECRET;
 
+function logLedewire(action: string, details: Record<string, any>) {
+  const timestamp = new Date().toISOString();
+  console.log(`[LEDEWIRE ${timestamp}] ${action}:`, JSON.stringify(details, null, 2));
+}
+
 interface LedewireAuthResponse {
   access_token: string;
   refresh_token: string;
@@ -166,33 +171,62 @@ class LedewireClient {
   }
 
   async registerContent(title: string, priceCents: number, metadata?: any): Promise<LedewireContentResponse> {
+    logLedewire('CONTENT_REGISTRATION_START', {
+      title,
+      priceCents,
+      metadata,
+      apiUrl: LEDEWIRE_API_URL,
+    });
+
     const token = await this.getSellerToken();
+    logLedewire('CONTENT_REGISTRATION_AUTH', { tokenObtained: !!token });
     
+    const requestBody = {
+      content_type: 'markdown',
+      title,
+      price_cents: priceCents,
+      content_body: btoa('Premium video content'),
+      visibility: 'public',
+      metadata: metadata || {},
+    };
+
+    logLedewire('CONTENT_REGISTRATION_REQUEST', {
+      endpoint: `${LEDEWIRE_API_URL}/seller/content`,
+      body: requestBody,
+    });
+
     const response = await fetch(`${LEDEWIRE_API_URL}/seller/content`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        content_type: 'markdown',
-        title,
-        price_cents: priceCents,
-        content_body: btoa('Premium video content'),
-        visibility: 'public',
-        metadata: metadata || {},
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
+      logLedewire('CONTENT_REGISTRATION_ERROR', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorMsg,
+      });
       throw new Error(`Failed to register content: ${errorMsg}`);
     }
 
     const data = await safeParseJSON(response);
     if (!data) {
+      logLedewire('CONTENT_REGISTRATION_ERROR', { error: 'Empty response' });
       throw new Error('Register content response was empty');
     }
+
+    logLedewire('CONTENT_REGISTRATION_SUCCESS', {
+      contentId: data.id,
+      title: data.title,
+      priceCents: data.price_cents,
+      visibility: data.visibility,
+    });
+
     return data;
   }
 
@@ -217,31 +251,63 @@ class LedewireClient {
   }
 
   async createPurchase(userToken: string, contentId: string, priceCents: number): Promise<LedewirePurchaseResponse> {
+    logLedewire('PURCHASE_START', {
+      contentId,
+      priceCents,
+      hasUserToken: !!userToken,
+    });
+
+    const requestBody = {
+      content_id: contentId,
+      price_cents: priceCents,
+    };
+
     const response = await fetch(`${LEDEWIRE_API_URL}/purchase`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`,
       },
-      body: JSON.stringify({
-        content_id: contentId,
-        price_cents: priceCents,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
+      logLedewire('PURCHASE_REJECTED', {
+        contentId,
+        priceCents,
+        status: response.status,
+        statusText: response.statusText,
+        error: errorMsg,
+      });
       throw new Error(`Purchase failed: ${errorMsg}`);
     }
 
     const data = await safeParseJSON(response);
     if (!data) {
+      logLedewire('PURCHASE_ERROR', { error: 'Empty response', contentId });
       throw new Error('Purchase response was empty');
     }
+
+    logLedewire('PURCHASE_SUCCESS', {
+      purchaseId: data.id,
+      contentId: data.content_id,
+      buyerId: data.buyer_id,
+      sellerId: data.seller_id,
+      amountCents: data.amount_cents,
+      status: data.status,
+      timestamp: data.timestamp,
+    });
+
     return data;
   }
 
   async verifyPurchase(userToken: string, contentId: string): Promise<LedewirePurchaseVerifyResponse> {
+    logLedewire('PURCHASE_VERIFY_START', {
+      contentId,
+      hasUserToken: !!userToken,
+    });
+
     const response = await fetch(`${LEDEWIRE_API_URL}/purchase/verify?content_id=${contentId}`, {
       method: 'GET',
       headers: {
@@ -251,13 +317,27 @@ class LedewireClient {
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
+      logLedewire('PURCHASE_VERIFY_ERROR', {
+        contentId,
+        status: response.status,
+        error: errorMsg,
+      });
       throw new Error(`Failed to verify purchase: ${errorMsg}`);
     }
 
     const data = await safeParseJSON(response);
     if (!data) {
+      logLedewire('PURCHASE_VERIFY_ERROR', { error: 'Empty response', contentId });
       throw new Error('Verify purchase response was empty');
     }
+
+    logLedewire('PURCHASE_VERIFY_RESULT', {
+      contentId,
+      hasPurchased: data.has_purchased,
+      purchaseDetails: data.purchase_details,
+      checkoutReadiness: data.checkout_readiness,
+    });
+
     return data;
   }
 

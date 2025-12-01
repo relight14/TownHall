@@ -49,4 +49,4 @@ mockupState = "FULLSTACK"
 [userenv]
 
 [userenv.shared]
-LEDEWIRE_API_URL = "https://api-staging.ledewire.com/v1"
+LEDEWIRE_API_URL = "https://api.ledewire.com/v1"
