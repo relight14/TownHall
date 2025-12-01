@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Play, BookOpen } from 'lucide-react';
 import { ImageWithFallback } from './ui/image-with-fallback';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
+
+interface Episode {
+  id: string;
+  videoUrl: string;
+  videoType: string;
+}
 
 interface Series {
   id: string;
@@ -10,7 +16,7 @@ interface Series {
   thumbnail: string;
   trailerUrl?: string | null;
   trailerType?: string | null;
-  episodes: any[];
+  episodes: Episode[];
 }
 
 interface SeriesCardProps {
@@ -37,11 +43,22 @@ export default function SeriesCard({ series }: SeriesCardProps) {
   const [showPlayer, setShowPlayer] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const hasTrailer = series.trailerUrl && series.trailerType;
+  const previewVideo = useMemo(() => {
+    if (series.trailerUrl && series.trailerType) {
+      return { url: series.trailerUrl, type: series.trailerType };
+    }
+    if (series.episodes && series.episodes.length > 0) {
+      const firstEpisode = series.episodes[0];
+      return { url: firstEpisode.videoUrl, type: firstEpisode.videoType };
+    }
+    return null;
+  }, [series.trailerUrl, series.trailerType, series.episodes]);
+  
+  const hasPreview = previewVideo !== null;
   
   const handleMouseEnter = () => {
     setIsHovered(true);
-    if (hasTrailer) {
+    if (hasPreview) {
       hoverTimeoutRef.current = setTimeout(() => {
         setShowPlayer(true);
       }, 300);
@@ -58,11 +75,11 @@ export default function SeriesCard({ series }: SeriesCardProps) {
   };
   
   const getEmbedUrl = () => {
-    if (!series.trailerUrl || !series.trailerType) return '';
-    if (series.trailerType === 'vimeo') {
-      return getVimeoEmbedUrl(series.trailerUrl);
+    if (!previewVideo) return '';
+    if (previewVideo.type === 'vimeo') {
+      return getVimeoEmbedUrl(previewVideo.url);
     } else {
-      return getYouTubeEmbedUrl(series.trailerUrl);
+      return getYouTubeEmbedUrl(previewVideo.url);
     }
   };
 
@@ -81,7 +98,7 @@ export default function SeriesCard({ series }: SeriesCardProps) {
             className={`w-full h-full object-cover transition-all duration-500 ${isHovered ? 'scale-110' : ''} ${showPlayer ? 'opacity-0' : 'opacity-100'}`}
           />
           
-          {showPlayer && hasTrailer && (
+          {showPlayer && hasPreview && (
             <iframe
               src={getEmbedUrl()}
               className="absolute inset-0 w-full h-full"
@@ -101,7 +118,7 @@ export default function SeriesCard({ series }: SeriesCardProps) {
             </div>
           )}
           
-          {showPlayer && hasTrailer && (
+          {showPlayer && hasPreview && (
             <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-xs text-white/80 backdrop-blur-sm">
               Preview
             </div>
