@@ -262,7 +262,8 @@ class LedewireClient {
       price_cents: priceCents,
     };
 
-    const response = await fetch(`${LEDEWIRE_API_URL}/purchase`, {
+    // Try buyer/purchase endpoint (following seller/content pattern)
+    const response = await fetch(`${LEDEWIRE_API_URL}/buyer/purchase`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -308,7 +309,8 @@ class LedewireClient {
       hasUserToken: !!userToken,
     });
 
-    const response = await fetch(`${LEDEWIRE_API_URL}/purchase/verify?content_id=${contentId}`, {
+    // Use buyer/purchase/verify endpoint (following buyer/purchase pattern)
+    const response = await fetch(`${LEDEWIRE_API_URL}/buyer/purchase/verify?content_id=${contentId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${userToken}`,
