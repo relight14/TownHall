@@ -26,7 +26,7 @@ function AppContent() {
               />
               <div>
                 <span className="text-xl text-white tracking-tight block font-bold">Jalbert Films</span>
-                <span className="text-xs text-slate-400 tracking-wide font-medium">Filmmaker-led. Legacy-driven. Studio-caliber work since 1971.</span>
+                <span className="text-xs text-slate-400 tracking-wide font-medium">Filmmaker-led. Legacy-driven. Studio-caliber work.</span>
               </div>
             </Link>
 
