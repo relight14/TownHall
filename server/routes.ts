@@ -204,6 +204,23 @@ export async function registerRoutes(
       res.status(400).json({ error: error.message });
     }
   });
+
+  app.put("/api/series/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validated = insertSeriesSchema.partial().parse(req.body);
+      const series = await storage.updateSeries(id, validated);
+      
+      if (!series) {
+        return res.status(404).json({ error: 'Series not found' });
+      }
+      
+      res.json(series);
+    } catch (error: any) {
+      console.error('Update series error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
   
   // ===== Episode Routes =====
   

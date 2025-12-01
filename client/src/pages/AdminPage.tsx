@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Plus, Trash2, Video } from 'lucide-react';
+import { Plus, Trash2, Video, Edit } from 'lucide-react';
 
 export default function AdminPage() {
-  const { series, addSeries, addEpisode } = useVideoStore();
+  const { series, addSeries, addEpisode, updateSeries } = useVideoStore();
   const [showSeriesForm, setShowSeriesForm] = useState(false);
+  const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
 
   return (
@@ -31,6 +32,17 @@ export default function AdminPage() {
         />
       )}
 
+      {editingSeriesId && (
+        <SeriesForm 
+          series={series.find(s => s.id === editingSeriesId)}
+          onClose={() => setEditingSeriesId(null)}
+          onSubmit={(data) => {
+            updateSeries(editingSeriesId, data);
+            setEditingSeriesId(null);
+          }}
+        />
+      )}
+
       <div className="space-y-6">
         {series.map(s => (
           <div key={s.id} className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 backdrop-blur-sm">
@@ -45,13 +57,23 @@ export default function AdminPage() {
                   <p className="text-slate-500 text-xs uppercase tracking-wider font-semibold">{s.episodes.length} episodes</p>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedSeriesId(selectedSeriesId === s.id ? null : s.id)}
-                className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-slate-700 whitespace-nowrap"
-              >
-                <Plus className="w-4 h-4" />
-                Add Episode
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingSeriesId(s.id)}
+                  className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-slate-700 whitespace-nowrap"
+                  data-testid="button-edit-series"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => setSelectedSeriesId(selectedSeriesId === s.id ? null : s.id)}
+                  className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-slate-700 whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Episode
+                </button>
+              </div>
             </div>
 
             {selectedSeriesId === s.id && (
@@ -88,13 +110,13 @@ export default function AdminPage() {
   );
 }
 
-function SeriesForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (series: any) => void }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [thumbnail, setThumbnail] = useState('');
+function SeriesForm({ series, onClose, onSubmit }: { series?: any; onClose: () => void; onSubmit: (series: any) => void }) {
+  const [title, setTitle] = useState(series?.title || '');
+  const [description, setDescription] = useState(series?.description || '');
+  const [thumbnail, setThumbnail] = useState(series?.thumbnail || '');
   const [useFile, setUseFile] = useState(false);
-  const [trailerUrl, setTrailerUrl] = useState('');
-  const [trailerType, setTrailerType] = useState<'vimeo' | 'youtube'>('vimeo');
+  const [trailerUrl, setTrailerUrl] = useState(series?.trailerUrl || '');
+  const [trailerType, setTrailerType] = useState<'vimeo' | 'youtube'>(series?.trailerType || 'vimeo');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -119,9 +141,11 @@ function SeriesForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (ser
     onClose();
   };
 
+  const isEditing = !!series;
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-top-2">
-      <h3 className="text-xl text-white mb-4 font-semibold">New Series</h3>
+      <h3 className="text-xl text-white mb-4 font-semibold">{isEditing ? 'Edit Series' : 'New Series'}</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-slate-300 mb-2 text-sm font-medium">Series Title</label>
@@ -231,7 +255,7 @@ function SeriesForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (ser
             type="submit"
             className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20"
           >
-            Create Series
+            {isEditing ? 'Save Changes' : 'Create Series'}
           </button>
         </div>
       </form>

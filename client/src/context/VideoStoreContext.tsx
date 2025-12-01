@@ -31,7 +31,7 @@ interface VideoStoreContextType {
   series: Series[];
   addSeries: (series: Omit<Series, 'id' | 'episodes'>) => Promise<void>;
   addEpisode: (seriesId: string, episode: Omit<Episode, 'id'>) => Promise<void>;
-  updateSeries: (seriesId: string, updates: Partial<Series>) => void;
+  updateSeries: (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => Promise<void>;
   purchasedEpisodes: string[];
   purchaseEpisode: (episodeId: string) => Promise<void>;
   checkPurchase: (episodeId: string) => Promise<boolean>;
@@ -123,8 +123,25 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateSeries = (seriesId: string, updates: Partial<Series>) => {
-    setSeries(prev => prev.map(s => s.id === seriesId ? { ...s, ...updates } : s));
+  const updateSeries = async (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => {
+    try {
+      const response = await fetch(`/api/series/${seriesId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update series');
+      }
+
+      await loadSeries();
+    } catch (error) {
+      console.error('Failed to update series:', error);
+      throw error;
+    }
   };
 
   const purchaseEpisode = async (episodeId: string) => {
