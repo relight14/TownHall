@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { X, Mail, Lock, User } from 'lucide-react';
 
@@ -54,7 +55,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
     window.location.href = '/api/login';
   };
 
-  return (
+  return createPortal(
     <div 
       className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
       onClick={onClose}
@@ -198,6 +199,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
