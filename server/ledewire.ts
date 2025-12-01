@@ -49,6 +49,35 @@ interface LedewirePurchaseVerifyResponse {
   };
 }
 
+async function safeParseJSON(response: Response): Promise<any> {
+  const text = await response.text();
+  if (!text || text.trim() === '') {
+    return null;
+  }
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return { raw: text };
+  }
+}
+
+async function getErrorMessage(response: Response): Promise<string> {
+  const data = await safeParseJSON(response);
+  if (!data) {
+    return `HTTP ${response.status}: ${response.statusText || 'Unknown error'}`;
+  }
+  if (data.raw) {
+    return `HTTP ${response.status}: ${data.raw}`;
+  }
+  if (data.error) {
+    return data.error;
+  }
+  if (data.message) {
+    return data.message;
+  }
+  return JSON.stringify(data);
+}
+
 class LedewireClient {
   private sellerToken: string | null = null;
 
@@ -104,11 +133,15 @@ class LedewireClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Ledewire signup failed: ${JSON.stringify(error)}`);
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(`Ledewire signup failed: ${errorMsg}`);
     }
 
-    return await response.json();
+    const data = await safeParseJSON(response);
+    if (!data) {
+      throw new Error('Signup response was empty');
+    }
+    return data;
   }
 
   async loginBuyer(email: string, password: string): Promise<LedewireAuthResponse> {
@@ -121,11 +154,15 @@ class LedewireClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Ledewire login failed: ${JSON.stringify(error)}`);
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(`Ledewire login failed: ${errorMsg}`);
     }
 
-    return await response.json();
+    const data = await safeParseJSON(response);
+    if (!data) {
+      throw new Error('Login response was empty');
+    }
+    return data;
   }
 
   async registerContent(title: string, priceCents: number, metadata?: any): Promise<LedewireContentResponse> {
@@ -148,11 +185,15 @@ class LedewireClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Failed to register content: ${JSON.stringify(error)}`);
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(`Failed to register content: ${errorMsg}`);
     }
 
-    return await response.json();
+    const data = await safeParseJSON(response);
+    if (!data) {
+      throw new Error('Register content response was empty');
+    }
+    return data;
   }
 
   async getWalletBalance(userToken: string): Promise<LedewireWalletBalanceResponse> {
@@ -164,11 +205,15 @@ class LedewireClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Failed to get wallet balance: ${JSON.stringify(error)}`);
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(`Failed to get wallet balance: ${errorMsg}`);
     }
 
-    return await response.json();
+    const data = await safeParseJSON(response);
+    if (!data) {
+      throw new Error('Wallet balance response was empty');
+    }
+    return data;
   }
 
   async createPurchase(userToken: string, contentId: string, priceCents: number): Promise<LedewirePurchaseResponse> {
@@ -185,11 +230,15 @@ class LedewireClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Purchase failed: ${JSON.stringify(error)}`);
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(`Purchase failed: ${errorMsg}`);
     }
 
-    return await response.json();
+    const data = await safeParseJSON(response);
+    if (!data) {
+      throw new Error('Purchase response was empty');
+    }
+    return data;
   }
 
   async verifyPurchase(userToken: string, contentId: string): Promise<LedewirePurchaseVerifyResponse> {
@@ -201,11 +250,15 @@ class LedewireClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Failed to verify purchase: ${JSON.stringify(error)}`);
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(`Failed to verify purchase: ${errorMsg}`);
     }
 
-    return await response.json();
+    const data = await safeParseJSON(response);
+    if (!data) {
+      throw new Error('Verify purchase response was empty');
+    }
+    return data;
   }
 
   async createPaymentSession(userToken: string, amountCents: number): Promise<any> {
@@ -222,11 +275,15 @@ class LedewireClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Failed to create payment session: ${JSON.stringify(error)}`);
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(`Failed to create payment session: ${errorMsg}`);
     }
 
-    return await response.json();
+    const data = await safeParseJSON(response);
+    if (!data) {
+      throw new Error('Payment session response was empty');
+    }
+    return data;
   }
 }
 
