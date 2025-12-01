@@ -9,7 +9,7 @@ export default function HomePage() {
     <div className="relative min-h-screen pb-20">
       {/* Hero Background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/85 to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/50 to-slate-950/60" />
         <img 
           src={austriaBackground}
           alt="Mountain background"
