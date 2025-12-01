@@ -38,30 +38,43 @@ export default function SeriesPage() {
         </Link>
 
         <div className="mb-12 max-w-4xl">
-          <div className="relative rounded-2xl overflow-hidden aspect-video shadow-2xl shadow-black/50 border border-slate-800">
-            {currentSeries.trailerUrl && currentSeries.trailerType ? (
-              <VideoEmbed url={currentSeries.trailerUrl} type={currentSeries.trailerType} title={currentSeries.title} />
-            ) : (
-              <>
-                <ImageWithFallback 
-                  src={currentSeries.thumbnail} 
-                  alt={currentSeries.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-              </>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-8">
-              <div className="inline-block mb-3 px-3 py-1 bg-blue-500/30 border border-blue-400/40 rounded-full backdrop-blur-sm">
-                <span className="text-blue-200 tracking-wide uppercase text-xs font-semibold">Documentary Series</span>
+          {currentSeries.trailerUrl && currentSeries.trailerType ? (
+            <>
+              {/* Trailer Video */}
+              <div className="relative rounded-2xl overflow-hidden aspect-video shadow-2xl shadow-black/50 border border-slate-800 mb-6">
+                <VideoEmbed url={currentSeries.trailerUrl} type={currentSeries.trailerType} title={currentSeries.title} bare />
               </div>
-              <h1 className="text-4xl md:text-5xl text-white mb-3 font-bold tracking-tight">{currentSeries.title}</h1>
-              <p className="text-lg md:text-xl text-slate-200 max-w-2xl leading-relaxed">
-                {currentSeries.description}
-              </p>
+              {/* Series Info below trailer */}
+              <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+                <div className="inline-block mb-3 px-3 py-1 bg-blue-500/30 border border-blue-400/40 rounded-full">
+                  <span className="text-blue-200 tracking-wide uppercase text-xs font-semibold">Documentary Series</span>
+                </div>
+                <h1 className="text-4xl md:text-5xl text-white mb-3 font-bold tracking-tight">{currentSeries.title}</h1>
+                <p className="text-lg md:text-xl text-slate-300 max-w-2xl leading-relaxed">
+                  {currentSeries.description}
+                </p>
+              </div>
+            </>
+          ) : (
+            /* Thumbnail with overlay */
+            <div className="relative rounded-2xl overflow-hidden aspect-video shadow-2xl shadow-black/50 border border-slate-800">
+              <ImageWithFallback 
+                src={currentSeries.thumbnail} 
+                alt={currentSeries.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <div className="inline-block mb-3 px-3 py-1 bg-blue-500/30 border border-blue-400/40 rounded-full backdrop-blur-sm">
+                  <span className="text-blue-200 tracking-wide uppercase text-xs font-semibold">Documentary Series</span>
+                </div>
+                <h1 className="text-4xl md:text-5xl text-white mb-3 font-bold tracking-tight">{currentSeries.title}</h1>
+                <p className="text-lg md:text-xl text-slate-200 max-w-2xl leading-relaxed">
+                  {currentSeries.description}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div>
