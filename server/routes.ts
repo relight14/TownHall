@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ledewire } from "./ledewire";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema } from "@shared/schema";
 import crypto from "crypto";
 
@@ -69,6 +70,34 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  // ===== Setup Replit Auth (Google SSO) =====
+  await setupAuth(app);
+  
+  // ===== SSO User Route =====
+  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({
+        id: user.id,
+        email: user.email,
+        name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        ledewireToken: user.ledewireAccessToken,
+      });
+    } catch (error) {
+      console.error("Error fetching SSO user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
   
   // ===== Admin Authentication Route =====
   

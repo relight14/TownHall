@@ -62,6 +62,29 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     loadSeries();
   }, []);
 
+  // Check for SSO user on mount
+  useEffect(() => {
+    const checkSSOUser = async () => {
+      try {
+        const response = await fetch('/api/auth/user');
+        if (response.ok) {
+          const data = await response.json();
+          setUser({
+            id: data.id,
+            email: data.email || '',
+            name: data.name || data.email || 'User',
+          });
+          if (data.ledewireToken) {
+            setLedewireToken(data.ledewireToken);
+          }
+        }
+      } catch (error) {
+        // Not logged in via SSO, ignore
+      }
+    };
+    checkSSOUser();
+  }, []);
+
   // Load wallet balance when token changes
   useEffect(() => {
     if (ledewireToken) {
@@ -298,6 +321,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     setLedewireToken(null);
     setPurchasedEpisodes([]);
     setWalletBalance(0);
+    // Also logout from Replit Auth (SSO)
+    window.location.href = '/api/logout';
   };
 
   const refreshWalletBalance = async () => {

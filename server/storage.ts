@@ -5,6 +5,7 @@ import {
   type InsertSeries, 
   type Episode, 
   type InsertEpisode,
+  type UpsertUser,
   users,
   series as seriesTable,
   episodes as episodesTable
@@ -18,6 +19,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser & { ledewireAccessToken?: string; ledewireRefreshToken?: string; ledewireUserId?: string }): Promise<User>;
   updateUserLedewireTokens(id: string, accessToken: string, refreshToken: string, userId: string): Promise<void>;
+  upsertUser(user: UpsertUser): Promise<User>;
   
   // Series operations
   getAllSeries(): Promise<Series[]>;
@@ -59,6 +61,36 @@ export class DatabaseStorage implements IStorage {
         ledewireUserId: userId,
       })
       .where(eq(users.id, id));
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: userData.profileImageUrl,
+        name: userData.firstName && userData.lastName 
+          ? `${userData.firstName} ${userData.lastName}`.trim()
+          : userData.firstName || userData.lastName || userData.email || 'User',
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          name: userData.firstName && userData.lastName 
+            ? `${userData.firstName} ${userData.lastName}`.trim()
+            : userData.firstName || userData.lastName || userData.email || 'User',
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   // Series operations
