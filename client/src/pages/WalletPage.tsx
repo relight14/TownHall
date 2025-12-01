@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle } from 'lucide-react';
+import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle, X } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -263,9 +263,30 @@ export default function WalletPage() {
       </div>
 
       {showAddFunds && !showPaymentForm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl">
-            <h2 className="text-2xl text-white mb-6 font-bold">Add Funds</h2>
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowAddFunds(false);
+            setError('');
+          }}
+        >
+          <div 
+            className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl text-white font-bold">Add Funds</h2>
+              <button 
+                onClick={() => {
+                  setShowAddFunds(false);
+                  setError('');
+                }}
+                className="text-slate-400 hover:text-white transition-colors"
+                data-testid="button-close-add-funds"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
             
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
@@ -361,9 +382,24 @@ export default function WalletPage() {
       )}
 
       {showPaymentForm && clientSecret && stripePromise && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl">
-            <h2 className="text-2xl text-white mb-6 font-bold">Complete Payment</h2>
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={handlePaymentCancel}
+        >
+          <div 
+            className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl text-white font-bold">Complete Payment</h2>
+              <button 
+                onClick={handlePaymentCancel}
+                className="text-slate-400 hover:text-white transition-colors"
+                data-testid="button-close-payment"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
             
             <Elements 
               stripe={stripePromise} 
