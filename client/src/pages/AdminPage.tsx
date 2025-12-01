@@ -1,0 +1,371 @@
+import { useState } from 'react';
+import { useVideoStore } from '../context/VideoStoreContext';
+import { Plus, Trash2, Video } from 'lucide-react';
+
+export default function AdminPage() {
+  const { series, addSeries, addEpisode } = useVideoStore();
+  const [showSeriesForm, setShowSeriesForm] = useState(false);
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
+      <div className="mb-8">
+        <h1 className="text-4xl text-white mb-2 font-bold">Content Management</h1>
+        <p className="text-slate-400">Manage your video series and episodes</p>
+      </div>
+
+      <div className="mb-8">
+        <button
+          onClick={() => setShowSeriesForm(true)}
+          className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-blue-600/20 font-medium"
+        >
+          <Plus className="w-5 h-5" />
+          Add New Series
+        </button>
+      </div>
+
+      {showSeriesForm && (
+        <SeriesForm 
+          onClose={() => setShowSeriesForm(false)}
+          onSubmit={addSeries}
+        />
+      )}
+
+      <div className="space-y-6">
+        {series.map(s => (
+          <div key={s.id} className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 backdrop-blur-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
+              <div className="flex gap-4 flex-1">
+                <div className="w-32 h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0 border border-slate-700">
+                  <img src={s.thumbnail} alt={s.title} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h3 className="text-xl text-white mb-1 font-medium">{s.title}</h3>
+                  <p className="text-slate-400 text-sm line-clamp-2 mb-2">{s.description}</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wider font-semibold">{s.episodes.length} episodes</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedSeriesId(selectedSeriesId === s.id ? null : s.id)}
+                className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-slate-700 whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                Add Episode
+              </button>
+            </div>
+
+            {selectedSeriesId === s.id && (
+              <EpisodeForm
+                seriesId={s.id}
+                onSubmit={(episode) => {
+                  addEpisode(s.id, episode);
+                  setSelectedSeriesId(null);
+                }}
+                onCancel={() => setSelectedSeriesId(null)}
+              />
+            )}
+
+            {s.episodes.length > 0 && (
+              <div className="mt-4 space-y-2 pl-4 border-l-2 border-slate-800">
+                {s.episodes.map(ep => (
+                  <div key={ep.id} className="bg-slate-800/30 hover:bg-slate-800/50 rounded-lg p-4 flex items-center gap-4 transition-colors border border-slate-800/50">
+                    <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                      <Video className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium">{ep.title}</h4>
+                      <p className="text-slate-400 text-sm">{ep.description}</p>
+                    </div>
+                    <div className="text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full text-sm border border-blue-500/20">${ep.price}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SeriesForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (series: any) => void }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [thumbnail, setThumbnail] = useState('');
+  const [useFile, setUseFile] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnail(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({ title, description, thumbnail });
+    onClose();
+  };
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-top-2">
+      <h3 className="text-xl text-white mb-4 font-semibold">New Series</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-slate-300 mb-2 text-sm font-medium">Series Title</label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-slate-300 mb-2 text-sm font-medium">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all h-24"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-slate-300 mb-2 text-sm font-medium">Thumbnail</label>
+          <div className="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              onClick={() => setUseFile(false)}
+              className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                !useFile 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+              }`}
+            >
+              URL
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseFile(true)}
+              className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                useFile 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+              }`}
+            >
+              Upload File
+            </button>
+          </div>
+          {!useFile ? (
+            <input
+              type="url"
+              value={thumbnail}
+              onChange={(e) => setThumbnail(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              placeholder="https://..."
+              required
+            />
+          ) : (
+            <div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer file:font-medium"
+                required={!thumbnail}
+              />
+              {thumbnail && (
+                <div className="mt-3">
+                  <img src={thumbnail} alt="Preview" className="w-32 h-20 object-cover rounded-lg border border-slate-700" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg transition-colors border border-slate-700 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20"
+          >
+            Create Series
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function EpisodeForm({ seriesId, onSubmit, onCancel }: { seriesId: string; onSubmit: (episode: any) => void; onCancel: () => void }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoType, setVideoType] = useState<'vimeo' | 'youtube'>('vimeo');
+  const [price, setPrice] = useState('9.99');
+  const [thumbnail, setThumbnail] = useState('');
+  const [useFile, setUseFile] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnail(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      title,
+      description,
+      videoUrl,
+      videoType,
+      price: parseFloat(price),
+      thumbnail
+    });
+  };
+
+  return (
+    <div className="bg-slate-800/50 rounded-lg p-6 mt-4 border border-slate-700 animate-in fade-in slide-in-from-top-2">
+      <h4 className="text-white mb-4 font-semibold">Add Episode</h4>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-slate-300 mb-1 text-sm font-medium">Episode Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-slate-300 mb-1 text-sm font-medium">Price ($)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              required
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-slate-300 mb-1 text-sm font-medium">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all h-20"
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-slate-300 mb-1 text-sm font-medium">Video URL</label>
+            <input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              placeholder="https://vimeo.com/... or https://youtube.com/..."
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-slate-300 mb-1 text-sm font-medium">Video Type</label>
+            <select
+              value={videoType}
+              onChange={(e) => setVideoType(e.target.value as 'vimeo' | 'youtube')}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+            >
+              <option value="vimeo">Vimeo</option>
+              <option value="youtube">YouTube</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-slate-300 mb-1 text-sm font-medium">Thumbnail</label>
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setUseFile(false)}
+              className={`px-3 py-1 rounded transition-colors text-sm font-medium ${
+                !useFile 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700'
+              }`}
+            >
+              URL
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseFile(true)}
+              className={`px-3 py-1 rounded transition-colors text-sm font-medium ${
+                useFile 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700'
+              }`}
+            >
+              Upload File
+            </button>
+          </div>
+          {!useFile ? (
+            <input
+              type="url"
+              value={thumbnail}
+              onChange={(e) => setThumbnail(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              placeholder="https://..."
+              required
+            />
+          ) : (
+            <div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer file:text-sm"
+                required={!thumbnail}
+              />
+              {thumbnail && (
+                <div className="mt-2">
+                  <img src={thumbnail} alt="Preview" className="w-32 h-20 object-cover rounded border border-slate-700" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg transition-colors border border-slate-700 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20"
+          >
+            Save Episode
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
