@@ -1,6 +1,12 @@
 const LEDEWIRE_API_URL = 'https://api.ledewire.com/v1';
+
+// Buyer credentials (for customer authentication)
 const LEDEWIRE_API_KEY = process.env.LEDEWIRE_API_KEY;
 const LEDEWIRE_API_SECRET = process.env.LEDEWIRE_API_SECRET;
+
+// Seller credentials (for content registration - NEVER expose these)
+const JALBERTFILMS_SELLER_API_KEY = process.env.JALBERTFILMS_SELLER_API_KEY;
+const JALBERTFILMS_SELLER_API_SECRET = process.env.JALBERTFILMS_SELLER_API_SECRET;
 
 interface LedewireAuthResponse {
   access_token: string;
@@ -51,20 +57,24 @@ class LedewireClient {
       return this.sellerToken;
     }
 
+    if (!JALBERTFILMS_SELLER_API_KEY || !JALBERTFILMS_SELLER_API_SECRET) {
+      throw new Error('Seller API credentials not configured');
+    }
+
     const response = await fetch(`${LEDEWIRE_API_URL}/auth/login/api-key`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        key: LEDEWIRE_API_KEY,
-        secret: LEDEWIRE_API_SECRET,
+        key: JALBERTFILMS_SELLER_API_KEY,
+        secret: JALBERTFILMS_SELLER_API_SECRET,
       }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(`Ledewire auth failed: ${JSON.stringify(error)}`);
+      throw new Error(`Seller authentication failed`);
     }
 
     const data: LedewireAuthResponse = await response.json();
