@@ -1,31 +1,55 @@
 import { useState } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { X, Mail, Lock } from 'lucide-react';
+import { X, Mail, Lock, User } from 'lucide-react';
 
 interface AuthModalProps {
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
-  const { login } = useVideoStore();
+  const { login, signup } = useVideoStore();
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
-    onSuccess();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await login(email, password);
+      } else {
+        await signup(email, password, name);
+      }
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        onClose();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 rounded-2xl max-w-md w-full border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center p-6 border-b border-slate-800">
-          <h2 className="text-2xl text-white">Sign In</h2>
+          <h2 className="text-2xl text-white font-bold">
+            {isLogin ? 'Sign In' : 'Sign Up'}
+          </h2>
           <button 
             onClick={onClose}
             className="text-slate-400 hover:text-white transition-colors"
+            data-testid="button-close-auth"
           >
             <X className="w-6 h-6" />
           </button>
@@ -33,12 +57,39 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
 
         <form onSubmit={handleSubmit} className="p-6">
           <p className="text-slate-400 mb-6">
-            Sign in to purchase and access premium content
+            {isLogin 
+              ? 'Sign in to purchase and access premium content'
+              : 'Create an account to get started'
+            }
           </p>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm" data-testid="text-error">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-4 mb-6">
+            {!isLogin && (
+              <div>
+                <label className="block text-slate-300 mb-2 text-sm font-medium">Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="Your name"
+                    required
+                    data-testid="input-name"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="block text-slate-300 mb-2">Email</label>
+              <label className="block text-slate-300 mb-2 text-sm font-medium">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
@@ -48,12 +99,13 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="your@email.com"
                   required
+                  data-testid="input-email"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-slate-300 mb-2">Password</label>
+              <label className="block text-slate-300 mb-2 text-sm font-medium">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
@@ -63,18 +115,41 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="••••••••"
                   required
+                  data-testid="input-password"
                 />
               </div>
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors font-medium"
-          >
-            Sign In
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors font-medium border border-slate-700"
+              data-testid="button-cancel"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20 disabled:opacity-50"
+              data-testid="button-submit"
+            >
+              {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
+            </button>
+          </div>
         </form>
+
+        <div className="px-6 pb-2">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="w-full text-blue-400 hover:text-blue-300 text-sm transition-colors py-2"
+            data-testid="button-toggle-auth"
+          >
+            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+          </button>
+        </div>
 
         <div className="px-6 pb-4 pt-2 border-t border-slate-800">
           <p className="text-slate-500 text-xs text-center">

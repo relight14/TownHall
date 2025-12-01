@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage';
 import SeriesPage from './pages/SeriesPage';
 import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
+import AuthModal from './components/AuthModal';
 import { Wallet, LogIn, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import indigoSoulLogo from '@assets/indigosoul_1764613870278.avif';
@@ -83,120 +84,6 @@ function AppContent() {
       </Routes>
 
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
-    </div>
-  );
-}
-
-function AuthModal({ onClose }: { onClose: () => void }) {
-  const { login, signup } = useVideoStore();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      if (isLogin) {
-        await login(email, password);
-      } else {
-        await signup(email, password, name);
-      }
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl">
-        <h2 className="text-2xl text-white mb-6 font-bold">
-          {isLogin ? 'Login' : 'Sign Up'}
-        </h2>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm" data-testid="text-error">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div>
-              <label className="block text-slate-300 mb-2 text-sm font-medium">Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                required
-                data-testid="input-name"
-              />
-            </div>
-          )}
-          
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              required
-              data-testid="input-email"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              required
-              data-testid="input-password"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg transition-colors border border-slate-700 font-medium"
-              data-testid="button-cancel"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20 disabled:opacity-50"
-              data-testid="button-submit"
-            >
-              {loading ? 'Please wait...' : isLogin ? 'Login' : 'Sign Up'}
-            </button>
-          </div>
-        </form>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
-            data-testid="button-toggle-auth"
-          >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Login'}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
