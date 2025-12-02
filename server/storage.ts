@@ -19,6 +19,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser & { ledewireAccessToken?: string; ledewireRefreshToken?: string; ledewireUserId?: string }): Promise<User>;
   updateUserLedewireTokens(id: string, accessToken: string, refreshToken: string, userId: string): Promise<void>;
+  updateUserGoogleId(id: string, googleId: string): Promise<void>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Series operations
@@ -59,6 +60,15 @@ export class DatabaseStorage implements IStorage {
         ledewireAccessToken: accessToken,
         ledewireRefreshToken: refreshToken,
         ledewireUserId: userId,
+      })
+      .where(eq(users.id, id));
+  }
+
+  async updateUserGoogleId(id: string, googleId: string): Promise<void> {
+    await db.update(users)
+      .set({
+        googleId,
+        updatedAt: new Date(),
       })
       .where(eq(users.id, id));
   }

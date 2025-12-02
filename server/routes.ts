@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ledewire } from "./ledewire";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
 import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema } from "@shared/schema";
 import crypto from "crypto";
 
@@ -71,14 +71,13 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  // ===== Setup Replit Auth (Google SSO) =====
-  await setupAuth(app);
+  // ===== Setup Google OAuth =====
+  await setupGoogleAuth(app);
   
-  // ===== SSO User Route =====
+  // ===== Google OAuth User Route =====
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const user = req.user;
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -94,7 +93,7 @@ export async function registerRoutes(
         ledewireToken: user.ledewireAccessToken,
       });
     } catch (error) {
-      console.error("Error fetching SSO user:", error);
+      console.error("Error fetching Google OAuth user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });

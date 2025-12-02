@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
+  googleId: text("google_id"),
   ledewireAccessToken: text("ledewire_access_token"),
   ledewireRefreshToken: text("ledewire_refresh_token"),
   ledewireUserId: text("ledewire_user_id"),
@@ -54,6 +55,8 @@ export const episodes = pgTable("episodes", {
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   name: true,
+  googleId: true,
+  profileImageUrl: true,
 });
 
 export type UpsertUser = {

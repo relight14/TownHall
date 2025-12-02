@@ -52,7 +52,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = '/api/login';
+    window.location.href = '/api/auth/google';
   };
 
   return createPortal(
