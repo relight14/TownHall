@@ -32,6 +32,7 @@ interface VideoStoreContextType {
   addSeries: (series: Omit<Series, 'id' | 'episodes'>) => Promise<void>;
   addEpisode: (seriesId: string, episode: Omit<Episode, 'id'>) => Promise<void>;
   updateSeries: (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => Promise<void>;
+  updateEpisode: (episodeId: string, updates: Omit<Partial<Episode>, 'id'>) => Promise<void>;
   deleteEpisode: (episodeId: string) => Promise<void>;
   purchasedEpisodes: string[];
   purchaseEpisode: (episodeId: string) => Promise<void>;
@@ -181,6 +182,32 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       await loadSeries();
     } catch (error) {
       console.error('Failed to update series:', error);
+      throw error;
+    }
+  };
+
+  const updateEpisode = async (episodeId: string, updates: Omit<Partial<Episode>, 'id'>) => {
+    if (!adminToken) {
+      throw new Error('Admin authentication required');
+    }
+    try {
+      const response = await fetch(`/api/episodes/${episodeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update episode');
+      }
+
+      await loadSeries();
+    } catch (error) {
+      console.error('Failed to update episode:', error);
       throw error;
     }
   };
@@ -377,6 +404,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       addSeries,
       addEpisode,
       updateSeries,
+      updateEpisode,
       deleteEpisode,
       purchasedEpisodes,
       purchaseEpisode,

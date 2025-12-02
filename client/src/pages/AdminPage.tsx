@@ -95,10 +95,11 @@ function AdminLoginGate({ onAuthenticated }: { onAuthenticated: (token: string) 
 }
 
 export default function AdminPage() {
-  const { series, addSeries, addEpisode, updateSeries, deleteEpisode, setAdminToken } = useVideoStore();
+  const { series, addSeries, addEpisode, updateSeries, updateEpisode, deleteEpisode, setAdminToken } = useVideoStore();
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
+  const [editingEpisodeId, setEditingEpisodeId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
 
@@ -247,27 +248,49 @@ export default function AdminPage() {
             {s.episodes.length > 0 && (
               <div className="mt-4 space-y-2 pl-4 border-l-2 border-slate-800">
                 {s.episodes.map(ep => (
-                  <div key={ep.id} className="bg-slate-800/30 hover:bg-slate-800/50 rounded-lg p-4 flex items-center gap-4 transition-colors border border-slate-800/50">
-                    <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
-                      <Video className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium">{ep.title}</h4>
-                      <p className="text-slate-400 text-sm">{ep.description}</p>
-                    </div>
-                    <div className="text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full text-sm border border-blue-500/20">${ep.price}</div>
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this episode?')) {
-                          deleteEpisode(ep.id);
-                        }
-                      }}
-                      className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                      data-testid={`button-delete-episode-${ep.id}`}
-                      title="Delete episode"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <div key={ep.id}>
+                    {editingEpisodeId === ep.id ? (
+                      <EpisodeForm
+                        seriesId={s.id}
+                        episode={ep}
+                        onSubmit={async (episodeData) => {
+                          await updateEpisode(ep.id, episodeData);
+                          setEditingEpisodeId(null);
+                        }}
+                        onCancel={() => setEditingEpisodeId(null)}
+                      />
+                    ) : (
+                      <div className="bg-slate-800/30 hover:bg-slate-800/50 rounded-lg p-4 flex items-center gap-4 transition-colors border border-slate-800/50">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                          <Video className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-white font-medium">{ep.title}</h4>
+                          <p className="text-slate-400 text-sm">{ep.description}</p>
+                        </div>
+                        <div className="text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full text-sm border border-blue-500/20">${ep.price}</div>
+                        <button
+                          onClick={() => setEditingEpisodeId(ep.id)}
+                          className="p-2 text-slate-400 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                          data-testid={`button-edit-episode-${ep.id}`}
+                          title="Edit episode"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('Are you sure you want to delete this episode?')) {
+                              deleteEpisode(ep.id);
+                            }
+                          }}
+                          className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                          data-testid={`button-delete-episode-${ep.id}`}
+                          title="Delete episode"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -434,14 +457,21 @@ function SeriesForm({ series, onClose, onSubmit }: { series?: any; onClose: () =
   );
 }
 
-function EpisodeForm({ seriesId, onSubmit, onCancel }: { seriesId: string; onSubmit: (episode: any) => void; onCancel: () => void }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoType, setVideoType] = useState<'vimeo' | 'youtube'>('vimeo');
-  const [price, setPrice] = useState('9.99');
-  const [thumbnail, setThumbnail] = useState('');
+function EpisodeForm({ seriesId, episode, onSubmit, onCancel }: { 
+  seriesId: string; 
+  episode?: any;
+  onSubmit: (episode: any) => void; 
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(episode?.title || '');
+  const [description, setDescription] = useState(episode?.description || '');
+  const [videoUrl, setVideoUrl] = useState(episode?.videoUrl || '');
+  const [videoType, setVideoType] = useState<'vimeo' | 'youtube'>(episode?.videoType || 'vimeo');
+  const [price, setPrice] = useState(episode?.price?.toString() || '9.99');
+  const [thumbnail, setThumbnail] = useState(episode?.thumbnail || '');
   const [useFile, setUseFile] = useState(false);
+  
+  const isEditing = !!episode;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -468,7 +498,7 @@ function EpisodeForm({ seriesId, onSubmit, onCancel }: { seriesId: string; onSub
 
   return (
     <div className="bg-slate-800/50 rounded-lg p-6 mt-4 border border-slate-700 animate-in fade-in slide-in-from-top-2">
-      <h4 className="text-white mb-4 font-semibold">Add Episode</h4>
+      <h4 className="text-white mb-4 font-semibold">{isEditing ? 'Edit Episode' : 'Add Episode'}</h4>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -590,7 +620,7 @@ function EpisodeForm({ seriesId, onSubmit, onCancel }: { seriesId: string; onSub
             type="submit"
             className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20"
           >
-            Save Episode
+            {isEditing ? 'Save Changes' : 'Save Episode'}
           </button>
         </div>
       </form>

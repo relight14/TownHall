@@ -439,6 +439,34 @@ export async function registerRoutes(
     }
   });
   
+  app.put("/api/episodes/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, description, videoUrl, videoType, price, thumbnail } = req.body;
+      
+      // Convert price to cents if provided
+      const updates: any = {};
+      if (title !== undefined) updates.title = title;
+      if (description !== undefined) updates.description = description;
+      if (videoUrl !== undefined) updates.videoUrl = videoUrl;
+      if (videoType !== undefined) updates.videoType = videoType;
+      if (thumbnail !== undefined) updates.thumbnail = thumbnail;
+      if (price !== undefined) updates.price = Math.round(price * 100);
+      
+      const episode = await storage.updateEpisode(id, updates);
+      if (!episode) {
+        return res.status(404).json({ error: 'Episode not found' });
+      }
+      res.json({
+        ...episode,
+        price: episode.price / 100,
+      });
+    } catch (error: any) {
+      console.error('Update episode error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.delete("/api/episodes/:id", requireAdminAuth, async (req, res) => {
     try {
       const { id } = req.params;
