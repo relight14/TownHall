@@ -6,12 +6,23 @@ import {
   type Episode, 
   type InsertEpisode,
   type UpsertUser,
+  type AdminSettings,
   users,
   series as seriesTable,
-  episodes as episodesTable
+  episodes as episodesTable,
+  adminSettings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import crypto from "crypto";
+
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+export function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash;
+}
 
 export interface IStorage {
   // User operations
@@ -35,6 +46,12 @@ export interface IStorage {
   createEpisode(episode: InsertEpisode & { ledewireContentId?: string }): Promise<Episode>;
   updateEpisode(id: string, episode: Partial<InsertEpisode>): Promise<Episode | undefined>;
   deleteEpisode(id: string): Promise<void>;
+  
+  // Admin settings operations
+  getAdminByEmail(email: string): Promise<AdminSettings | undefined>;
+  createOrUpdateAdmin(email: string, password: string): Promise<AdminSettings>;
+  verifyAdminPassword(email: string, password: string): Promise<boolean>;
+  updateAdminPassword(email: string, newPassword: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -155,6 +172,43 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEpisode(id: string): Promise<void> {
     await db.delete(episodesTable).where(eq(episodesTable.id, id));
+  }
+
+  // Admin settings operations
+  async getAdminByEmail(email: string): Promise<AdminSettings | undefined> {
+    const result = await db.select().from(adminSettings).where(eq(adminSettings.email, email));
+    return result[0];
+  }
+
+  async createOrUpdateAdmin(email: string, password: string): Promise<AdminSettings> {
+    const passwordHash = hashPassword(password);
+    const existing = await this.getAdminByEmail(email);
+    
+    if (existing) {
+      const result = await db.update(adminSettings)
+        .set({ passwordHash, updatedAt: new Date() })
+        .where(eq(adminSettings.email, email))
+        .returning();
+      return result[0];
+    } else {
+      const result = await db.insert(adminSettings)
+        .values({ email, passwordHash })
+        .returning();
+      return result[0];
+    }
+  }
+
+  async verifyAdminPassword(email: string, password: string): Promise<boolean> {
+    const admin = await this.getAdminByEmail(email);
+    if (!admin) return false;
+    return verifyPassword(password, admin.passwordHash);
+  }
+
+  async updateAdminPassword(email: string, newPassword: string): Promise<void> {
+    const passwordHash = hashPassword(newPassword);
+    await db.update(adminSettings)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(adminSettings.email, email));
   }
 }
 

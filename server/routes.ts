@@ -131,12 +131,26 @@ export async function registerRoutes(
       const adminEmail = process.env.ADMIN_EMAIL;
       const adminPassword = process.env.ADMIN_PASSWORD;
       
-      if (!adminEmail || !adminPassword) {
-        console.log('[ADMIN AUTH] Admin credentials not configured');
+      if (!adminEmail) {
+        console.log('[ADMIN AUTH] Admin email not configured');
         return res.status(500).json({ error: 'Admin authentication not configured' });
       }
       
-      if (email === adminEmail && password === adminPassword) {
+      // First check database for admin credentials (allows password changes)
+      const dbAdmin = await storage.getAdminByEmail(email);
+      let authenticated = false;
+      
+      if (dbAdmin) {
+        // Use database password if admin exists in DB
+        authenticated = await storage.verifyAdminPassword(email, password);
+      } else if (email === adminEmail && adminPassword && password === adminPassword) {
+        // Fall back to env var password for initial setup
+        authenticated = true;
+        // Migrate the password to database for future logins
+        await storage.createOrUpdateAdmin(email, password);
+      }
+      
+      if (authenticated) {
         // Reset rate limit on successful login
         resetRateLimit(clientIp);
         
@@ -152,6 +166,46 @@ export async function registerRoutes(
       }
     } catch (error: any) {
       console.error('[ADMIN AUTH] Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/admin/change-password", requireAdminAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const adminEmail = process.env.ADMIN_EMAIL;
+      
+      if (!adminEmail) {
+        return res.status(500).json({ error: 'Admin email not configured' });
+      }
+      
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters' });
+      }
+      
+      // Verify current password
+      const dbAdmin = await storage.getAdminByEmail(adminEmail);
+      let isValidCurrentPassword = false;
+      
+      if (dbAdmin) {
+        isValidCurrentPassword = await storage.verifyAdminPassword(adminEmail, currentPassword);
+      } else {
+        // Check against env var password for first-time setup
+        const adminPassword = process.env.ADMIN_PASSWORD;
+        isValidCurrentPassword = currentPassword === adminPassword;
+      }
+      
+      if (!isValidCurrentPassword) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+      
+      // Update password in database
+      await storage.createOrUpdateAdmin(adminEmail, newPassword);
+      
+      console.log('[ADMIN AUTH] Password changed successfully');
+      res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error: any) {
+      console.error('[ADMIN AUTH] Password change error:', error);
       res.status(500).json({ error: error.message });
     }
   });

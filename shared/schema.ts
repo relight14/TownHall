@@ -51,6 +51,13 @@ export const episodes = pgTable("episodes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const adminSettings = pgTable("admin_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -88,3 +95,4 @@ export type InsertSeries = z.infer<typeof insertSeriesSchema>;
 export type Series = typeof series.$inferSelect;
 export type InsertEpisode = z.infer<typeof insertEpisodeSchema>;
 export type Episode = typeof episodes.$inferSelect;
+export type AdminSettings = typeof adminSettings.$inferSelect;
