@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { VideoStoreProvider, useVideoStore } from './context/VideoStoreContext';
 import HomePage from './pages/HomePage';
 import SeriesPage from './pages/SeriesPage';
@@ -8,6 +9,8 @@ import AuthModal from './components/AuthModal';
 import { Wallet, LogIn, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import indigoSoulLogo from '@assets/indigosoul_1764613870278.avif';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 function AppContent() {
   const { user, walletBalance, logout } = useVideoStore();
@@ -90,10 +93,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <VideoStoreProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </VideoStoreProvider>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <VideoStoreProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </VideoStoreProvider>
+    </GoogleOAuthProvider>
   );
 }

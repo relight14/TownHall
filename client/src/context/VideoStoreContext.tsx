@@ -40,6 +40,7 @@ interface VideoStoreContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
+  loginWithGoogle: (accessToken: string) => Promise<void>;
   logout: () => void;
   ledewireToken: string | null;
   walletBalance: number;
@@ -343,6 +344,30 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (accessToken: string) => {
+    try {
+      const response = await fetch('/api/auth/google/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accessToken }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Google login failed');
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      setLedewireToken(data.ledewireToken);
+    } catch (error) {
+      console.error('Google login failed:', error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setLedewireToken(null);
@@ -412,6 +437,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       user,
       login,
       signup,
+      loginWithGoogle,
       logout,
       ledewireToken,
       walletBalance,

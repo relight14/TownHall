@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { X, Mail, Lock, User } from 'lucide-react';
 
@@ -20,7 +21,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
-  const { login, signup } = useVideoStore();
+  const { login, signup, loginWithGoogle } = useVideoStore();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,8 +52,31 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
     }
   };
 
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setError('');
+      setLoading(true);
+      try {
+        await loginWithGoogle(tokenResponse.access_token);
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          onClose();
+        }
+      } catch (err: any) {
+        setError(err.message || 'Google authentication failed');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Google login error:', error);
+      setError('Google sign-in failed. Please try again.');
+    },
+  });
+
   const handleGoogleLogin = () => {
-    window.location.href = '/api/auth/google';
+    googleLogin();
   };
 
   return createPortal(
@@ -93,11 +117,12 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
 
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 py-3 rounded-lg transition-colors font-medium mb-6"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 py-3 rounded-lg transition-colors font-medium mb-6 disabled:opacity-50"
             data-testid="button-google-login"
           >
             <GoogleIcon className="w-5 h-5" />
-            Continue with Google
+            {loading ? 'Signing in...' : 'Continue with Google'}
           </button>
 
           <div className="relative mb-6">
