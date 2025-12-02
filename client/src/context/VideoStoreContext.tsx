@@ -44,7 +44,7 @@ interface VideoStoreContextType {
   walletBalance: number;
   refreshWalletBalance: () => Promise<void>;
   createPaymentSession: (amountCents: number) => Promise<any>;
-  setAdminToken: (token: string) => void;
+  setAdminToken: (token: string | null) => void;
 }
 
 const VideoStoreContext = createContext<VideoStoreContextType | undefined>(undefined);

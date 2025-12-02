@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Plus, Trash2, Video, Edit, X, Lock } from 'lucide-react';
+import { Plus, Trash2, Video, Edit, X, Lock, LogOut } from 'lucide-react';
 
 function AdminLoginGate({ onAuthenticated }: { onAuthenticated: (token: string) => void }) {
   const [email, setEmail] = useState('');
@@ -100,15 +100,49 @@ export default function AdminPage() {
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('adminAuthenticated');
+    sessionStorage.removeItem('adminToken');
+    setAdminToken(null);
+    setIsAuthenticated(false);
+  };
 
   useEffect(() => {
-    const auth = sessionStorage.getItem('adminAuthenticated');
-    const token = sessionStorage.getItem('adminToken');
-    if (auth === 'true' && token) {
-      setIsAuthenticated(true);
-      setAdminToken(token);
-    }
+    const verifyToken = async () => {
+      const auth = sessionStorage.getItem('adminAuthenticated');
+      const token = sessionStorage.getItem('adminToken');
+      
+      if (auth === 'true' && token) {
+        try {
+          const response = await fetch('/api/admin/verify', {
+            headers: { 'X-Admin-Token': token }
+          });
+          
+          if (response.ok) {
+            setIsAuthenticated(true);
+            setAdminToken(token);
+          } else {
+            handleLogout();
+          }
+        } catch {
+          handleLogout();
+        }
+      }
+      setIsVerifying(false);
+    };
+    
+    verifyToken();
   }, [setAdminToken]);
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-slate-400">Verifying session...</div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <AdminLoginGate onAuthenticated={(token) => {
@@ -119,9 +153,19 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-4xl text-white mb-2 font-bold">Content Management</h1>
-        <p className="text-slate-400">Manage your video series and episodes</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl text-white mb-2 font-bold">Content Management</h1>
+          <p className="text-slate-400">Manage your video series and episodes</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors border border-slate-700"
+          data-testid="button-admin-logout"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
       </div>
 
       <div className="mb-8">

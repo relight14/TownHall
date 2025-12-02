@@ -101,6 +101,22 @@ export async function registerRoutes(
   
   // ===== Admin Authentication Route =====
   
+  app.get("/api/admin/verify", (req, res) => {
+    const adminToken = req.headers['x-admin-token'] as string;
+    
+    if (!adminToken || !currentAdminToken || adminToken !== currentAdminToken) {
+      return res.status(401).json({ valid: false, error: 'Invalid token' });
+    }
+    
+    if (adminTokenExpiry && Date.now() > adminTokenExpiry) {
+      currentAdminToken = null;
+      adminTokenExpiry = null;
+      return res.status(401).json({ valid: false, error: 'Token expired' });
+    }
+    
+    res.json({ valid: true });
+  });
+  
   app.post("/api/admin/login", async (req, res) => {
     try {
       const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
