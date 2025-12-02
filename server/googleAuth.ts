@@ -36,7 +36,7 @@ async function createLedewireAccountForGoogleUser(email: string, name: string): 
       const signupResponse = await ledewire.signupBuyer(email, tempPassword, name);
       console.log(`[GOOGLE_AUTH] Created new Ledewire account for Google user: ${email}`);
       
-      const decoded = JSON.parse(atob(signupResponse.access_token.split('.')[1]));
+      const decoded = JSON.parse(Buffer.from(signupResponse.access_token.split('.')[1], 'base64').toString('utf8'));
       return {
         accessToken: signupResponse.access_token,
         refreshToken: signupResponse.refresh_token,
