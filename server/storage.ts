@@ -7,13 +7,18 @@ import {
   type InsertEpisode,
   type UpsertUser,
   type AdminSettings,
+  type SiteSettings,
+  type InsertSiteSettings,
+  type FeaturedEpisode,
   users,
   series as seriesTable,
   episodes as episodesTable,
-  adminSettings
+  adminSettings,
+  siteSettings,
+  featuredEpisodes
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import crypto from "crypto";
 
 function hashPassword(password: string): string {
@@ -53,6 +58,14 @@ export interface IStorage {
   createOrUpdateAdmin(email: string, password: string): Promise<AdminSettings>;
   verifyAdminPassword(email: string, password: string): Promise<boolean>;
   updateAdminPassword(email: string, newPassword: string): Promise<void>;
+  
+  // Site settings operations
+  getSiteSettings(): Promise<SiteSettings>;
+  updateSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings>;
+  
+  // Featured episodes operations
+  getFeaturedEpisodes(): Promise<(FeaturedEpisode & { episode: Episode })[]>;
+  setFeaturedEpisodes(episodeIds: string[]): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -215,6 +228,66 @@ export class DatabaseStorage implements IStorage {
     await db.update(adminSettings)
       .set({ passwordHash, updatedAt: new Date() })
       .where(eq(adminSettings.email, email));
+  }
+
+  // Site settings operations
+  async getSiteSettings(): Promise<SiteSettings> {
+    const result = await db.select().from(siteSettings).where(eq(siteSettings.id, 'default'));
+    if (result[0]) {
+      return result[0];
+    }
+    // Create default settings if they don't exist
+    const defaults = await db.insert(siteSettings)
+      .values({ id: 'default' })
+      .returning();
+    return defaults[0];
+  }
+
+  async updateSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
+    const result = await db.insert(siteSettings)
+      .values({ id: 'default', ...settings })
+      .onConflictDoUpdate({
+        target: siteSettings.id,
+        set: { ...settings, updatedAt: new Date() },
+      })
+      .returning();
+    return result[0];
+  }
+
+  // Featured episodes operations
+  async getFeaturedEpisodes(): Promise<(FeaturedEpisode & { episode: Episode })[]> {
+    const featured = await db.select()
+      .from(featuredEpisodes)
+      .orderBy(asc(featuredEpisodes.displayOrder));
+    
+    if (featured.length === 0) return [];
+    
+    const episodeIds = featured.map(f => f.episodeId);
+    const episodes = await db.select()
+      .from(episodesTable)
+      .where(inArray(episodesTable.id, episodeIds));
+    
+    const episodeMap = new Map(episodes.map(e => [e.id, e]));
+    
+    return featured
+      .filter(f => episodeMap.has(f.episodeId))
+      .map(f => ({
+        ...f,
+        episode: episodeMap.get(f.episodeId)!,
+      }));
+  }
+
+  async setFeaturedEpisodes(episodeIds: string[]): Promise<void> {
+    await db.delete(featuredEpisodes);
+    
+    if (episodeIds.length === 0) return;
+    
+    const values = episodeIds.map((episodeId, index) => ({
+      episodeId,
+      displayOrder: index,
+    }));
+    
+    await db.insert(featuredEpisodes).values(values);
   }
 }
 

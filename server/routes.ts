@@ -253,6 +253,64 @@ export async function registerRoutes(
     }
   });
   
+  // ===== Site Settings Routes =====
+  
+  app.get("/api/site-settings", async (req, res) => {
+    try {
+      const settings = await storage.getSiteSettings();
+      res.json(settings);
+    } catch (error: any) {
+      console.error('Error fetching site settings:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.put("/api/admin/site-settings", requireAdminAuth, async (req, res) => {
+    try {
+      const { heroHeading, heroSubheading } = req.body;
+      const settings = await storage.updateSiteSettings({ heroHeading, heroSubheading });
+      res.json(settings);
+    } catch (error: any) {
+      console.error('Error updating site settings:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // ===== Featured Episodes Routes =====
+  
+  app.get("/api/featured-episodes", async (req, res) => {
+    try {
+      const featured = await storage.getFeaturedEpisodes();
+      res.json(featured.map(f => ({
+        ...f.episode,
+        seriesId: f.episode.seriesId,
+        displayOrder: f.displayOrder,
+      })));
+    } catch (error: any) {
+      console.error('Error fetching featured episodes:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.put("/api/admin/featured-episodes", requireAdminAuth, async (req, res) => {
+    try {
+      const { episodeIds } = req.body;
+      if (!Array.isArray(episodeIds)) {
+        return res.status(400).json({ error: 'episodeIds must be an array' });
+      }
+      await storage.setFeaturedEpisodes(episodeIds);
+      const featured = await storage.getFeaturedEpisodes();
+      res.json(featured.map(f => ({
+        ...f.episode,
+        seriesId: f.episode.seriesId,
+        displayOrder: f.displayOrder,
+      })));
+    } catch (error: any) {
+      console.error('Error updating featured episodes:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // ===== Authentication Routes =====
   
   app.post("/api/auth/signup", async (req, res) => {

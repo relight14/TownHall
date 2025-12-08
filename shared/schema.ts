@@ -58,6 +58,19 @@ export const adminSettings = pgTable("admin_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const siteSettings = pgTable("site_settings", {
+  id: varchar("id").primaryKey().default("default"),
+  heroHeading: text("hero_heading").notNull().default("Nurturing artists.\nShaping culture."),
+  heroSubheading: text("hero_subheading").notNull().default("Accessible space, community, and education for artists of all levels, mediums, and backgrounds—transforming society through the power of culture."),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const featuredEpisodes = pgTable("featured_episodes", {
+  episodeId: varchar("episode_id").primaryKey().references(() => episodes.id, { onDelete: 'cascade' }),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -88,6 +101,15 @@ export const insertEpisodeSchema = createInsertSchema(episodes).omit({
   ledewireContentId: true,
 });
 
+export const insertSiteSettingsSchema = createInsertSchema(siteSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export const insertFeaturedEpisodeSchema = createInsertSchema(featuredEpisodes).omit({
+  createdAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -96,3 +118,7 @@ export type Series = typeof series.$inferSelect;
 export type InsertEpisode = z.infer<typeof insertEpisodeSchema>;
 export type Episode = typeof episodes.$inferSelect;
 export type AdminSettings = typeof adminSettings.$inferSelect;
+export type SiteSettings = typeof siteSettings.$inferSelect;
+export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
+export type FeaturedEpisode = typeof featuredEpisodes.$inferSelect;
+export type InsertFeaturedEpisode = z.infer<typeof insertFeaturedEpisodeSchema>;
