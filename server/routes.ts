@@ -2,8 +2,10 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ledewire } from "./ledewire";
-import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
+import { setupGoogleAuth, isAuthenticated, getSession } from "./googleAuth";
 import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema } from "@shared/schema";
+import { createSSORoutes, setSSoCookie } from "./sso-module/sso-routes";
+import type { SSOConfig } from "./sso-module/sso-types";
 import crypto from "crypto";
 
 // Generate a secure admin session token
@@ -70,6 +72,47 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  // ===== Setup Session Middleware (needed for SSO routes) =====
+  app.set("trust proxy", 1);
+  app.use(getSession());
+  
+  // ===== Setup SSO Routes =====
+  const ssoConfig: SSOConfig = {
+    refreshToken: async (refreshToken: string) => {
+      return await ledewire.refreshToken(refreshToken);
+    },
+    findUserByLedewireId: async (ledewireUserId: string) => {
+      const user = await storage.getUserByLedewireId(ledewireUserId);
+      if (!user) return null;
+      return {
+        id: user.id,
+        email: user.email || '',
+        name: user.name || user.email || 'User',
+      };
+    },
+    findUserByEmail: async (email: string) => {
+      const user = await storage.getUserByEmail(email);
+      if (!user) return null;
+      return {
+        id: user.id,
+        email: user.email || '',
+        name: user.name || user.email || 'User',
+      };
+    },
+    updateUserTokens: async (userId: string, accessToken: string, refreshToken: string, ledewireUserId: string) => {
+      await storage.updateUserLedewireTokens(userId, accessToken, refreshToken, ledewireUserId);
+    },
+    onSessionRestored: (req: any, userId: string) => {
+      // Hydrate Express session so /api/auth/user works after SSO restoration
+      if (req.session) {
+        req.session.userId = userId;
+      }
+    },
+  };
+  
+  const ssoRoutes = createSSORoutes(ssoConfig);
+  app.use("/api/auth", ssoRoutes);
   
   // ===== Setup Google OAuth =====
   await setupGoogleAuth(app);
@@ -232,6 +275,12 @@ export async function registerRoutes(
         ledewireUserId,
       });
       
+      // Set SSO cookie for cross-subdomain authentication
+      if (ledewireAuth.refresh_token) {
+        setSSoCookie(res, ledewireAuth.refresh_token);
+        console.log('[SSO] Set SSO cookie on signup');
+      }
+      
       res.json({
         user: {
           id: user.id,
@@ -279,6 +328,12 @@ export async function registerRoutes(
           ledewireAuth.refresh_token,
           ledewireUserId
         );
+      }
+      
+      // Set SSO cookie for cross-subdomain authentication
+      if (ledewireAuth.refresh_token) {
+        setSSoCookie(res, ledewireAuth.refresh_token);
+        console.log('[SSO] Set SSO cookie on login');
       }
       
       res.json({

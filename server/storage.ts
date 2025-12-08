@@ -28,6 +28,7 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByLedewireId(ledewireUserId: string): Promise<User | undefined>;
   createUser(user: InsertUser & { ledewireAccessToken?: string; ledewireRefreshToken?: string; ledewireUserId?: string }): Promise<User>;
   updateUserLedewireTokens(id: string, accessToken: string, refreshToken: string, userId: string): Promise<void>;
   updateUserGoogleId(id: string, googleId: string): Promise<void>;
@@ -63,6 +64,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.email, email));
+    return result[0];
+  }
+
+  async getUserByLedewireId(ledewireUserId: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.ledewireUserId, ledewireUserId));
     return result[0];
   }
 

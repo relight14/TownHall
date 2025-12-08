@@ -64,9 +64,40 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     loadSeries();
   }, []);
 
-  // Check for SSO user on mount
+  // Check for cross-subdomain SSO session first, then local session
   useEffect(() => {
-    const checkSSOUser = async () => {
+    const checkSSOSession = async () => {
+      // First, try the cross-subdomain SSO session (uses shared cookie)
+      try {
+        const ssoResponse = await fetch('/api/auth/session', { credentials: 'include' });
+        if (ssoResponse.ok) {
+          const ssoData = await ssoResponse.json();
+          if (ssoData.authenticated) {
+            console.log('[SSO] Cross-site session restored');
+            if (ssoData.user) {
+              setUser({
+                id: ssoData.user.id,
+                email: ssoData.user.email || '',
+                name: ssoData.user.name || ssoData.user.email || 'User',
+              });
+            } else if (ssoData.ledewireUserId) {
+              setUser({
+                id: ssoData.ledewireUserId,
+                email: '',
+                name: 'User',
+              });
+            }
+            if (ssoData.ledewireToken) {
+              setLedewireToken(ssoData.ledewireToken);
+            }
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('[SSO] No cross-site session found');
+      }
+
+      // Fall back to local session check (Google OAuth session)
       try {
         const response = await fetch('/api/auth/user');
         if (response.ok) {
@@ -81,10 +112,10 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (error) {
-        // Not logged in via SSO, ignore
+        // Not logged in via any method
       }
     };
-    checkSSOUser();
+    checkSSOSession();
   }, []);
 
   // Load wallet balance when token changes
@@ -303,6 +334,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password, name }),
       });
 
@@ -327,6 +359,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -351,6 +384,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ accessToken }),
       });
 

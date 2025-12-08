@@ -9,6 +9,7 @@ export interface SSOConfig {
   findUserByLedewireId?: (ledewireUserId: string) => Promise<any | null>;
   findUserByEmail?: (email: string) => Promise<any | null>;
   updateUserTokens?: (userId: string, accessToken: string, refreshToken: string, ledewireUserId: string) => Promise<void>;
+  onSessionRestored?: (req: any, userId: string) => void;
   cookieOptions?: SSOCookieOptions;
 }
 

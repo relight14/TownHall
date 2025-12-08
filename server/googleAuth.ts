@@ -3,6 +3,7 @@ import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { ledewire } from "./ledewire";
+import { setSSoCookie, clearSSoCookie } from "./sso-module/sso-routes";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 
@@ -56,15 +57,13 @@ async function createLedewireAccountForGoogleUser(email: string, name: string): 
 }
 
 export async function setupGoogleAuth(app: Express) {
-  app.set("trust proxy", 1);
+  // Note: trust proxy and session middleware are now set up in routes.ts before SSO routes
   
   // Add COOP header for popup support
   app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     next();
   });
-  
-  app.use(getSession());
 
   const clientID = process.env.GOOGLE_CLIENT_ID;
 
@@ -144,6 +143,10 @@ export async function setupGoogleAuth(app: Express) {
         }
       }
 
+      // Track refresh token for SSO cookie (may come from newly created account or existing user)
+      let refreshTokenForSSO: string | null = null;
+      let accessTokenForResponse: string | null = null;
+
       // Create Ledewire account if needed
       if (!user.ledewireUserId) {
         console.log(`[GOOGLE_AUTH] Google user ${email} needs Ledewire account, creating...`);
@@ -157,13 +160,26 @@ export async function setupGoogleAuth(app: Express) {
             ledewireAccount.userId
           );
           console.log(`[GOOGLE_AUTH] Linked Ledewire account for Google user: ${email}`);
-          // Refresh user data
+          // Use the fresh tokens directly
+          refreshTokenForSSO = ledewireAccount.refreshToken;
+          accessTokenForResponse = ledewireAccount.accessToken;
+          // Refresh user data for other fields
           user = await storage.getUserByEmail(email);
         }
+      } else {
+        // Use existing user tokens
+        refreshTokenForSSO = user.ledewireRefreshToken || null;
+        accessTokenForResponse = user.ledewireAccessToken || null;
       }
 
       // Set user in session
       (req.session as any).userId = user!.id;
+      
+      // Set SSO cookie for cross-subdomain authentication
+      if (refreshTokenForSSO) {
+        setSSoCookie(res, refreshTokenForSSO);
+        console.log('[SSO] Set SSO cookie on Google login');
+      }
       
       res.json({
         user: {
@@ -171,7 +187,7 @@ export async function setupGoogleAuth(app: Express) {
           email: user!.email,
           name: user!.name,
         },
-        ledewireToken: user!.ledewireAccessToken,
+        ledewireToken: accessTokenForResponse,
       });
     } catch (error: any) {
       console.error('[GOOGLE_AUTH] Token verification error:', error);
@@ -181,6 +197,10 @@ export async function setupGoogleAuth(app: Express) {
 
   // Logout endpoint
   app.get("/api/logout", (req, res) => {
+    // Clear SSO cookie
+    clearSSoCookie(res);
+    console.log('[SSO] Cleared SSO cookie on logout');
+    
     req.session.destroy((err) => {
       if (err) {
         console.error('[GOOGLE_AUTH] Logout error:', err);

@@ -56,6 +56,12 @@ export function createSSORoutes(config: SSOConfig): Router {
         );
       }
       
+      // Hydrate Express session if callback provided
+      if (user && config.onSessionRestored) {
+        config.onSessionRestored(req, user.id);
+        console.log('[SSO] Hydrated Express session for user:', user.id);
+      }
+      
       if (refreshedAuth.refresh_token) {
         setSSoCookie(res, refreshedAuth.refresh_token);
         console.log('[SSO] Updated SSO cookie with new refresh token');
