@@ -343,6 +343,37 @@ class LedewireClient {
     return data;
   }
 
+  async refreshToken(refreshToken: string): Promise<{ access_token: string; refresh_token: string } | null> {
+    try {
+      const response = await fetch(`${LEDEWIRE_API_URL}/auth/token/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (!response.ok) {
+        console.log('[Ledewire] Token refresh failed:', response.status);
+        return null;
+      }
+
+      const data = await safeParseJSON(response);
+      if (!data || !data.access_token) {
+        console.log('[Ledewire] Token refresh returned empty response');
+        return null;
+      }
+
+      return {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      };
+    } catch (error) {
+      console.error('[Ledewire] Token refresh error:', error);
+      return null;
+    }
+  }
+
   async createPaymentSession(userToken: string, amountCents: number, options?: { success_url?: string; cancel_url?: string }): Promise<any> {
     const requestBody: any = {
       amount_cents: amountCents,
