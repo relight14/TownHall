@@ -84,7 +84,7 @@ export default function SeriesPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentSeries.episodes.map(episode => (
-              <EpisodeCard key={episode.id} episode={episode} />
+              <EpisodeCard key={episode.id} episode={episode} seriesId={currentSeries.id} />
             ))}
           </div>
 
