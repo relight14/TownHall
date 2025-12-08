@@ -42,3 +42,17 @@ export function decodeJwtPayload(token: string): any {
     return null;
   }
 }
+
+export function isTokenExpired(token: string): boolean {
+  try {
+    const payload = decodeJwtPayload(token);
+    if (!payload || !payload.exp) {
+      return true;
+    }
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const bufferSeconds = 30;
+    return payload.exp < (nowSeconds + bufferSeconds);
+  } catch {
+    return true;
+  }
+}

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { SSO_COOKIE_NAME, setSSoCookie, clearSSoCookie, decodeJwtPayload, configureCookieOptions } from "./sso-helpers";
+import { SSO_COOKIE_NAME, setSSoCookie, clearSSoCookie, decodeJwtPayload, isTokenExpired, configureCookieOptions } from "./sso-helpers";
 import type { SSOConfig, SessionResponse } from "./sso-types";
 
 export function createSSORoutes(config: SSOConfig): Router {
@@ -30,6 +30,15 @@ export function createSSORoutes(config: SSOConfig): Router {
         return res.status(401).json({ 
           authenticated: false, 
           error: 'Session expired' 
+        } as SessionResponse);
+      }
+      
+      if (isTokenExpired(refreshedAuth.access_token)) {
+        console.log('[SSO] Access token is expired or invalid - clearing cookie');
+        clearSSoCookie(res);
+        return res.status(401).json({ 
+          authenticated: false, 
+          error: 'Token expired' 
         } as SessionResponse);
       }
       
