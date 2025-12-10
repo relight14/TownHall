@@ -666,6 +666,50 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/articles/latest", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const articles = await storage.getLatestArticles(limit);
+      res.json(articles);
+    } catch (error: any) {
+      console.error('Get latest articles error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/articles/most-read", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const articles = await storage.getMostReadArticles(limit);
+      res.json(articles);
+    } catch (error: any) {
+      console.error('Get most read articles error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/articles/category/:category", async (req, res) => {
+    try {
+      const { category } = req.params;
+      const articles = await storage.getArticlesByCategory(category);
+      res.json(articles);
+    } catch (error: any) {
+      console.error('Get articles by category error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/articles/:id/view", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.incrementArticleViewCount(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Increment view count error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/articles/:id", async (req, res) => {
     try {
       const article = await storage.getArticle(req.params.id);

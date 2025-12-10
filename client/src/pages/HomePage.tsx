@@ -1,125 +1,82 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import SeriesCard from '../components/SeriesCard';
-import studioBackground from '@assets/indigostudio_1764614068955.webp';
 import { Link } from 'wouter';
-import { Play, Star, Check, FileText, Video, Calendar, User } from 'lucide-react';
+import { Clock, Eye, Play, Search, ChevronRight } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 
-function TwitterIcon({ className }: { className?: string }) {
+const categories = [
+  { id: 'all', label: 'All' },
+  { id: 'elections', label: 'Elections' },
+  { id: 'policy', label: 'Policy' },
+  { id: 'candidate-rankings', label: 'Candidate Rankings' },
+  { id: 'speech-analysis', label: 'Speech Analysis' },
+];
+
+const categoryLabels: Record<string, string> = {
+  'elections': 'Elections',
+  'policy': 'Policy',
+  'candidate-rankings': 'Candidate Rankings',
+  'speech-analysis': 'Speech Analysis',
+};
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+function formatShortDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function formatViewCount(count: number): string {
+  if (count >= 1000) {
+    return (count / 1000).toFixed(1) + 'K';
+  }
+  return count.toString();
+}
+
+interface Article {
+  id: string;
+  title: string;
+  summary: string;
+  author: string;
+  thumbnail: string | null;
+  category: string;
+  viewCount: number;
+  readTimeMinutes: number;
+  featured: number;
+  publishedAt: string;
+}
+
+function CategoryBadge({ category }: { category: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-    </svg>
+    <span className="inline-block bg-slate-800 text-white text-xs font-medium px-2.5 py-1 rounded">
+      {categoryLabels[category] || category}
+    </span>
   );
 }
 
-function FacebookIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-    </svg>
-  );
-}
-
-function LinkedInIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-    </svg>
-  );
-}
-
-function WhatsAppIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-    </svg>
-  );
-}
-
-function LinkIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-    </svg>
-  );
-}
-
-interface ArticleCardProps {
-  article: {
-    id: string;
-    title: string;
-    summary: string;
-    author: string;
-    thumbnail: string | null;
-    featured: number;
-    publishedAt: string;
-  };
-  isFeatured?: boolean;
-}
-
-function ArticleCard({ article, isFeatured }: ArticleCardProps) {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
+function LatestArticleItem({ article }: { article: Article }) {
   return (
     <Link to={`/article/${article.id}`}>
-      <div 
-        className={`group relative backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
-          isFeatured 
-            ? 'bg-gradient-to-br from-red-900/30 to-rose-900/20 border border-red-500/30 hover:border-red-400/50 hover:shadow-red-500/20' 
-            : 'bg-slate-800/50 border border-slate-700 hover:border-slate-600 hover:shadow-slate-500/10'
-        }`}
-        data-testid={`card-article-${article.id}`}
-      >
-        {isFeatured && (
-          <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-red-500/90 text-white px-2.5 py-1 rounded-full text-xs font-medium">
-            <Star className="w-3 h-3" fill="currentColor" />
-            Featured
-          </div>
-        )}
-        
-        {article.thumbnail ? (
-          <div className="relative aspect-[16/9] overflow-hidden">
-            <ImageWithFallback 
-              src={article.thumbnail} 
-              alt={article.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-          </div>
-        ) : (
-          <div className="relative aspect-[16/9] bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-            <FileText className="w-16 h-16 text-slate-500" />
-          </div>
-        )}
-
-        <div className="p-5">
-          <h3 className={`text-lg text-white mb-2 group-hover:transition-colors font-medium line-clamp-2 ${
-            isFeatured ? 'group-hover:text-red-400' : 'group-hover:text-blue-400'
-          }`}>
-            {article.title}
-          </h3>
-          <p className="text-slate-400 text-sm mb-4 line-clamp-2">
-            {article.summary}
-          </p>
-          
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5" />
-              <span>{article.author}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{formatDate(article.publishedAt)}</span>
-            </div>
+      <div className="group py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`latest-article-${article.id}`}>
+        <CategoryBadge category={article.category} />
+        <h3 className="text-base font-semibold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+          {article.title}
+        </h3>
+        <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+          <span>{formatShortDate(article.publishedAt)}</span>
+          <span className="text-gray-300">•</span>
+          <div className="flex items-center gap-1">
+            <Eye className="w-3.5 h-3.5" />
+            <span>{formatViewCount(article.viewCount)}</span>
           </div>
         </div>
       </div>
@@ -127,316 +84,369 @@ function ArticleCard({ article, isFeatured }: ArticleCardProps) {
   );
 }
 
-function FeaturedEpisodeCard({ episode, seriesTitle }: { 
-  episode: { id: string; title: string; thumbnail: string; seriesId: string; price: number };
-  seriesTitle: string;
-}) {
-  const [copied, setCopied] = useState(false);
+function MostReadArticleItem({ article, rank }: { article: Article; rank: number }) {
+  return (
+    <Link to={`/article/${article.id}`}>
+      <div className="group py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`most-read-article-${article.id}`}>
+        <CategoryBadge category={article.category} />
+        <h3 className="text-base font-semibold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+          {article.title}
+        </h3>
+        <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+          <span>{formatShortDate(article.publishedAt)}</span>
+          <span className="text-gray-300">•</span>
+          <div className="flex items-center gap-1">
+            <Eye className="w-3.5 h-3.5" />
+            <span>{formatViewCount(article.viewCount)}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
-  const getEpisodeUrl = () => {
-    if (typeof window === 'undefined') return '';
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/series/${episode.seriesId}?episode=${episode.id}`;
-  };
+function FeaturedHeroArticle({ article }: { article: Article }) {
+  return (
+    <Link to={`/article/${article.id}`}>
+      <div className="group cursor-pointer" data-testid={`featured-article-${article.id}`}>
+        <CategoryBadge category={article.category} />
+        <div className="mt-3 relative aspect-[4/3] overflow-hidden rounded-lg">
+          {article.thumbnail ? (
+            <ImageWithFallback
+              src={article.thumbnail}
+              alt={article.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+              <span className="text-gray-400 text-4xl font-serif">So What</span>
+            </div>
+          )}
+        </div>
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mt-4 group-hover:text-blue-600 transition-colors leading-tight">
+          {article.title}
+        </h2>
+        <p className="text-gray-600 mt-3 line-clamp-3 leading-relaxed">
+          {article.summary}
+        </p>
+        <div className="flex items-center gap-3 mt-4 text-sm text-gray-500">
+          <span>{formatDate(article.publishedAt)}</span>
+          <span className="text-gray-300">•</span>
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            <span>{article.readTimeMinutes} min read</span>
+          </div>
+          <span className="text-gray-300">•</span>
+          <div className="flex items-center gap-1">
+            <Eye className="w-4 h-4" />
+            <span>{formatViewCount(article.viewCount)}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
-  const shareText = `Check out "${episode.title}"`;
+function CategoryArticleCard({ article }: { article: Article }) {
+  return (
+    <Link to={`/article/${article.id}`}>
+      <div className="group cursor-pointer" data-testid={`category-article-${article.id}`}>
+        <div className="relative aspect-[3/2] overflow-hidden rounded-lg">
+          {article.thumbnail ? (
+            <ImageWithFallback
+              src={article.thumbnail}
+              alt={article.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+              <span className="text-gray-400 text-xl font-serif">So What</span>
+            </div>
+          )}
+        </div>
+        <CategoryBadge category={article.category} />
+        <h3 className="text-lg font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+          {article.title}
+        </h3>
+        <p className="text-gray-600 mt-2 text-sm line-clamp-3">
+          {article.summary}
+        </p>
+        <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
+          <span>{formatShortDate(article.publishedAt)}</span>
+          <span className="text-gray-300">•</span>
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            <span>{article.readTimeMinutes} min read</span>
+          </div>
+          <span className="text-gray-300">•</span>
+          <div className="flex items-center gap-1">
+            <Eye className="w-3 h-3" />
+            <span>{formatViewCount(article.viewCount)}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
-  const handleShare = (e: React.MouseEvent, platform: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const url = encodeURIComponent(getEpisodeUrl());
-    const text = encodeURIComponent(shareText);
-    
-    let shareUrl = '';
-    switch (platform) {
-      case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-        break;
-      case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
-        break;
-      case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
-        break;
-      case 'whatsapp':
-        shareUrl = `https://wa.me/?text=${text}%20${url}`;
-        break;
-    }
-    
-    if (shareUrl) {
-      window.open(shareUrl, '_blank', 'noopener,noreferrer,width=600,height=400');
-    }
-  };
-
-  const handleCopyLink = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
-    try {
-      await navigator.clipboard.writeText(getEpisodeUrl());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
+function VideoCard({ episode, seriesTitle }: { episode: any; seriesTitle: string }) {
   return (
     <Link to={`/series/${episode.seriesId}`}>
-      <div 
-        className="group relative bg-gradient-to-br from-amber-900/30 to-orange-900/20 backdrop-blur-sm rounded-2xl overflow-hidden border border-amber-500/30 hover:border-amber-400/50 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20 hover:-translate-y-1"
-        data-testid={`card-featured-${episode.id}`}
-      >
-        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-amber-500/90 text-white px-2.5 py-1 rounded-full text-xs font-medium">
-          <Star className="w-3 h-3" fill="currentColor" />
-          Featured
-        </div>
-        <div className="relative aspect-video overflow-hidden">
-          <ImageWithFallback 
-            src={episode.thumbnail} 
+      <div className="group cursor-pointer" data-testid={`video-card-${episode.id}`}>
+        <div className="relative aspect-video overflow-hidden rounded-lg">
+          <ImageWithFallback
+            src={episode.thumbnail}
             alt={episode.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/50">
-              <Play className="w-8 h-8 text-white ml-1" fill="white" />
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center">
+              <Play className="w-6 h-6 text-gray-900 ml-1" fill="currentColor" />
             </div>
           </div>
+          {episode.duration && (
+            <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+              {episode.duration}
+            </div>
+          )}
         </div>
-
-        <div className="p-5">
-          <h3 className="text-lg text-white mb-1 group-hover:text-amber-400 transition-colors font-medium line-clamp-1">
-            {episode.title}
-          </h3>
-          <p className="text-slate-400 text-sm mb-2">{seriesTitle}</p>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-1 rounded-full text-sm border border-amber-500/20">
-              ${(episode.price / 100).toFixed(2)}
-            </div>
-          </div>
-          
-          <div 
-            className="flex items-center gap-1 pt-3 border-t border-amber-500/20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <span className="text-amber-400/60 text-xs mr-2">Share</span>
-            <button
-              onClick={(e) => handleShare(e, 'twitter')}
-              className="p-2 rounded-lg hover:bg-amber-500/20 text-amber-400/60 hover:text-white transition-colors"
-              data-testid={`button-share-twitter-featured-${episode.id}`}
-              title="Share on X"
-            >
-              <TwitterIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => handleShare(e, 'facebook')}
-              className="p-2 rounded-lg hover:bg-amber-500/20 text-amber-400/60 hover:text-[#1877F2] transition-colors"
-              data-testid={`button-share-facebook-featured-${episode.id}`}
-              title="Share on Facebook"
-            >
-              <FacebookIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => handleShare(e, 'linkedin')}
-              className="p-2 rounded-lg hover:bg-amber-500/20 text-amber-400/60 hover:text-[#0A66C2] transition-colors"
-              data-testid={`button-share-linkedin-featured-${episode.id}`}
-              title="Share on LinkedIn"
-            >
-              <LinkedInIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => handleShare(e, 'whatsapp')}
-              className="p-2 rounded-lg hover:bg-amber-500/20 text-amber-400/60 hover:text-[#25D366] transition-colors"
-              data-testid={`button-share-whatsapp-featured-${episode.id}`}
-              title="Share on WhatsApp"
-            >
-              <WhatsAppIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleCopyLink}
-              className="p-2 rounded-lg hover:bg-amber-500/20 text-amber-400/60 hover:text-amber-400 transition-colors relative"
-              data-testid={`button-share-copy-featured-${episode.id}`}
-              title="Copy link"
-            >
-              {copied ? (
-                <Check className="w-4 h-4 text-green-400" />
-              ) : (
-                <LinkIcon className="w-4 h-4" />
-              )}
-            </button>
-          </div>
+        <h3 className="text-lg font-bold text-gray-900 mt-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+          {episode.title}
+        </h3>
+        <p className="text-gray-600 mt-2 text-sm line-clamp-2">
+          {episode.description}
+        </p>
+        <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
+          <span>{seriesTitle}</span>
         </div>
       </div>
     </Link>
   );
 }
 
-export default function HomePage() {
-  const { series, siteSettings, featuredEpisodes, articles, featuredArticles } = useVideoStore();
-  const [activeTab, setActiveTab] = useState<'articles' | 'videos'>('articles');
+function CategorySection({ category, articles }: { category: string; articles: Article[] }) {
+  if (articles.length === 0) return null;
 
-  const renderHeroHeading = () => {
-    const lines = siteSettings.heroHeading.split('\n');
-    if (lines.length === 1) {
-      return <span>{lines[0]}</span>;
-    }
-    return (
-      <>
-        {lines[0]}<br />
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-300">
-          {lines.slice(1).join(' ')}
-        </span>
-      </>
-    );
-  };
+  return (
+    <section className="py-12 border-t border-gray-200">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold text-gray-900">{categoryLabels[category] || category}</h2>
+        <Link to={`/category/${category}`}>
+          <span className="text-sm text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors" data-testid={`view-all-${category}`}>
+            View all <ChevronRight className="w-4 h-4" />
+          </span>
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {articles.slice(0, 3).map(article => (
+          <CategoryArticleCard key={article.id} article={article} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function VideoAnalysisSection({ episodes, series }: { episodes: any[]; series: any[] }) {
+  if (episodes.length === 0) return null;
 
   const getSeriesTitle = (seriesId: string) => {
     return series.find(s => s.id === seriesId)?.title || 'Video Series';
   };
 
   return (
-    <div className="relative min-h-screen pb-20">
-      {/* Hero Background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/50 to-slate-950/60" />
-        <img 
-          src={studioBackground}
-          alt="Political Content Hub"
-          className="w-full h-full object-cover opacity-30 fixed"
-        />
+    <section className="py-12 border-t border-gray-200">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold text-gray-900">Video Analysis</h2>
+        <Link to="/videos">
+          <span className="text-sm text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors" data-testid="view-all-videos">
+            View all <ChevronRight className="w-4 h-4" />
+          </span>
+        </Link>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {episodes.slice(0, 2).map(episode => (
+          <VideoCard key={episode.id} episode={episode} seriesTitle={getSeriesTitle(episode.seriesId)} />
+        ))}
+      </div>
+    </section>
+  );
+}
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-12 pt-8 animate-in slide-in-from-bottom-4 duration-700 fade-in">
-          <h1 className="text-5xl md:text-6xl text-white mb-4 tracking-tight font-bold" data-testid="text-hero-heading">
-            {renderHeroHeading()}
-          </h1>
-          <p className="text-xl text-slate-300 max-w-2xl leading-relaxed" data-testid="text-hero-subheading">
-            {siteSettings.heroSubheading}
-          </p>
-        </div>
+export default function HomePage() {
+  const { 
+    articles, 
+    latestArticles, 
+    mostReadArticles, 
+    featuredArticles,
+    getArticlesByCategory,
+    series,
+    featuredEpisodes 
+  } = useVideoStore();
+  
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [searchOpen, setSearchOpen] = useState(false);
 
-        {/* Content Tabs */}
-        <div className="mb-8 animate-in slide-in-from-bottom-5 duration-700 fade-in fill-mode-backwards delay-50">
-          <div className="flex gap-2 p-1 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 w-fit">
-            <button
-              onClick={() => setActiveTab('articles')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                activeTab === 'articles'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-              }`}
-              data-testid="tab-articles"
-            >
-              <FileText className="w-5 h-5" />
-              Written Content
-            </button>
-            <button
-              onClick={() => setActiveTab('videos')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                activeTab === 'videos'
-                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-              }`}
-              data-testid="tab-videos"
-            >
-              <Video className="w-5 h-5" />
-              Video Content
-            </button>
+  const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
+
+  const getFilteredArticles = (category: string) => {
+    if (category === 'all') return allArticles;
+    return allArticles.filter(a => a.category === category);
+  };
+
+  const categoryArticles = getFilteredArticles(activeCategory);
+
+  const latestForCategory = [...categoryArticles].sort((a, b) => 
+    new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  );
+
+  const mostReadForCategory = [...categoryArticles].sort((a, b) => b.viewCount - a.viewCount);
+
+  const featuredForCategory = categoryArticles.filter(a => a.featured > 0)
+    .sort((a, b) => a.featured - b.featured);
+
+  const featuredArticle = featuredForCategory[0] || latestForCategory[0];
+  
+  const displayedLatest = latestForCategory.filter(a => a.id !== featuredArticle?.id).slice(0, 4);
+  const displayedMostRead = mostReadForCategory.filter(a => a.id !== featuredArticle?.id).slice(0, 4);
+
+  const electionsArticles = getArticlesByCategory('elections');
+  const policyArticles = getArticlesByCategory('policy');
+  const candidateRankingsArticles = getArticlesByCategory('candidate-rankings');
+  const speechAnalysisArticles = getArticlesByCategory('speech-analysis');
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/">
+              <span className="text-2xl font-bold text-gray-900 tracking-tight" data-testid="logo">So What</span>
+            </Link>
+            
+            <nav className="hidden md:flex items-center gap-8">
+              <Link to="/">
+                <span className="text-gray-600 hover:text-gray-900 font-medium transition-colors" data-testid="nav-home">Home</span>
+              </Link>
+              <Link to="/articles">
+                <span className="text-gray-600 hover:text-gray-900 font-medium transition-colors" data-testid="nav-articles">Articles</span>
+              </Link>
+              <Link to="/videos">
+                <span className="text-gray-600 hover:text-gray-900 font-medium transition-colors" data-testid="nav-videos">Videos</span>
+              </Link>
+              <Link to="/about">
+                <span className="text-gray-600 hover:text-gray-900 font-medium transition-colors" data-testid="nav-about">About</span>
+              </Link>
+            </nav>
+
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                data-testid="button-search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+              <Link to="/login">
+                <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors" data-testid="button-login">
+                  Log in
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
+      </header>
 
-        {/* Articles Tab Content */}
-        {activeTab === 'articles' && (
-          <div className="animate-in fade-in duration-500">
-            {/* Featured Articles */}
-            {featuredArticles.length > 0 && (
-              <div className="mb-12">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg flex items-center justify-center">
-                    <Star className="w-5 h-5 text-white" fill="white" />
-                  </div>
-                  <h2 className="text-2xl md:text-3xl text-white font-bold">Featured Articles</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {featuredArticles.map(article => (
-                    <ArticleCard key={article.id} article={article} isFeatured />
-                  ))}
-                </div>
-              </div>
-            )}
+      {/* Category Subheader */}
+      <div className="border-b border-gray-100 bg-gray-50/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex items-center gap-8 h-12 overflow-x-auto">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`text-sm font-medium whitespace-nowrap transition-colors relative py-3 ${
+                  activeCategory === cat.id 
+                    ? 'text-gray-900' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                data-testid={`category-tab-${cat.id}`}
+              >
+                {cat.label}
+                {activeCategory === cat.id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
 
-            {/* All Articles */}
-            {articles.length > 0 && (
-              <div>
-                <h2 className="text-2xl md:text-3xl text-white font-bold mb-6">All Articles</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {articles.filter(a => a.featured === 0).map(article => (
-                    <ArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Hero Section - 3 Column Layout */}
+        {featuredArticle && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Left Column - Latest */}
+            <div className="lg:col-span-3 order-2 lg:order-1">
+              <h2 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-200">Latest</h2>
+              <div className="divide-y divide-gray-100">
+                {displayedLatest.map(article => (
+                  <LatestArticleItem key={article.id} article={article} />
+                ))}
               </div>
-            )}
+              {displayedLatest.length === 0 && (
+                <p className="text-gray-500 text-sm py-4">No articles yet</p>
+              )}
+            </div>
 
-            {articles.length === 0 && featuredArticles.length === 0 && (
-              <div className="text-center py-20 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
-                <FileText className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 text-xl">No articles available yet.</p>
-                <p className="text-slate-500 mt-2">Use the Admin panel to add your first article.</p>
+            {/* Center Column - Featured */}
+            <div className="lg:col-span-6 order-1 lg:order-2">
+              <FeaturedHeroArticle article={featuredArticle} />
+            </div>
+
+            {/* Right Column - Most Read */}
+            <div className="lg:col-span-3 order-3">
+              <h2 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-200">Most Read</h2>
+              <div className="divide-y divide-gray-100">
+                {displayedMostRead.map((article, index) => (
+                  <MostReadArticleItem key={article.id} article={article} rank={index + 1} />
+                ))}
               </div>
-            )}
+              {displayedMostRead.length === 0 && (
+                <p className="text-gray-500 text-sm py-4">No articles yet</p>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Videos Tab Content */}
-        {activeTab === 'videos' && (
-          <div className="animate-in fade-in duration-500">
-            {/* Featured Videos Section */}
-            {featuredEpisodes.length > 0 && (
-              <div className="mb-12">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
-                    <Star className="w-5 h-5 text-white" fill="white" />
-                  </div>
-                  <h2 className="text-2xl md:text-3xl text-white font-bold">Featured Videos</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {featuredEpisodes.map(episode => (
-                    <FeaturedEpisodeCard 
-                      key={episode.id} 
-                      episode={episode}
-                      seriesTitle={getSeriesTitle(episode.seriesId)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* All Series Section */}
-            {series.length > 0 && (
-              <div>
-                <h2 className="text-2xl md:text-3xl text-white font-bold mb-6">All Series</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {series.map(s => (
-                    <SeriesCard key={s.id} series={s} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {series.length === 0 && featuredEpisodes.length === 0 && (
-              <div className="text-center py-20 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
-                <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 text-xl">No video content available yet.</p>
-                <p className="text-slate-500 mt-2">Use the Admin panel to add your first series.</p>
-              </div>
-            )}
+        {/* Empty State */}
+        {!featuredArticle && (
+          <div className="text-center py-20">
+            <p className="text-gray-500 text-xl">No articles available yet.</p>
+            <p className="text-gray-400 mt-2">Use the Admin panel to add your first article.</p>
           </div>
         )}
-      </div>
+
+        {/* Category Sections */}
+        <CategorySection category="elections" articles={electionsArticles} />
+        <CategorySection category="policy" articles={policyArticles} />
+        <CategorySection category="candidate-rankings" articles={candidateRankingsArticles} />
+        <CategorySection category="speech-analysis" articles={speechAnalysisArticles} />
+
+        {/* Video Analysis Section */}
+        <VideoAnalysisSection episodes={featuredEpisodes} series={series} />
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <span className="text-xl font-bold text-gray-900">So What</span>
+            <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} So What. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

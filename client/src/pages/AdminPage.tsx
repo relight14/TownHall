@@ -880,7 +880,7 @@ export default function AdminPage() {
           }}
           onSubmit={async (data) => {
             if (editingArticleId) {
-              await updateArticle(parseInt(editingArticleId), data);
+              await updateArticle(editingArticleId, data);
             } else {
               await addArticle(data);
             }
@@ -910,6 +910,14 @@ export default function AdminPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-xl text-white font-medium">{article.title}</h3>
+                      {article.category && (
+                        <span className="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full">
+                          {article.category === 'elections' ? 'Elections' : 
+                           article.category === 'policy' ? 'Policy' :
+                           article.category === 'candidate-rankings' ? 'Candidate Rankings' :
+                           article.category === 'speech-analysis' ? 'Speech Analysis' : article.category}
+                        </span>
+                      )}
                       {article.featured && (
                         <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full border border-amber-500/30">Featured</span>
                       )}
@@ -962,6 +970,7 @@ function ArticleForm({ article, onClose, onSubmit }: {
   const [author, setAuthor] = useState(article?.author || '');
   const [content, setContent] = useState(article?.content || '');
   const [thumbnail, setThumbnail] = useState(article?.thumbnail || '');
+  const [category, setCategory] = useState(article?.category || 'elections');
   const [featured, setFeatured] = useState(article?.featured || false);
   const [useFile, setUseFile] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -1009,6 +1018,7 @@ function ArticleForm({ article, onClose, onSubmit }: {
         content,
         summary: generateSummary(content),
         thumbnail: thumbnail || null,
+        category,
         featured,
         publishedAt: new Date().toISOString(),
       });
@@ -1054,6 +1064,21 @@ function ArticleForm({ article, onClose, onSubmit }: {
               data-testid="input-article-author"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-slate-300 mb-2 text-sm font-medium">Category</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+            data-testid="select-article-category"
+          >
+            <option value="elections">Elections</option>
+            <option value="policy">Policy</option>
+            <option value="candidate-rankings">Candidate Rankings</option>
+            <option value="speech-analysis">Speech Analysis</option>
+          </select>
         </div>
 
         <div>

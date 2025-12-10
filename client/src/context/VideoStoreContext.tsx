@@ -44,6 +44,9 @@ interface Article {
   content: string;
   author: string;
   thumbnail: string | null;
+  category: string;
+  viewCount: number;
+  readTimeMinutes: number;
   featured: number;
   publishedAt: string;
 }
@@ -75,10 +78,14 @@ interface VideoStoreContextType {
   getAllEpisodes: () => Episode[];
   articles: Article[];
   featuredArticles: Article[];
+  latestArticles: Article[];
+  mostReadArticles: Article[];
+  getArticlesByCategory: (category: string) => Article[];
   addArticle: (article: Omit<Article, 'id' | 'publishedAt'>) => Promise<void>;
   updateArticle: (articleId: string, updates: Partial<Omit<Article, 'id'>>) => Promise<void>;
   deleteArticle: (articleId: string) => Promise<void>;
   refreshArticles: () => Promise<void>;
+  incrementArticleView: (articleId: string) => Promise<void>;
 }
 
 const VideoStoreContext = createContext<VideoStoreContextType | undefined>(undefined);
@@ -99,6 +106,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [featuredEpisodes, setFeaturedEpisodesState] = useState<FeaturedEpisode[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
+  const [latestArticles, setLatestArticles] = useState<Article[]>([]);
+  const [mostReadArticles, setMostReadArticles] = useState<Article[]>([]);
 
   // Load series, site settings, featured episodes, and articles on mount
   useEffect(() => {
@@ -107,6 +116,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     loadFeaturedEpisodes();
     loadArticles();
     loadFeaturedArticles();
+    loadLatestArticles();
+    loadMostReadArticles();
   }, []);
 
   // Check for cross-subdomain SSO session first, then local session
@@ -233,9 +244,50 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loadLatestArticles = async () => {
+    try {
+      const response = await fetch('/api/articles/latest?limit=5');
+      if (response.ok) {
+        const data = await response.json();
+        setLatestArticles(data);
+      }
+    } catch (error) {
+      console.error('Failed to load latest articles:', error);
+    }
+  };
+
+  const loadMostReadArticles = async () => {
+    try {
+      const response = await fetch('/api/articles/most-read?limit=5');
+      if (response.ok) {
+        const data = await response.json();
+        setMostReadArticles(data);
+      }
+    } catch (error) {
+      console.error('Failed to load most read articles:', error);
+    }
+  };
+
+  const getArticlesByCategory = (category: string): Article[] => {
+    const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
+    return allArticles.filter(a => a.category === category).sort((a, b) => 
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    );
+  };
+
+  const incrementArticleView = async (articleId: string) => {
+    try {
+      await fetch(`/api/articles/${articleId}/view`, { method: 'POST' });
+    } catch (error) {
+      console.error('Failed to increment view count:', error);
+    }
+  };
+
   const refreshArticles = async () => {
     await loadArticles();
     await loadFeaturedArticles();
+    await loadLatestArticles();
+    await loadMostReadArticles();
   };
 
   const addArticle = async (newArticle: Omit<Article, 'id' | 'publishedAt'>) => {
@@ -723,10 +775,14 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       getAllEpisodes,
       articles,
       featuredArticles,
+      latestArticles,
+      mostReadArticles,
+      getArticlesByCategory,
       addArticle,
       updateArticle,
       deleteArticle,
       refreshArticles,
+      incrementArticleView,
     }}>
       {children}
     </VideoStoreContext.Provider>

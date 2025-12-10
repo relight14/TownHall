@@ -71,6 +71,10 @@ export const featuredEpisodes = pgTable("featured_episodes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Article categories enum
+export const articleCategories = ['elections', 'policy', 'candidate-rankings', 'speech-analysis'] as const;
+export type ArticleCategory = typeof articleCategories[number];
+
 export const articles = pgTable("articles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
@@ -78,6 +82,9 @@ export const articles = pgTable("articles", {
   content: text("content").notNull(), // HTML content
   author: text("author").notNull(),
   thumbnail: text("thumbnail"),
+  category: text("category").notNull().default('elections'), // elections, policy, candidate-rankings, speech-analysis
+  viewCount: integer("view_count").default(0).notNull(),
+  readTimeMinutes: integer("read_time_minutes").default(5).notNull(),
   featured: integer("featured").default(0), // 0 = not featured, 1+ = featured with order
   publishedAt: timestamp("published_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
