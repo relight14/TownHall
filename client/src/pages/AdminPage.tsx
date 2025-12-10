@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Settings, Star, Check, GripVertical, FileText } from 'lucide-react';
+import { marked } from 'marked';
 
 function AdminLoginGate({ onAuthenticated }: { onAuthenticated: (token: string) => void }) {
   const [email, setEmail] = useState('');
@@ -978,12 +979,14 @@ function ArticleForm({ article, onClose, onSubmit }: {
     }
   };
 
-  const handleMarkdownUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMarkdownUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && (file.name.endsWith('.md') || file.type === 'text/markdown')) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setContent(reader.result as string);
+      reader.onloadend = async () => {
+        const markdownText = reader.result as string;
+        const html = await marked.parse(markdownText);
+        setContent(html);
       };
       reader.readAsText(file);
     }
