@@ -726,8 +726,36 @@ export async function registerRoutes(
   app.post("/api/articles", requireAdminAuth, async (req, res) => {
     try {
       const validated = insertArticleSchema.parse(req.body);
+      
+      // Create article first
       const article = await storage.createArticle(validated);
-      res.json(article);
+      
+      // Register with Ledewire for micropayments
+      try {
+        const priceCents = validated.price || 99;
+        const content = await ledewire.registerContent(
+          article.title,
+          priceCents,
+          { 
+            type: 'article',
+            articleId: article.id,
+            author: article.author,
+            category: article.category,
+          }
+        );
+        
+        // Update article with Ledewire content ID
+        await storage.updateArticleLedewireId(article.id, content.id);
+        console.log(`[ARTICLE] Registered article "${article.title}" with Ledewire, content ID: ${content.id}`);
+        
+        // Return updated article
+        const updatedArticle = await storage.getArticle(article.id);
+        res.json(updatedArticle);
+      } catch (ledewireError: any) {
+        console.error('[ARTICLE] Failed to register with Ledewire:', ledewireError.message);
+        // Still return the article even if Ledewire registration failed
+        res.json(article);
+      }
     } catch (error: any) {
       console.error('Create article error:', error);
       res.status(400).json({ error: error.message });
@@ -761,6 +789,94 @@ export async function registerRoutes(
   });
   
   // ===== Purchase Routes =====
+  
+  // Article purchase endpoint
+  app.post("/api/articles/:id/purchase", async (req, res) => {
+    const { id: articleId } = req.params;
+    console.log(`[ARTICLE PURCHASE] Starting purchase for article: ${articleId}`);
+    
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        console.log('[ARTICLE PURCHASE] Error: No authorization header');
+        return res.status(401).json({ error: 'Authorization required' });
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      
+      // Get article details
+      const article = await storage.getArticle(articleId);
+      if (!article || !article.ledewireContentId) {
+        console.log(`[ARTICLE PURCHASE] Error: Article ${articleId} not found or no Ledewire content ID`);
+        return res.status(404).json({ error: 'Article not found or not registered with Ledewire' });
+      }
+      
+      console.log(`[ARTICLE PURCHASE] Article found: ${article.title}, Ledewire ID: ${article.ledewireContentId}, Price: ${article.price} cents`);
+      
+      // Make purchase with Ledewire
+      const purchase = await ledewire.createPurchase(
+        token,
+        article.ledewireContentId,
+        article.price
+      );
+      
+      console.log(`[ARTICLE PURCHASE] Purchase response received, status: ${purchase.status}`);
+      
+      if (purchase.status !== 'completed' && purchase.status !== 'success') {
+        console.log(`[ARTICLE PURCHASE] Purchase not confirmed - status: ${purchase.status}, rejecting unlock`);
+        return res.status(400).json({ 
+          error: 'Purchase was not completed', 
+          status: purchase.status,
+          unlocked: false 
+        });
+      }
+      
+      // Double-verify the purchase is actually recorded
+      const verification = await ledewire.verifyPurchase(token, article.ledewireContentId);
+      
+      if (!verification.has_purchased) {
+        console.log(`[ARTICLE PURCHASE] Verification failed - Ledewire says not purchased, rejecting unlock`);
+        return res.status(400).json({ 
+          error: 'Purchase verification failed', 
+          unlocked: false 
+        });
+      }
+      
+      console.log(`[ARTICLE PURCHASE] Purchase verified successfully, unlocking content`);
+      res.json({ ...purchase, unlocked: true });
+    } catch (error: any) {
+      console.error(`[ARTICLE PURCHASE] Error for article ${articleId}:`, error.message);
+      res.status(400).json({ error: error.message, unlocked: false });
+    }
+  });
+
+  // Article purchase verification endpoint
+  app.get("/api/articles/:id/purchase/verify", async (req, res) => {
+    const { id: articleId } = req.params;
+    console.log(`[ARTICLE VERIFY] Checking purchase status for article: ${articleId}`);
+    
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Authorization required' });
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      
+      const article = await storage.getArticle(articleId);
+      if (!article || !article.ledewireContentId) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+      
+      const verification = await ledewire.verifyPurchase(token, article.ledewireContentId);
+      console.log(`[ARTICLE VERIFY] Result for article ${articleId}: has_purchased=${verification.has_purchased}`);
+      
+      res.json(verification);
+    } catch (error: any) {
+      console.error(`[ARTICLE VERIFY] Error for article ${articleId}:`, error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
   
   app.post("/api/purchase", async (req, res) => {
     const { episodeId } = req.body;

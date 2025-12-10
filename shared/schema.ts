@@ -83,6 +83,8 @@ export const articles = pgTable("articles", {
   author: text("author").notNull(),
   thumbnail: text("thumbnail"),
   category: text("category").notNull().default('elections'), // elections, policy, candidate-rankings, speech-analysis
+  price: integer("price_cents").notNull().default(99), // price in cents
+  ledewireContentId: text("ledewire_content_id"), // ID from Ledewire for this article
   viewCount: integer("view_count").default(0).notNull(),
   readTimeMinutes: integer("read_time_minutes").default(5).notNull(),
   featured: integer("featured").default(0), // 0 = not featured, 1+ = featured with order
@@ -132,6 +134,7 @@ export const insertFeaturedEpisodeSchema = createInsertSchema(featuredEpisodes).
 export const insertArticleSchema = createInsertSchema(articles).omit({
   id: true,
   createdAt: true,
+  ledewireContentId: true,
 });
 
 // Types

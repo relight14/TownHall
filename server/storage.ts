@@ -73,8 +73,9 @@ export interface IStorage {
   // Article operations
   getAllArticles(): Promise<Article[]>;
   getArticle(id: string): Promise<Article | undefined>;
-  createArticle(article: InsertArticle): Promise<Article>;
+  createArticle(article: InsertArticle & { ledewireContentId?: string }): Promise<Article>;
   updateArticle(id: string, article: Partial<InsertArticle>): Promise<Article | undefined>;
+  updateArticleLedewireId(id: string, ledewireContentId: string): Promise<void>;
   deleteArticle(id: string): Promise<void>;
   getFeaturedArticles(): Promise<Article[]>;
   getArticlesByCategory(category: string): Promise<Article[]>;
@@ -315,7 +316,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createArticle(article: InsertArticle): Promise<Article> {
+  async createArticle(article: InsertArticle & { ledewireContentId?: string }): Promise<Article> {
     const result = await db.insert(articlesTable).values(article).returning();
     return result[0];
   }
@@ -326,6 +327,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(articlesTable.id, id))
       .returning();
     return result[0];
+  }
+
+  async updateArticleLedewireId(id: string, ledewireContentId: string): Promise<void> {
+    await db.update(articlesTable)
+      .set({ ledewireContentId })
+      .where(eq(articlesTable.id, id));
   }
 
   async deleteArticle(id: string): Promise<void> {
