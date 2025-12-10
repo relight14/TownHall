@@ -971,6 +971,7 @@ function ArticleForm({ article, onClose, onSubmit }: {
   const [content, setContent] = useState(article?.content || '');
   const [thumbnail, setThumbnail] = useState(article?.thumbnail || '');
   const [category, setCategory] = useState(article?.category || 'elections');
+  const [price, setPrice] = useState(article?.price !== undefined ? String(article.price) : '99');
   const [featured, setFeatured] = useState(article?.featured || false);
   const [useFile, setUseFile] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -1019,6 +1020,7 @@ function ArticleForm({ article, onClose, onSubmit }: {
         summary: generateSummary(content),
         thumbnail: thumbnail || null,
         category,
+        price: parseInt(price) || 99,
         featured,
         publishedAt: new Date().toISOString(),
       });
@@ -1066,19 +1068,35 @@ function ArticleForm({ article, onClose, onSubmit }: {
           </div>
         </div>
 
-        <div>
-          <label className="block text-slate-300 mb-2 text-sm font-medium">Category</label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
-            data-testid="select-article-category"
-          >
-            <option value="elections">Elections</option>
-            <option value="policy">Policy</option>
-            <option value="candidate-rankings">Candidate Rankings</option>
-            <option value="speech-analysis">Speech Analysis</option>
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-slate-300 mb-2 text-sm font-medium">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+              data-testid="select-article-category"
+            >
+              <option value="elections">Elections</option>
+              <option value="policy">Policy</option>
+              <option value="candidate-rankings">Candidate Rankings</option>
+              <option value="speech-analysis">Speech Analysis</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-slate-300 mb-2 text-sm font-medium">Price (in cents)</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+              placeholder="99"
+              data-testid="input-article-price"
+            />
+            <p className="text-xs text-slate-500 mt-1">Price in cents (e.g., 99 = $0.99, 199 = $1.99)</p>
+          </div>
         </div>
 
         <div>
