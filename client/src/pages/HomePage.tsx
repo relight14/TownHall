@@ -320,24 +320,18 @@ export default function HomePage() {
       <header className="border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <img 
+                src="/attached_assets/Chris_C_Profile_1765399638128.webp" 
+                alt="Profile" 
+                className="w-10 h-10 rounded-full object-cover"
+                data-testid="img-profile"
+              />
+            </div>
+            
             <Link to="/">
               <span className="text-2xl font-bold text-gray-900 tracking-tight" data-testid="logo">So What</span>
             </Link>
-            
-            <nav className="hidden md:flex items-center gap-8">
-              <Link to="/">
-                <span className="text-gray-600 hover:text-gray-900 font-medium transition-colors" data-testid="nav-home">Home</span>
-              </Link>
-              <Link to="/articles">
-                <span className="text-gray-600 hover:text-gray-900 font-medium transition-colors" data-testid="nav-articles">Articles</span>
-              </Link>
-              <Link to="/videos">
-                <span className="text-gray-600 hover:text-gray-900 font-medium transition-colors" data-testid="nav-videos">Videos</span>
-              </Link>
-              <Link to="/about">
-                <span className="text-gray-600 hover:text-gray-900 font-medium transition-colors" data-testid="nav-about">About</span>
-              </Link>
-            </nav>
 
             <div className="flex items-center gap-4">
               <button 
@@ -347,11 +341,6 @@ export default function HomePage() {
               >
                 <Search className="w-5 h-5" />
               </button>
-              <Link to="/login">
-                <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors" data-testid="button-login">
-                  Log in
-                </button>
-              </Link>
             </div>
           </div>
         </div>
