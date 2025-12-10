@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Clock, Eye, Play, Search, ChevronRight } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import profilePic from '@assets/Chris_C_Profile_1765399638128.webp';
+import AuthModal from '../components/AuthModal';
+import PurchaseModal from '../components/PurchaseModal';
 
 const categories = [
   { id: 'all', label: 'All' },
@@ -281,11 +283,13 @@ export default function HomePage() {
     featuredArticles,
     getArticlesByCategory,
     series,
-    featuredEpisodes 
+    featuredEpisodes,
+    user 
   } = useVideoStore();
   
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
 
@@ -342,11 +346,21 @@ export default function HomePage() {
               >
                 <Search className="w-5 h-5" />
               </button>
-              <Link to="/wallet">
-                <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors" data-testid="button-login">
+              {user ? (
+                <Link to="/wallet">
+                  <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors" data-testid="button-wallet">
+                    Wallet
+                  </button>
+                </Link>
+              ) : (
+                <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors" 
+                  data-testid="button-login"
+                >
                   Log in
                 </button>
-              </Link>
+              )}
             </div>
           </div>
         </div>
@@ -442,6 +456,13 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal 
+          onClose={() => setShowAuthModal(false)} 
+        />
+      )}
     </div>
   );
 }
