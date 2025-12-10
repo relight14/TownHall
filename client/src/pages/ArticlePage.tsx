@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Share2, Check } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2 } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
+import { useVideoStore } from '../context/VideoStoreContext';
+import AuthModal from '../components/AuthModal';
 
 interface Article {
   id: string;
@@ -10,6 +12,9 @@ interface Article {
   content: string;
   author: string;
   thumbnail: string | null;
+  category: string;
+  price: number;
+  ledewireContentId: string | null;
   featured: number;
   publishedAt: string;
 }
@@ -40,10 +45,18 @@ function LinkedInIcon({ className }: { className?: string }) {
 
 export default function ArticlePage() {
   const { articleId } = useParams<{ articleId: string }>();
+  const navigate = useNavigate();
+  const { user, ledewireToken, walletBalance, refreshWalletBalance } = useVideoStore();
+  
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [checkingPurchase, setCheckingPurchase] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadArticle = async () => {
@@ -66,6 +79,77 @@ export default function ArticlePage() {
       loadArticle();
     }
   }, [articleId]);
+
+  useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      if (!user || !ledewireToken || !article?.ledewireContentId) {
+        setHasPurchased(false);
+        return;
+      }
+
+      try {
+        setCheckingPurchase(true);
+        const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
+          headers: {
+            'Authorization': `Bearer ${ledewireToken}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setHasPurchased(data.has_purchased || false);
+        }
+      } catch (err) {
+        console.error('Failed to check purchase status:', err);
+      } finally {
+        setCheckingPurchase(false);
+      }
+    };
+
+    checkPurchaseStatus();
+  }, [user, ledewireToken, article]);
+
+  const handlePurchase = async () => {
+    if (!user || !ledewireToken) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (!article?.ledewireContentId) {
+      setPurchaseError('This article is not available for purchase');
+      return;
+    }
+
+    setPurchasing(true);
+    setPurchaseError(null);
+
+    try {
+      const response = await fetch(`/api/articles/${article.id}/purchase`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ledewireToken}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Purchase failed');
+      }
+
+      if (data.unlocked) {
+        setHasPurchased(true);
+        refreshWalletBalance();
+      } else {
+        throw new Error('Purchase was not confirmed');
+      }
+    } catch (err: any) {
+      setPurchaseError(err.message);
+    } finally {
+      setPurchasing(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -114,50 +198,51 @@ export default function ArticlePage() {
     }
   };
 
+  const formatPrice = (cents: number) => {
+    return `$${(cents / 100).toFixed(2)}`;
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (error || !article) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Link to="/" className="inline-flex items-center gap-2 text-slate-300 hover:text-white mb-8 transition-colors bg-slate-900/50 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-600">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-white min-h-screen">
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Back to home
         </Link>
-        <div className="text-center py-20 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
-          <p className="text-slate-400 text-xl">Article not found</p>
-          <p className="text-slate-500 mt-2">The article you're looking for doesn't exist.</p>
+        <div className="text-center py-20">
+          <p className="text-gray-500 text-xl">Article not found</p>
+          <p className="text-gray-400 mt-2">The article you're looking for doesn't exist.</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="relative min-h-screen pb-20">
-      {/* Background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/90 to-slate-950" />
-      </div>
+  const isPaid = article.price > 0 && article.ledewireContentId;
+  const canViewContent = !isPaid || hasPurchased;
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  return (
+    <div className="min-h-screen bg-white pb-20">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-slate-300 hover:text-white mb-8 transition-colors bg-slate-900/50 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-600"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
           data-testid="link-back-home"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to home
         </Link>
 
-        {/* Article Header */}
-        <article className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden">
+        <article className="bg-white">
           {article.thumbnail && (
-            <div className="aspect-[21/9] overflow-hidden">
+            <div className="aspect-[21/9] overflow-hidden rounded-lg mb-8">
               <ImageWithFallback 
                 src={article.thumbnail} 
                 alt={article.title}
@@ -166,9 +251,8 @@ export default function ArticlePage() {
             </div>
           )}
 
-          <div className="p-8 md:p-12">
-            {/* Meta info */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400 mb-6">
+          <div>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span data-testid="text-article-author">{article.author}</span>
@@ -179,25 +263,22 @@ export default function ArticlePage() {
               </div>
             </div>
 
-            {/* Title */}
-            <h1 className="text-3xl md:text-4xl lg:text-5xl text-white font-bold mb-6 leading-tight" data-testid="text-article-title">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl text-gray-900 font-bold mb-6 leading-tight" data-testid="text-article-title">
               {article.title}
             </h1>
 
-            {/* Summary */}
-            <p className="text-xl text-slate-300 mb-8 leading-relaxed border-l-4 border-red-500 pl-6" data-testid="text-article-summary">
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">
               {article.summary}
             </p>
 
-            {/* Share buttons */}
-            <div className="flex items-center gap-2 mb-8 pb-8 border-b border-slate-700">
-              <span className="text-slate-400 text-sm flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-8 pb-8 border-b border-gray-200">
+              <span className="text-gray-500 text-sm flex items-center gap-2">
                 <Share2 className="w-4 h-4" />
                 Share
               </span>
               <button
                 onClick={() => handleShare('twitter')}
-                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
                 data-testid="button-share-twitter"
                 title="Share on X"
               >
@@ -205,7 +286,7 @@ export default function ArticlePage() {
               </button>
               <button
                 onClick={() => handleShare('facebook')}
-                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-[#1877F2] transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#1877F2] transition-colors"
                 data-testid="button-share-facebook"
                 title="Share on Facebook"
               >
@@ -213,7 +294,7 @@ export default function ArticlePage() {
               </button>
               <button
                 onClick={() => handleShare('linkedin')}
-                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-[#0A66C2] transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#0A66C2] transition-colors"
                 data-testid="button-share-linkedin"
                 title="Share on LinkedIn"
               >
@@ -221,12 +302,12 @@ export default function ArticlePage() {
               </button>
               <button
                 onClick={handleCopyLink}
-                className="ml-auto px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors text-sm flex items-center gap-2"
+                className="ml-auto px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors text-sm flex items-center gap-2"
                 data-testid="button-copy-link"
               >
                 {copied ? (
                   <>
-                    <Check className="w-4 h-4 text-green-400" />
+                    <Check className="w-4 h-4 text-green-600" />
                     Copied!
                   </>
                 ) : (
@@ -235,26 +316,116 @@ export default function ArticlePage() {
               </button>
             </div>
 
-            {/* Article Content */}
-            <div 
-              className="prose prose-invert prose-lg max-w-none
-                prose-headings:text-white prose-headings:font-bold
-                prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-                prose-p:text-slate-300 prose-p:leading-relaxed
-                prose-a:text-red-400 prose-a:no-underline hover:prose-a:underline
-                prose-strong:text-white
-                prose-ul:text-slate-300 prose-ol:text-slate-300
-                prose-li:marker:text-red-500
-                prose-blockquote:border-l-red-500 prose-blockquote:text-slate-400 prose-blockquote:italic
-                prose-code:text-red-300 prose-code:bg-slate-800 prose-code:px-1 prose-code:rounded
-                prose-pre:bg-slate-800 prose-pre:border prose-pre:border-slate-700
-                prose-img:rounded-xl"
-              data-testid="text-article-content"
-              dangerouslySetInnerHTML={{ __html: article.content }}
-            />
+            {canViewContent ? (
+              <div 
+                className="prose prose-lg max-w-none
+                  prose-headings:text-gray-900 prose-headings:font-bold
+                  prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
+                  prose-p:text-gray-700 prose-p:leading-relaxed
+                  prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+                  prose-strong:text-gray-900
+                  prose-ul:text-gray-700 prose-ol:text-gray-700
+                  prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-600 prose-blockquote:italic
+                  prose-code:text-gray-800 prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded
+                  prose-pre:bg-gray-100 prose-pre:border prose-pre:border-gray-200
+                  prose-img:rounded-xl"
+                data-testid="text-article-content"
+                dangerouslySetInnerHTML={{ __html: article.content }}
+              />
+            ) : (
+              <div className="relative">
+                <div 
+                  className="prose prose-lg max-w-none prose-p:text-gray-700 blur-sm select-none"
+                  dangerouslySetInnerHTML={{ __html: article.content.substring(0, 500) + '...' }}
+                />
+                
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white flex items-end justify-center pb-8">
+                  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 max-w-md w-full text-center">
+                    <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Lock className="w-8 h-8 text-white" />
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Premium Content</h3>
+                    <p className="text-gray-600 mb-6">
+                      Unlock this article for just {formatPrice(article.price)}
+                    </p>
+
+                    {checkingPurchase ? (
+                      <div className="flex items-center justify-center gap-2 text-gray-500">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Checking access...
+                      </div>
+                    ) : user ? (
+                      <>
+                        <div className="text-sm text-gray-500 mb-4">
+                          Wallet Balance: {formatPrice(walletBalance)}
+                        </div>
+                        
+                        {purchaseError && (
+                          <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">
+                            {purchaseError}
+                          </div>
+                        )}
+
+                        {walletBalance >= article.price ? (
+                          <button
+                            onClick={handlePurchase}
+                            disabled={purchasing}
+                            className="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            data-testid="button-purchase-article"
+                          >
+                            {purchasing ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard className="w-5 h-5" />
+                                Purchase for {formatPrice(article.price)}
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <div>
+                            <p className="text-amber-600 text-sm mb-3">
+                              Insufficient balance. Please add funds to continue.
+                            </p>
+                            <Link 
+                              to="/wallet"
+                              className="inline-block w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-center"
+                              data-testid="link-add-funds"
+                            >
+                              Add Funds to Wallet
+                            </Link>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowAuthModal(true)}
+                        className="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                        data-testid="button-login-to-purchase"
+                      >
+                        Sign in to Purchase
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </article>
       </div>
+
+      {showAuthModal && (
+        <AuthModal 
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => {
+            setShowAuthModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
