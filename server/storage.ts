@@ -10,15 +10,18 @@ import {
   type SiteSettings,
   type InsertSiteSettings,
   type FeaturedEpisode,
+  type Article,
+  type InsertArticle,
   users,
   series as seriesTable,
   episodes as episodesTable,
   adminSettings,
   siteSettings,
-  featuredEpisodes
+  featuredEpisodes,
+  articles as articlesTable
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, asc, inArray } from "drizzle-orm";
+import { eq, asc, inArray, gt, desc } from "drizzle-orm";
 import crypto from "crypto";
 
 function hashPassword(password: string): string {
@@ -66,6 +69,14 @@ export interface IStorage {
   // Featured episodes operations
   getFeaturedEpisodes(): Promise<(FeaturedEpisode & { episode: Episode })[]>;
   setFeaturedEpisodes(episodeIds: string[]): Promise<void>;
+  
+  // Article operations
+  getAllArticles(): Promise<Article[]>;
+  getArticle(id: string): Promise<Article | undefined>;
+  createArticle(article: InsertArticle): Promise<Article>;
+  updateArticle(id: string, article: Partial<InsertArticle>): Promise<Article | undefined>;
+  deleteArticle(id: string): Promise<void>;
+  getFeaturedArticles(): Promise<Article[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -288,6 +299,41 @@ export class DatabaseStorage implements IStorage {
     }));
     
     await db.insert(featuredEpisodes).values(values);
+  }
+
+  // Article operations
+  async getAllArticles(): Promise<Article[]> {
+    return await db.select().from(articlesTable).orderBy(desc(articlesTable.publishedAt));
+  }
+
+  async getArticle(id: string): Promise<Article | undefined> {
+    const result = await db.select().from(articlesTable).where(eq(articlesTable.id, id));
+    return result[0];
+  }
+
+  async createArticle(article: InsertArticle): Promise<Article> {
+    const result = await db.insert(articlesTable).values(article).returning();
+    return result[0];
+  }
+
+  async updateArticle(id: string, article: Partial<InsertArticle>): Promise<Article | undefined> {
+    const result = await db.update(articlesTable)
+      .set(article)
+      .where(eq(articlesTable.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteArticle(id: string): Promise<void> {
+    await db.delete(articlesTable).where(eq(articlesTable.id, id));
+  }
+
+  async getFeaturedArticles(): Promise<Article[]> {
+    const result = await db.select()
+      .from(articlesTable)
+      .where(gt(articlesTable.featured, 0))
+      .orderBy(asc(articlesTable.featured));
+    return result;
   }
 }
 

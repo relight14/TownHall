@@ -37,6 +37,17 @@ interface FeaturedEpisode extends Episode {
   seriesId: string;
 }
 
+interface Article {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  author: string;
+  thumbnail: string | null;
+  featured: number;
+  publishedAt: string;
+}
+
 interface VideoStoreContextType {
   series: Series[];
   addSeries: (series: Omit<Series, 'id' | 'episodes'>) => Promise<void>;
@@ -62,6 +73,12 @@ interface VideoStoreContextType {
   featuredEpisodes: FeaturedEpisode[];
   setFeaturedEpisodes: (episodeIds: string[]) => Promise<void>;
   getAllEpisodes: () => Episode[];
+  articles: Article[];
+  featuredArticles: Article[];
+  addArticle: (article: Omit<Article, 'id' | 'publishedAt'>) => Promise<void>;
+  updateArticle: (articleId: string, updates: Partial<Omit<Article, 'id'>>) => Promise<void>;
+  deleteArticle: (articleId: string) => Promise<void>;
+  refreshArticles: () => Promise<void>;
 }
 
 const VideoStoreContext = createContext<VideoStoreContextType | undefined>(undefined);
@@ -80,12 +97,16 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
   const [featuredEpisodes, setFeaturedEpisodesState] = useState<FeaturedEpisode[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
 
-  // Load series, site settings, and featured episodes on mount
+  // Load series, site settings, featured episodes, and articles on mount
   useEffect(() => {
     loadSeries();
     loadSiteSettings();
     loadFeaturedEpisodes();
+    loadArticles();
+    loadFeaturedArticles();
   }, []);
 
   // Check for cross-subdomain SSO session first, then local session
@@ -185,6 +206,111 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to load featured episodes:', error);
+    }
+  };
+
+  const loadArticles = async () => {
+    try {
+      const response = await fetch('/api/articles');
+      if (response.ok) {
+        const data = await response.json();
+        setArticles(data);
+      }
+    } catch (error) {
+      console.error('Failed to load articles:', error);
+    }
+  };
+
+  const loadFeaturedArticles = async () => {
+    try {
+      const response = await fetch('/api/articles/featured');
+      if (response.ok) {
+        const data = await response.json();
+        setFeaturedArticles(data);
+      }
+    } catch (error) {
+      console.error('Failed to load featured articles:', error);
+    }
+  };
+
+  const refreshArticles = async () => {
+    await loadArticles();
+    await loadFeaturedArticles();
+  };
+
+  const addArticle = async (newArticle: Omit<Article, 'id' | 'publishedAt'>) => {
+    if (!adminToken) {
+      throw new Error('Admin authentication required');
+    }
+    try {
+      const response = await fetch('/api/articles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
+        },
+        body: JSON.stringify(newArticle),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create article');
+      }
+
+      await refreshArticles();
+    } catch (error) {
+      console.error('Failed to add article:', error);
+      throw error;
+    }
+  };
+
+  const updateArticle = async (articleId: string, updates: Partial<Omit<Article, 'id'>>) => {
+    if (!adminToken) {
+      throw new Error('Admin authentication required');
+    }
+    try {
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update article');
+      }
+
+      await refreshArticles();
+    } catch (error) {
+      console.error('Failed to update article:', error);
+      throw error;
+    }
+  };
+
+  const deleteArticle = async (articleId: string) => {
+    if (!adminToken) {
+      throw new Error('Admin authentication required');
+    }
+    try {
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Token': adminToken,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete article');
+      }
+
+      await refreshArticles();
+    } catch (error) {
+      console.error('Failed to delete article:', error);
+      throw error;
     }
   };
 
@@ -595,6 +721,12 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       featuredEpisodes,
       setFeaturedEpisodes,
       getAllEpisodes,
+      articles,
+      featuredArticles,
+      addArticle,
+      updateArticle,
+      deleteArticle,
+      refreshArticles,
     }}>
       {children}
     </VideoStoreContext.Provider>

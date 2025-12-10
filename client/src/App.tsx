@@ -3,6 +3,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { VideoStoreProvider, useVideoStore } from './context/VideoStoreContext';
 import HomePage from './pages/HomePage';
 import SeriesPage from './pages/SeriesPage';
+import ArticlePage from './pages/ArticlePage';
 import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
 import AuthModal from './components/AuthModal';
@@ -82,6 +83,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/series/:seriesId" element={<SeriesPage />} />
+        <Route path="/article/:articleId" element={<ArticlePage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/wallet" element={<WalletPage />} />
       </Routes>

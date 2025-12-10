@@ -71,6 +71,18 @@ export const featuredEpisodes = pgTable("featured_episodes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const articles = pgTable("articles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull(), // HTML content
+  author: text("author").notNull(),
+  thumbnail: text("thumbnail"),
+  featured: integer("featured").default(0), // 0 = not featured, 1+ = featured with order
+  publishedAt: timestamp("published_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -110,6 +122,11 @@ export const insertFeaturedEpisodeSchema = createInsertSchema(featuredEpisodes).
   createdAt: true,
 });
 
+export const insertArticleSchema = createInsertSchema(articles).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -122,3 +139,5 @@ export type SiteSettings = typeof siteSettings.$inferSelect;
 export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
 export type FeaturedEpisode = typeof featuredEpisodes.$inferSelect;
 export type InsertFeaturedEpisode = z.infer<typeof insertFeaturedEpisodeSchema>;
+export type Article = typeof articles.$inferSelect;
+export type InsertArticle = z.infer<typeof insertArticleSchema>;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Settings, Star, Check, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Settings, Star, Check, GripVertical, FileText } from 'lucide-react';
 
 function AdminLoginGate({ onAuthenticated }: { onAuthenticated: (token: string) => void }) {
   const [email, setEmail] = useState('');
@@ -548,7 +548,8 @@ function FeaturedEpisodesManager({
 export default function AdminPage() {
   const { 
     series, addSeries, addEpisode, updateSeries, updateEpisode, deleteEpisode, setAdminToken,
-    siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes, getAllEpisodes
+    siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes, getAllEpisodes,
+    articles, addArticle, updateArticle, deleteArticle, refreshArticles
   } = useVideoStore();
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
@@ -559,6 +560,9 @@ export default function AdminPage() {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [showSiteSettings, setShowSiteSettings] = useState(false);
   const [showFeaturedManager, setShowFeaturedManager] = useState(false);
+  const [showArticleForm, setShowArticleForm] = useState(false);
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [adminTab, setAdminTab] = useState<'videos' | 'articles'>('videos');
 
   const handleLogout = () => {
     sessionStorage.removeItem('adminAuthenticated');
@@ -636,7 +640,7 @@ export default function AdminPage() {
       <div className="mb-8 flex justify-between items-start">
         <div>
           <h1 className="text-4xl text-white mb-2 font-bold">Content Management</h1>
-          <p className="text-slate-400">Manage your video series and episodes</p>
+          <p className="text-slate-400">Manage your articles and video content</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -658,6 +662,36 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* Admin Tabs */}
+      <div className="mb-6 flex gap-2 p-1 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 w-fit">
+        <button
+          onClick={() => setAdminTab('articles')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+            adminTab === 'articles'
+              ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+          }`}
+          data-testid="admin-tab-articles"
+        >
+          <FileText className="w-5 h-5" />
+          Articles
+        </button>
+        <button
+          onClick={() => setAdminTab('videos')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+            adminTab === 'videos'
+              ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+          }`}
+          data-testid="admin-tab-videos"
+        >
+          <Video className="w-5 h-5" />
+          Videos
+        </button>
+      </div>
+
+      {/* Videos Tab Actions */}
+      {adminTab === 'videos' && (
       <div className="mb-8 flex flex-wrap gap-3">
         <button
           onClick={() => setShowSeriesForm(true)}
@@ -684,7 +718,33 @@ export default function AdminPage() {
           Featured Videos
         </button>
       </div>
+      )}
 
+      {/* Articles Tab Actions */}
+      {adminTab === 'articles' && (
+      <div className="mb-8 flex flex-wrap gap-3">
+        <button
+          onClick={() => setShowArticleForm(true)}
+          className="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-red-600/20 font-medium"
+          data-testid="button-add-article"
+        >
+          <Plus className="w-5 h-5" />
+          Add New Article
+        </button>
+        <button
+          onClick={() => setShowSiteSettings(true)}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-indigo-600/20 font-medium"
+          data-testid="button-site-settings-articles"
+        >
+          <Settings className="w-5 h-5" />
+          Site Settings
+        </button>
+      </div>
+      )}
+
+      {/* Videos Tab Content */}
+      {adminTab === 'videos' && (
+      <>
       {showSeriesForm && (
         <SeriesForm 
           onClose={() => setShowSeriesForm(false)}
@@ -804,6 +864,304 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+      </>
+      )}
+
+      {/* Articles Tab Content */}
+      {adminTab === 'articles' && (
+      <>
+      {(showArticleForm || editingArticleId) && (
+        <ArticleForm
+          article={editingArticleId ? articles.find(a => a.id.toString() === editingArticleId) : undefined}
+          onClose={() => {
+            setShowArticleForm(false);
+            setEditingArticleId(null);
+          }}
+          onSubmit={async (data) => {
+            if (editingArticleId) {
+              await updateArticle(parseInt(editingArticleId), data);
+            } else {
+              await addArticle(data);
+            }
+            setShowArticleForm(false);
+            setEditingArticleId(null);
+          }}
+        />
+      )}
+
+      <div className="space-y-4">
+        {articles.length === 0 ? (
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
+            <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl text-white mb-2">No Articles Yet</h3>
+            <p className="text-slate-400 mb-4">Start by adding your first article</p>
+          </div>
+        ) : (
+          articles.map(article => (
+            <div key={article.id} className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 backdrop-blur-sm">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                <div className="flex gap-4 flex-1">
+                  {article.thumbnail && (
+                    <div className="w-32 h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0 border border-slate-700">
+                      <img src={article.thumbnail} alt={article.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl text-white font-medium">{article.title}</h3>
+                      {article.featured && (
+                        <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full border border-amber-500/30">Featured</span>
+                      )}
+                    </div>
+                    <p className="text-slate-400 text-sm mb-2">By {article.author}</p>
+                    <p className="text-slate-500 text-xs">
+                      {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Not published'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingArticleId(article.id.toString())}
+                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-slate-700"
+                    data-testid={`button-edit-article-${article.id}`}
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete this article?')) {
+                        deleteArticle(article.id);
+                      }
+                    }}
+                    className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20"
+                    data-testid={`button-delete-article-${article.id}`}
+                    title="Delete article"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      </>
+      )}
+    </div>
+  );
+}
+
+function ArticleForm({ article, onClose, onSubmit }: { 
+  article?: any; 
+  onClose: () => void; 
+  onSubmit: (data: any) => Promise<void>;
+}) {
+  const [title, setTitle] = useState(article?.title || '');
+  const [author, setAuthor] = useState(article?.author || '');
+  const [content, setContent] = useState(article?.content || '');
+  const [thumbnail, setThumbnail] = useState(article?.thumbnail || '');
+  const [featured, setFeatured] = useState(article?.featured || false);
+  const [useFile, setUseFile] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  const isEditing = !!article;
+
+  const handleThumbnailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnail(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleMarkdownUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && (file.name.endsWith('.md') || file.type === 'text/markdown')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setContent(reader.result as string);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const generateSummary = (htmlContent: string): string => {
+    const textContent = htmlContent.replace(/<[^>]*>/g, '').trim();
+    const sentences = textContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const summary = sentences.slice(0, 2).join('. ').trim();
+    return summary.length > 200 ? summary.substring(0, 197) + '...' : (summary || textContent.substring(0, 200));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await onSubmit({
+        title,
+        author,
+        content,
+        summary: generateSummary(content),
+        thumbnail: thumbnail || null,
+        featured,
+        publishedAt: new Date().toISOString(),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-top-2">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl text-white font-semibold">{isEditing ? 'Edit Article' : 'New Article'}</h3>
+        <button
+          onClick={onClose}
+          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-slate-300 mb-2 text-sm font-medium">Article Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+              placeholder="Enter article title"
+              required
+              data-testid="input-article-title"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-300 mb-2 text-sm font-medium">Author</label>
+            <input
+              type="text"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+              placeholder="Author name"
+              required
+              data-testid="input-article-author"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-slate-300 mb-2 text-sm font-medium">Thumbnail Image</label>
+          <div className="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              onClick={() => setUseFile(false)}
+              className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                !useFile 
+                  ? 'bg-red-600 text-white' 
+                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+              }`}
+            >
+              URL
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseFile(true)}
+              className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                useFile 
+                  ? 'bg-red-600 text-white' 
+                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+              }`}
+            >
+              Upload File
+            </button>
+          </div>
+          {!useFile ? (
+            <input
+              type="url"
+              value={thumbnail}
+              onChange={(e) => setThumbnail(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+              placeholder="https://..."
+            />
+          ) : (
+            <div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleThumbnailFileChange}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer file:font-medium"
+              />
+              {thumbnail && (
+                <div className="mt-3">
+                  <img src={thumbnail} alt="Preview" className="w-32 h-20 object-cover rounded-lg border border-slate-700" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-slate-300 text-sm font-medium">Article Content (HTML or Markdown)</label>
+            <label className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg cursor-pointer transition-colors">
+              <FileText className="w-4 h-4 text-slate-400" />
+              <span className="text-sm text-slate-300">Upload .md file</span>
+              <input
+                type="file"
+                accept=".md,text/markdown"
+                onChange={handleMarkdownUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all h-64 font-mono text-sm"
+            placeholder="Paste your HTML content here or upload a Markdown file..."
+            required
+            data-testid="input-article-content"
+          />
+          <p className="text-slate-500 text-xs mt-1">
+            Tip: You can paste HTML directly from a web page or upload a Markdown (.md) file
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={(e) => setFeatured(e.target.checked)}
+              className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-red-600 focus:ring-red-500 focus:ring-offset-slate-900"
+              data-testid="checkbox-article-featured"
+            />
+            <span className="text-slate-300 text-sm">Featured article (appears prominently on homepage)</span>
+          </label>
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg transition-colors border border-slate-700 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white py-2.5 rounded-lg transition-all font-medium shadow-lg shadow-red-600/20 disabled:opacity-50"
+            data-testid="button-save-article"
+          >
+            {loading ? 'Saving...' : isEditing ? 'Update Article' : 'Create Article'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

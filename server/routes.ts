@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ledewire } from "./ledewire";
 import { setupGoogleAuth, isAuthenticated, getSession } from "./googleAuth";
-import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema } from "@shared/schema";
+import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema, insertArticleSchema } from "@shared/schema";
 import { createSSORoutes, setSSoCookie } from "./sso-module/sso-routes";
 import type { SSOConfig } from "./sso-module/sso-types";
 import crypto from "crypto";
@@ -640,6 +640,78 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error: any) {
       console.error('Delete episode error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+  
+  // ===== Article Routes =====
+  
+  app.get("/api/articles", async (req, res) => {
+    try {
+      const articles = await storage.getAllArticles();
+      res.json(articles);
+    } catch (error: any) {
+      console.error('Get articles error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/articles/featured", async (req, res) => {
+    try {
+      const articles = await storage.getFeaturedArticles();
+      res.json(articles);
+    } catch (error: any) {
+      console.error('Get featured articles error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/articles/:id", async (req, res) => {
+    try {
+      const article = await storage.getArticle(req.params.id);
+      if (!article) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+      res.json(article);
+    } catch (error: any) {
+      console.error('Get article error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/articles", requireAdminAuth, async (req, res) => {
+    try {
+      const validated = insertArticleSchema.parse(req.body);
+      const article = await storage.createArticle(validated);
+      res.json(article);
+    } catch (error: any) {
+      console.error('Create article error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/articles/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validated = insertArticleSchema.partial().parse(req.body);
+      const article = await storage.updateArticle(id, validated);
+      if (!article) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+      res.json(article);
+    } catch (error: any) {
+      console.error('Update article error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/articles/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteArticle(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Delete article error:', error);
       res.status(400).json({ error: error.message });
     }
   });

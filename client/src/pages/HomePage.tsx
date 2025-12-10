@@ -3,7 +3,7 @@ import { useVideoStore } from '../context/VideoStoreContext';
 import SeriesCard from '../components/SeriesCard';
 import studioBackground from '@assets/indigostudio_1764614068955.webp';
 import { Link } from 'wouter';
-import { Play, Star, Check } from 'lucide-react';
+import { Play, Star, Check, FileText, Video, Calendar, User } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 
 function TwitterIcon({ className }: { className?: string }) {
@@ -47,6 +47,86 @@ function LinkIcon({ className }: { className?: string }) {
   );
 }
 
+interface ArticleCardProps {
+  article: {
+    id: string;
+    title: string;
+    summary: string;
+    author: string;
+    thumbnail: string | null;
+    featured: number;
+    publishedAt: string;
+  };
+  isFeatured?: boolean;
+}
+
+function ArticleCard({ article, isFeatured }: ArticleCardProps) {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  return (
+    <Link to={`/article/${article.id}`}>
+      <div 
+        className={`group relative backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
+          isFeatured 
+            ? 'bg-gradient-to-br from-red-900/30 to-rose-900/20 border border-red-500/30 hover:border-red-400/50 hover:shadow-red-500/20' 
+            : 'bg-slate-800/50 border border-slate-700 hover:border-slate-600 hover:shadow-slate-500/10'
+        }`}
+        data-testid={`card-article-${article.id}`}
+      >
+        {isFeatured && (
+          <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-red-500/90 text-white px-2.5 py-1 rounded-full text-xs font-medium">
+            <Star className="w-3 h-3" fill="currentColor" />
+            Featured
+          </div>
+        )}
+        
+        {article.thumbnail ? (
+          <div className="relative aspect-[16/9] overflow-hidden">
+            <ImageWithFallback 
+              src={article.thumbnail} 
+              alt={article.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+          </div>
+        ) : (
+          <div className="relative aspect-[16/9] bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
+            <FileText className="w-16 h-16 text-slate-500" />
+          </div>
+        )}
+
+        <div className="p-5">
+          <h3 className={`text-lg text-white mb-2 group-hover:transition-colors font-medium line-clamp-2 ${
+            isFeatured ? 'group-hover:text-red-400' : 'group-hover:text-blue-400'
+          }`}>
+            {article.title}
+          </h3>
+          <p className="text-slate-400 text-sm mb-4 line-clamp-2">
+            {article.summary}
+          </p>
+          
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" />
+              <span>{article.author}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{formatDate(article.publishedAt)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function FeaturedEpisodeCard({ episode, seriesTitle }: { 
   episode: { id: string; title: string; thumbnail: string; seriesId: string; price: number };
   seriesTitle: string;
@@ -59,7 +139,7 @@ function FeaturedEpisodeCard({ episode, seriesTitle }: {
     return `${baseUrl}/series/${episode.seriesId}?episode=${episode.id}`;
   };
 
-  const shareText = `Check out "${episode.title}" on Indigo Soul NYC`;
+  const shareText = `Check out "${episode.title}"`;
 
   const handleShare = (e: React.MouseEvent, platform: string) => {
     e.preventDefault();
@@ -195,7 +275,8 @@ function FeaturedEpisodeCard({ episode, seriesTitle }: {
 }
 
 export default function HomePage() {
-  const { series, siteSettings, featuredEpisodes } = useVideoStore();
+  const { series, siteSettings, featuredEpisodes, articles, featuredArticles } = useVideoStore();
+  const [activeTab, setActiveTab] = useState<'articles' | 'videos'>('articles');
 
   const renderHeroHeading = () => {
     const lines = siteSettings.heroHeading.split('\n');
@@ -205,7 +286,7 @@ export default function HomePage() {
     return (
       <>
         {lines[0]}<br />
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-300">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-300">
           {lines.slice(1).join(' ')}
         </span>
       </>
@@ -223,7 +304,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/50 to-slate-950/60" />
         <img 
           src={studioBackground}
-          alt="Indigo Soul Studio"
+          alt="Political Content Hub"
           className="w-full h-full object-cover opacity-30 fixed"
         />
       </div>
@@ -238,43 +319,121 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Featured Videos Section */}
-        {featuredEpisodes.length > 0 && (
-          <div className="mb-16 animate-in slide-in-from-bottom-6 duration-800 fade-in fill-mode-backwards delay-100">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
-                <Star className="w-5 h-5 text-white" fill="white" />
+        {/* Content Tabs */}
+        <div className="mb-8 animate-in slide-in-from-bottom-5 duration-700 fade-in fill-mode-backwards delay-50">
+          <div className="flex gap-2 p-1 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 w-fit">
+            <button
+              onClick={() => setActiveTab('articles')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'articles'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+              data-testid="tab-articles"
+            >
+              <FileText className="w-5 h-5" />
+              Written Content
+            </button>
+            <button
+              onClick={() => setActiveTab('videos')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'videos'
+                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+              data-testid="tab-videos"
+            >
+              <Video className="w-5 h-5" />
+              Video Content
+            </button>
+          </div>
+        </div>
+
+        {/* Articles Tab Content */}
+        {activeTab === 'articles' && (
+          <div className="animate-in fade-in duration-500">
+            {/* Featured Articles */}
+            {featuredArticles.length > 0 && (
+              <div className="mb-12">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg flex items-center justify-center">
+                    <Star className="w-5 h-5 text-white" fill="white" />
+                  </div>
+                  <h2 className="text-2xl md:text-3xl text-white font-bold">Featured Articles</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {featuredArticles.map(article => (
+                    <ArticleCard key={article.id} article={article} isFeatured />
+                  ))}
+                </div>
               </div>
-              <h2 className="text-2xl md:text-3xl text-white font-bold">Featured Videos</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredEpisodes.map(episode => (
-                <FeaturedEpisodeCard 
-                  key={episode.id} 
-                  episode={episode}
-                  seriesTitle={getSeriesTitle(episode.seriesId)}
-                />
-              ))}
-            </div>
+            )}
+
+            {/* All Articles */}
+            {articles.length > 0 && (
+              <div>
+                <h2 className="text-2xl md:text-3xl text-white font-bold mb-6">All Articles</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {articles.filter(a => a.featured === 0).map(article => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {articles.length === 0 && featuredArticles.length === 0 && (
+              <div className="text-center py-20 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
+                <FileText className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400 text-xl">No articles available yet.</p>
+                <p className="text-slate-500 mt-2">Use the Admin panel to add your first article.</p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* All Series Section */}
-        {series.length > 0 && (
-          <div className="animate-in slide-in-from-bottom-8 duration-1000 fade-in fill-mode-backwards delay-200">
-            <h2 className="text-2xl md:text-3xl text-white font-bold mb-6">All Series</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {series.map(s => (
-                <SeriesCard key={s.id} series={s} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Videos Tab Content */}
+        {activeTab === 'videos' && (
+          <div className="animate-in fade-in duration-500">
+            {/* Featured Videos Section */}
+            {featuredEpisodes.length > 0 && (
+              <div className="mb-12">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+                    <Star className="w-5 h-5 text-white" fill="white" />
+                  </div>
+                  <h2 className="text-2xl md:text-3xl text-white font-bold">Featured Videos</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {featuredEpisodes.map(episode => (
+                    <FeaturedEpisodeCard 
+                      key={episode.id} 
+                      episode={episode}
+                      seriesTitle={getSeriesTitle(episode.seriesId)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {series.length === 0 && featuredEpisodes.length === 0 && (
-          <div className="text-center py-20 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
-            <p className="text-slate-400 text-xl">No series available yet.</p>
-            <p className="text-slate-500 mt-2">Use the Admin panel to add your first series.</p>
+            {/* All Series Section */}
+            {series.length > 0 && (
+              <div>
+                <h2 className="text-2xl md:text-3xl text-white font-bold mb-6">All Series</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {series.map(s => (
+                    <SeriesCard key={s.id} series={s} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {series.length === 0 && featuredEpisodes.length === 0 && (
+              <div className="text-center py-20 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
+                <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400 text-xl">No video content available yet.</p>
+                <p className="text-slate-500 mt-2">Use the Admin panel to add your first series.</p>
+              </div>
+            )}
           </div>
         )}
       </div>
