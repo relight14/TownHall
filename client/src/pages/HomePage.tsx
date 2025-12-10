@@ -3,6 +3,7 @@ import { useVideoStore } from '../context/VideoStoreContext';
 import { Link } from 'wouter';
 import { Clock, Eye, Play, Search, ChevronRight } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
+import profilePic from '@assets/Chris_C_Profile_1765399638128.webp';
 
 const categories = [
   { id: 'all', label: 'All' },
@@ -322,7 +323,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <img 
-                src="/attached_assets/Chris_C_Profile_1765399638128.webp" 
+                src={profilePic} 
                 alt="Profile" 
                 className="w-10 h-10 rounded-full object-cover"
                 data-testid="img-profile"
