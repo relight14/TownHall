@@ -234,7 +234,7 @@ export default function ArticlePage() {
 
   if (error || !article) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-white min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-white min-h-screen text-gray-900">
         <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Back to home
@@ -251,8 +251,8 @@ export default function ArticlePage() {
   const canViewContent = !isPaid || hasPurchased;
 
   return (
-    <div className="min-h-screen bg-white pb-20">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-white pb-20 text-gray-900">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-gray-900">
         <Link 
           to="/" 
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
@@ -262,7 +262,7 @@ export default function ArticlePage() {
           Back to home
         </Link>
 
-        <article className="bg-white">
+        <article className="bg-white text-gray-900">
           {article.thumbnail && (
             <div className="aspect-[21/9] overflow-hidden rounded-lg mb-8">
               <ImageWithFallback 
