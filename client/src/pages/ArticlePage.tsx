@@ -274,7 +274,7 @@ export default function ArticlePage() {
           )}
 
           <div>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-6">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span data-testid="text-article-author">{article.author}</span>
@@ -289,18 +289,18 @@ export default function ArticlePage() {
               {article.title}
             </h1>
 
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">
+            <p className="text-xl text-gray-900 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">
               {stripHtml(article.summary)}
             </p>
 
             <div className="flex items-center gap-2 mb-8 pb-8 border-b border-gray-200">
-              <span className="text-gray-500 text-sm flex items-center gap-2">
+              <span className="text-gray-700 text-sm flex items-center gap-2">
                 <Share2 className="w-4 h-4" />
                 Share
               </span>
               <button
                 onClick={() => handleShare('twitter')}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-gray-900 transition-colors"
                 data-testid="button-share-twitter"
                 title="Share on X"
               >
@@ -308,7 +308,7 @@ export default function ArticlePage() {
               </button>
               <button
                 onClick={() => handleShare('facebook')}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#1877F2] transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-[#1877F2] transition-colors"
                 data-testid="button-share-facebook"
                 title="Share on Facebook"
               >
@@ -316,7 +316,7 @@ export default function ArticlePage() {
               </button>
               <button
                 onClick={() => handleShare('linkedin')}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#0A66C2] transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-[#0A66C2] transition-colors"
                 data-testid="button-share-linkedin"
                 title="Share on LinkedIn"
               >
@@ -343,12 +343,12 @@ export default function ArticlePage() {
                 className="prose prose-lg max-w-none
                   prose-headings:text-gray-900 prose-headings:font-bold
                   prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-                  prose-p:text-gray-700 prose-p:leading-relaxed
+                  prose-p:text-gray-900 prose-p:leading-relaxed
                   prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
                   prose-strong:text-gray-900
-                  prose-ul:text-gray-700 prose-ol:text-gray-700
-                  prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-600 prose-blockquote:italic
-                  prose-code:text-gray-800 prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded
+                  prose-ul:text-gray-900 prose-ol:text-gray-900
+                  prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-900 prose-blockquote:italic
+                  prose-code:text-gray-900 prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded
                   prose-pre:bg-gray-100 prose-pre:border prose-pre:border-gray-200
                   prose-img:rounded-xl"
                 data-testid="text-article-content"
@@ -360,10 +360,10 @@ export default function ArticlePage() {
                   className="prose prose-lg max-w-none
                     prose-headings:text-gray-900 prose-headings:font-bold
                     prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-                    prose-p:text-gray-700 prose-p:leading-relaxed
+                    prose-p:text-gray-900 prose-p:leading-relaxed
                     prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
                     prose-strong:text-gray-900
-                    prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-600 prose-blockquote:italic"
+                    prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-900 prose-blockquote:italic"
                   data-testid="text-article-preview"
                   dangerouslySetInnerHTML={{ __html: extractPreviewParagraphs(article.content, 3) }}
                 />
