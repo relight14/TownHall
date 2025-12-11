@@ -80,9 +80,9 @@ function LatestArticleItem({ article }: { article: Article }) {
         <h3 className="text-base font-semibold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
           {article.title}
         </h3>
-        <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 mt-2 text-sm text-gray-700">
           <span>{formatShortDate(article.publishedAt)}</span>
-          <span className="text-gray-300">•</span>
+          <span className="text-gray-400">•</span>
           <div className="flex items-center gap-1">
             <Eye className="w-3.5 h-3.5" />
             <span>{formatViewCount(article.viewCount)}</span>
@@ -101,9 +101,9 @@ function MostReadArticleItem({ article, rank }: { article: Article; rank: number
         <h3 className="text-base font-semibold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
           {article.title}
         </h3>
-        <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 mt-2 text-sm text-gray-700">
           <span>{formatShortDate(article.publishedAt)}</span>
-          <span className="text-gray-300">•</span>
+          <span className="text-gray-400">•</span>
           <div className="flex items-center gap-1">
             <Eye className="w-3.5 h-3.5" />
             <span>{formatViewCount(article.viewCount)}</span>
@@ -135,12 +135,12 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
         <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mt-4 group-hover:text-blue-600 transition-colors leading-tight">
           {article.title}
         </h2>
-        <p className="text-gray-600 mt-3 line-clamp-3 leading-relaxed">
+        <p className="text-gray-800 mt-3 line-clamp-3 leading-relaxed">
           {stripHtml(article.summary)}
         </p>
-        <div className="flex items-center gap-3 mt-4 text-sm text-gray-500">
+        <div className="flex items-center gap-3 mt-4 text-sm text-gray-700">
           <span>{formatDate(article.publishedAt)}</span>
-          <span className="text-gray-300">•</span>
+          <span className="text-gray-400">•</span>
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             <span>{article.readTimeMinutes} min read</span>
@@ -177,12 +177,12 @@ function CategoryArticleCard({ article }: { article: Article }) {
         <h3 className="text-lg font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
           {article.title}
         </h3>
-        <p className="text-gray-600 mt-2 text-sm line-clamp-3">
+        <p className="text-gray-800 mt-2 text-sm line-clamp-3">
           {stripHtml(article.summary)}
         </p>
-        <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
+        <div className="flex items-center gap-2 mt-3 text-xs text-gray-700">
           <span>{formatShortDate(article.publishedAt)}</span>
-          <span className="text-gray-300">•</span>
+          <span className="text-gray-400">•</span>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             <span>{article.readTimeMinutes} min read</span>
