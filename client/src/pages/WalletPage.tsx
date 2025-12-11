@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle, X } from 'lucide-react';
-import { useLocation } from 'wouter';
+import { useLocation } from 'react-router-dom';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -121,7 +121,7 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [location] = useLocation();
+  const location = useLocation();
   
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);

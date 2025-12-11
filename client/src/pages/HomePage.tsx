@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Link, useLocation } from 'wouter';
+import { Link } from 'react-router-dom';
 import { Clock, Eye, Play, Search, ChevronRight } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import profilePic from '@assets/Chris_C_Profile_1765399638128.webp';
