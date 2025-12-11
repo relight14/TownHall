@@ -1,12 +1,12 @@
-const LEDEWIRE_API_URL = process.env.LEDEWIRE_API_URL || 'https://api.ledewire.com/v1';
+const LEDEWIRE_API_URL = process.env.LEDEWIRE_API_URL || 'https://api.staging.ledewire.com/v1';
 
 // Buyer credentials (for customer authentication)
 const LEDEWIRE_API_KEY = process.env.LEDEWIRE_API_KEY;
 const LEDEWIRE_API_SECRET = process.env.LEDEWIRE_API_SECRET;
 
 // Seller credentials (for content registration - NEVER expose these)
-const INDIGO_SELLER_API_KEY = process.env.INDIGO_SELLER_API_KEY;
-const INDIGO_SELLER_API_SECRET = process.env.INDIGO_SELLER_API_SECRET;
+const CILLIZZA_SELLER_API_KEY = process.env.CILLIZZA_SELLER_API_KEY;
+const CILLIZZA_SELLER_API_SECRET = process.env.CILLIZZA_SELLER_API_SECRET;
 
 function logLedewire(action: string, details: Record<string, any>) {
   const timestamp = new Date().toISOString();
@@ -91,8 +91,8 @@ class LedewireClient {
       return this.sellerToken;
     }
 
-    if (!INDIGO_SELLER_API_KEY || !INDIGO_SELLER_API_SECRET) {
-      throw new Error('Indigo Soul seller API credentials not configured. Please provide INDIGO_SELLER_API_KEY and INDIGO_SELLER_API_SECRET.');
+    if (!CILLIZZA_SELLER_API_KEY || !CILLIZZA_SELLER_API_SECRET) {
+      throw new Error('Seller API credentials not configured. Please provide CILLIZZA_SELLER_API_KEY and CILLIZZA_SELLER_API_SECRET.');
     }
 
     console.log('Attempting Ledewire auth to:', `${LEDEWIRE_API_URL}/auth/login/api-key`);
@@ -104,8 +104,8 @@ class LedewireClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          key: INDIGO_SELLER_API_KEY,
-          secret: INDIGO_SELLER_API_SECRET,
+          key: CILLIZZA_SELLER_API_KEY,
+          secret: CILLIZZA_SELLER_API_SECRET,
         }),
       });
 
