@@ -770,7 +770,12 @@ export async function registerRoutes(
   app.put("/api/articles/:id", requireAdminAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const validated = insertArticleSchema.partial().parse(req.body);
+      // Convert publishedAt string to Date if needed
+      const body = {
+        ...req.body,
+        publishedAt: req.body.publishedAt ? new Date(req.body.publishedAt) : undefined,
+      };
+      const validated = insertArticleSchema.partial().parse(body);
       const article = await storage.updateArticle(id, validated);
       if (!article) {
         return res.status(404).json({ error: 'Article not found' });
