@@ -1,9 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { useVideoStore } from '../context/VideoStoreContext';
 import AuthModal from '../components/AuthModal';
+
+function stripHtml(html: string): string {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+function extractPreviewParagraphs(html: string, count: number = 3): string {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const paragraphs = tmp.querySelectorAll('p');
+  const previewParagraphs: string[] = [];
+  for (let i = 0; i < Math.min(count, paragraphs.length); i++) {
+    previewParagraphs.push(paragraphs[i].outerHTML);
+  }
+  return previewParagraphs.join('');
+}
 
 interface Article {
   id: string;
@@ -55,6 +72,7 @@ export default function ArticlePage() {
   const [hasPurchased, setHasPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
@@ -109,12 +127,15 @@ export default function ArticlePage() {
     checkPurchaseStatus();
   }, [user, ledewireToken, article]);
 
-  const handlePurchase = async () => {
+  const handleBuyNow = () => {
     if (!user || !ledewireToken) {
       setShowAuthModal(true);
       return;
     }
+    setShowPurchaseModal(true);
+  };
 
+  const handleConfirmPurchase = async () => {
     if (!article?.ledewireContentId) {
       setPurchaseError('This article is not available for purchase');
       return;
@@ -141,6 +162,7 @@ export default function ArticlePage() {
       if (data.unlocked) {
         setHasPurchased(true);
         refreshWalletBalance();
+        setShowPurchaseModal(false);
       } else {
         throw new Error('Purchase was not confirmed');
       }
@@ -268,7 +290,7 @@ export default function ArticlePage() {
             </h1>
 
             <p className="text-xl text-gray-600 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">
-              {article.summary}
+              {stripHtml(article.summary)}
             </p>
 
             <div className="flex items-center gap-2 mb-8 pb-8 border-b border-gray-200">
@@ -333,84 +355,48 @@ export default function ArticlePage() {
                 dangerouslySetInnerHTML={{ __html: article.content }}
               />
             ) : (
-              <div className="relative">
+              <div>
                 <div 
-                  className="prose prose-lg max-w-none prose-p:text-gray-700 blur-sm select-none"
-                  dangerouslySetInnerHTML={{ __html: article.content.substring(0, 500) + '...' }}
+                  className="prose prose-lg max-w-none
+                    prose-headings:text-gray-900 prose-headings:font-bold
+                    prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
+                    prose-p:text-gray-700 prose-p:leading-relaxed
+                    prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+                    prose-strong:text-gray-900
+                    prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-600 prose-blockquote:italic"
+                  data-testid="text-article-preview"
+                  dangerouslySetInnerHTML={{ __html: extractPreviewParagraphs(article.content, 3) }}
                 />
                 
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white flex items-end justify-center pb-8">
-                  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 max-w-md w-full text-center">
-                    <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Lock className="w-8 h-8 text-white" />
-                    </div>
-                    
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Premium Content</h3>
-                    <p className="text-gray-600 mb-6">
-                      Unlock this article for just {formatPrice(article.price)}
-                    </p>
-
-                    {checkingPurchase ? (
-                      <div className="flex items-center justify-center gap-2 text-gray-500">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Checking access...
-                      </div>
-                    ) : user ? (
-                      <>
-                        <div className="text-sm text-gray-500 mb-4">
-                          Wallet Balance: {formatPrice(walletBalance)}
-                        </div>
-                        
-                        {purchaseError && (
-                          <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">
-                            {purchaseError}
-                          </div>
-                        )}
-
-                        {walletBalance >= article.price ? (
-                          <button
-                            onClick={handlePurchase}
-                            disabled={purchasing}
-                            className="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                            data-testid="button-purchase-article"
-                          >
-                            {purchasing ? (
-                              <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                <CreditCard className="w-5 h-5" />
-                                Purchase for {formatPrice(article.price)}
-                              </>
-                            )}
-                          </button>
-                        ) : (
-                          <div>
-                            <p className="text-amber-600 text-sm mb-3">
-                              Insufficient balance. Please add funds to continue.
-                            </p>
-                            <Link 
-                              to="/wallet"
-                              className="inline-block w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-center"
-                              data-testid="link-add-funds"
-                            >
-                              Add Funds to Wallet
-                            </Link>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setShowAuthModal(true)}
-                        className="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-                        data-testid="button-login-to-purchase"
-                      >
-                        Sign in to Purchase
-                      </button>
-                    )}
+                <div className="my-10 p-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl text-center">
+                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-white" />
                   </div>
+                  
+                  <h3 className="text-2xl font-bold text-white mb-2">Continue Reading</h3>
+                  <p className="text-slate-300 mb-6 max-w-md mx-auto">
+                    Unlock the full article for just {formatPrice(article.price)}
+                  </p>
+
+                  {checkingPurchase ? (
+                    <div className="flex items-center justify-center gap-2 text-slate-300">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Checking access...
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleBuyNow}
+                      className="bg-white text-slate-900 py-3 px-8 rounded-lg font-semibold hover:bg-slate-100 transition-colors inline-flex items-center gap-2"
+                      data-testid="button-buy-now"
+                    >
+                      <CreditCard className="w-5 h-5" />
+                      Buy Now - {formatPrice(article.price)}
+                    </button>
+                  )}
+
+                  <p className="text-slate-500 text-xs mt-4">
+                    Powered by <span className="text-blue-400">Ledewire</span>
+                  </p>
                 </div>
               </div>
             )}
@@ -423,8 +409,130 @@ export default function ArticlePage() {
           onClose={() => setShowAuthModal(false)}
           onSuccess={() => {
             setShowAuthModal(false);
+            setShowPurchaseModal(true);
           }}
         />
+      )}
+
+      {showPurchaseModal && article && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+          onClick={() => setShowPurchaseModal(false)}
+        >
+          <div 
+            className="bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-6 border-b border-slate-800">
+              <h2 className="text-2xl text-white">Confirm Purchase</h2>
+              <button 
+                onClick={() => setShowPurchaseModal(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+                data-testid="button-close-purchase-modal"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="flex gap-4 mb-6">
+                {article.thumbnail && (
+                  <div className="w-40 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                    <ImageWithFallback 
+                      src={article.thumbnail} 
+                      alt={article.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-white mb-2 font-medium">{article.title}</h3>
+                  <p className="text-slate-400 line-clamp-2 text-sm">{stripHtml(article.summary)}</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-lg p-4 mb-6 border border-slate-700">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-slate-300">Article Price</span>
+                  <span className="text-white font-semibold">{formatPrice(article.price)}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-slate-300">Your Balance</span>
+                  <span className="text-white font-semibold">{formatPrice(walletBalance)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Payment Method</span>
+                  <span className="text-blue-400 flex items-center gap-2 font-medium">
+                    <CreditCard className="w-4 h-4" />
+                    Ledewire Micropayments
+                  </span>
+                </div>
+              </div>
+
+              {purchaseError && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
+                  <p className="text-red-300 text-sm">{purchaseError}</p>
+                </div>
+              )}
+
+              {walletBalance < article.price ? (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
+                  <p className="text-amber-300 text-sm mb-3">
+                    Insufficient balance. You need {formatPrice(article.price - walletBalance)} more to purchase this article.
+                  </p>
+                  <Link 
+                    to="/wallet"
+                    className="inline-block w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg transition-colors text-center font-medium"
+                    data-testid="link-add-funds-modal"
+                  >
+                    Add Funds to Wallet
+                  </Link>
+                </div>
+              ) : (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+                  <p className="text-blue-300 text-sm">
+                    After purchase, you'll have unlimited access to this article
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPurchaseModal(false)}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors font-medium"
+                  disabled={purchasing}
+                  data-testid="button-cancel-purchase"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmPurchase}
+                  disabled={purchasing || walletBalance < article.price}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 font-medium"
+                  data-testid="button-confirm-purchase"
+                >
+                  {purchasing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-5 h-5" />
+                      Confirm {formatPrice(article.price)}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-800">
+                <p className="text-slate-500 text-xs text-center">
+                  powered by <span className="text-blue-400">ledewire</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

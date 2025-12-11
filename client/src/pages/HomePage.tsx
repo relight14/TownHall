@@ -45,6 +45,12 @@ function formatViewCount(count: number): string {
   return count.toString();
 }
 
+function stripHtml(html: string): string {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
 interface Article {
   id: string;
   title: string;
@@ -130,7 +136,7 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
           {article.title}
         </h2>
         <p className="text-gray-600 mt-3 line-clamp-3 leading-relaxed">
-          {article.summary}
+          {stripHtml(article.summary)}
         </p>
         <div className="flex items-center gap-3 mt-4 text-sm text-gray-500">
           <span>{formatDate(article.publishedAt)}</span>
@@ -172,7 +178,7 @@ function CategoryArticleCard({ article }: { article: Article }) {
           {article.title}
         </h3>
         <p className="text-gray-600 mt-2 text-sm line-clamp-3">
-          {article.summary}
+          {stripHtml(article.summary)}
         </p>
         <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
           <span>{formatShortDate(article.publishedAt)}</span>
