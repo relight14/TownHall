@@ -1021,8 +1021,8 @@ function ArticleForm({ article, onClose, onSubmit }: {
         thumbnail: thumbnail || null,
         category,
         price: parseInt(price) || 99,
-        featured,
-        publishedAt: new Date().toISOString(),
+        featured: featured ? 1 : 0,
+        publishedAt: new Date(),
       });
     } finally {
       setLoading(false);

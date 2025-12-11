@@ -725,7 +725,12 @@ export async function registerRoutes(
 
   app.post("/api/articles", requireAdminAuth, async (req, res) => {
     try {
-      const validated = insertArticleSchema.parse(req.body);
+      // Convert publishedAt string to Date if needed
+      const body = {
+        ...req.body,
+        publishedAt: req.body.publishedAt ? new Date(req.body.publishedAt) : new Date(),
+      };
+      const validated = insertArticleSchema.parse(body);
       
       // Create article first
       const article = await storage.createArticle(validated);
