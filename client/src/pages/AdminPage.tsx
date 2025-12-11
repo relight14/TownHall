@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Settings, Star, Check, GripVertical, FileText } from 'lucide-react';
 import { marked } from 'marked';
+import MDEditor from '@uiw/react-md-editor';
 
 function AdminLoginGate({ onAuthenticated }: { onAuthenticated: (token: string) => void }) {
   const [email, setEmail] = useState('');
@@ -995,28 +996,28 @@ function ArticleForm({ article, onClose, onSubmit }: {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const markdownText = reader.result as string;
-        const html = await marked.parse(markdownText);
-        setContent(html);
+        setContent(markdownText);
       };
       reader.readAsText(file);
     }
   };
 
-  const generateSummary = (htmlContent: string): string => {
-    const textContent = htmlContent.replace(/<[^>]*>/g, '').trim();
-    const sentences = textContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const generateSummary = (text: string): string => {
+    const plainText = text.replace(/[#*_`\[\]()>-]/g, '').replace(/\n+/g, ' ').trim();
+    const sentences = plainText.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const summary = sentences.slice(0, 2).join('. ').trim();
-    return summary.length > 200 ? summary.substring(0, 197) + '...' : (summary || textContent.substring(0, 200));
+    return summary.length > 200 ? summary.substring(0, 197) + '...' : (summary || plainText.substring(0, 200));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
+      const htmlContent = await marked.parse(content);
       await onSubmit({
         title,
         author,
-        content,
+        content: htmlContent,
         summary: generateSummary(content),
         thumbnail: thumbnail || null,
         category,
@@ -1150,9 +1151,9 @@ function ArticleForm({ article, onClose, onSubmit }: {
           )}
         </div>
 
-        <div>
+        <div data-color-mode="dark">
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-slate-300 text-sm font-medium">Article Content (HTML or Markdown)</label>
+            <label className="block text-slate-300 text-sm font-medium">Article Content</label>
             <label className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg cursor-pointer transition-colors">
               <FileText className="w-4 h-4 text-slate-400" />
               <span className="text-sm text-slate-300">Upload .md file</span>
@@ -1164,16 +1165,15 @@ function ArticleForm({ article, onClose, onSubmit }: {
               />
             </label>
           </div>
-          <textarea
+          <MDEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all h-64 font-mono text-sm"
-            placeholder="Paste your HTML content here or upload a Markdown file..."
-            required
+            onChange={(val) => setContent(val || '')}
+            height={400}
+            preview="live"
             data-testid="input-article-content"
           />
-          <p className="text-slate-500 text-xs mt-1">
-            Tip: You can paste HTML directly from a web page or upload a Markdown (.md) file
+          <p className="text-slate-500 text-xs mt-2">
+            Write in Markdown on the left, see the live preview on the right. You can also upload a .md file.
           </p>
         </div>
 
