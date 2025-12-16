@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Settings, Star, Check, GripVertical, FileText } from 'lucide-react';
 import { marked } from 'marked';
-import MDEditor from '@uiw/react-md-editor';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 function AdminLoginGate({ onAuthenticated }: { onAuthenticated: (token: string) => void }) {
   const [email, setEmail] = useState('');
@@ -996,28 +997,31 @@ function ArticleForm({ article, onClose, onSubmit }: {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const markdownText = reader.result as string;
-        setContent(markdownText);
+        const htmlContent = await marked.parse(markdownText);
+        setContent(htmlContent);
       };
       reader.readAsText(file);
     }
   };
 
-  const generateSummary = (text: string): string => {
-    const plainText = text.replace(/[#*_`\[\]()>-]/g, '').replace(/\n+/g, ' ').trim();
-    const sentences = plainText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const generateSummary = (htmlText: string): string => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlText;
+    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+    const cleaned = plainText.replace(/\s+/g, ' ').trim();
+    const sentences = cleaned.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const summary = sentences.slice(0, 2).join('. ').trim();
-    return summary.length > 200 ? summary.substring(0, 197) + '...' : (summary || plainText.substring(0, 200));
+    return summary.length > 200 ? summary.substring(0, 197) + '...' : (summary || cleaned.substring(0, 200));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const htmlContent = await marked.parse(content);
       await onSubmit({
         title,
         author,
-        content: htmlContent,
+        content: content,
         summary: generateSummary(content),
         thumbnail: thumbnail || null,
         category,
@@ -1151,7 +1155,7 @@ function ArticleForm({ article, onClose, onSubmit }: {
           )}
         </div>
 
-        <div data-color-mode="dark">
+        <div>
           <div className="flex items-center justify-between mb-2">
             <label className="block text-slate-300 text-sm font-medium">Article Content</label>
             <label className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg cursor-pointer transition-colors">
@@ -1165,15 +1169,27 @@ function ArticleForm({ article, onClose, onSubmit }: {
               />
             </label>
           </div>
-          <MDEditor
-            value={content}
-            onChange={(val) => setContent(val || '')}
-            height={400}
-            preview="live"
-            data-testid="input-article-content"
-          />
-          <p className="text-slate-500 text-xs mt-2">
-            Write in Markdown on the left, see the live preview on the right. You can also upload a .md file.
+          <div className="bg-white rounded-lg overflow-hidden">
+            <ReactQuill
+              theme="snow"
+              value={content}
+              onChange={setContent}
+              style={{ height: '400px' }}
+              modules={{
+                toolbar: [
+                  [{ 'header': [1, 2, 3, false] }],
+                  ['bold', 'italic', 'underline', 'strike'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  ['blockquote', 'code-block'],
+                  ['link', 'image'],
+                  ['clean']
+                ]
+              }}
+              data-testid="input-article-content"
+            />
+          </div>
+          <p className="text-slate-500 text-xs mt-14">
+            Paste formatted content directly, or upload a .md file. Images and links will be preserved.
           </p>
         </div>
 
