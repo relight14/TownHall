@@ -179,32 +179,7 @@ class LedewireClient {
       metadata?: any;
     }
   ): Promise<LedewireContentResponse> {
-    console.log('[LEDEWIRE] ========== CONTENT REGISTRATION START ==========');
-    logLedewire('CONTENT_REGISTRATION_START', {
-      title,
-      priceCents,
-      hasContent: !!options?.content,
-      contentLength: options?.content?.length || 0,
-      hasTeaser: !!options?.teaser,
-      teaserLength: options?.teaser?.length || 0,
-      metadata: options?.metadata,
-      apiUrl: LEDEWIRE_API_URL,
-    });
-
-    let token: string;
-    try {
-      console.log('[LEDEWIRE] Attempting to get seller token...');
-      token = await this.getSellerToken();
-      console.log('[LEDEWIRE] Seller token obtained successfully');
-      logLedewire('CONTENT_REGISTRATION_AUTH', { tokenObtained: !!token });
-    } catch (authError: any) {
-      console.error('[LEDEWIRE] SELLER AUTH FAILED:', authError.message);
-      logLedewire('CONTENT_REGISTRATION_AUTH_FAILED', { 
-        error: authError.message,
-        apiUrl: LEDEWIRE_API_URL,
-      });
-      throw authError;
-    }
+    const token = await this.getSellerToken();
     
     const contentBody = options?.content || 'Premium content';
     const teaserBody = options?.teaser || '';
@@ -222,14 +197,6 @@ class LedewireClient {
       requestBody.teaser = Buffer.from(teaserBody).toString('base64');
     }
 
-    console.log('[LEDEWIRE] Sending content registration request...');
-    logLedewire('CONTENT_REGISTRATION_REQUEST', {
-      endpoint: `${LEDEWIRE_API_URL}/seller/content`,
-      bodyKeys: Object.keys(requestBody),
-      contentBodyLength: requestBody.content_body.length,
-      hasteaser: !!requestBody.teaser,
-    });
-
     const response = await fetch(`${LEDEWIRE_API_URL}/seller/content`, {
       method: 'POST',
       headers: {
@@ -241,31 +208,16 @@ class LedewireClient {
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
-      console.error('[LEDEWIRE] CONTENT REGISTRATION FAILED:', response.status, errorMsg);
-      logLedewire('CONTENT_REGISTRATION_ERROR', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorMsg,
-      });
+      console.error('[LEDEWIRE-REG-FAIL]', response.status, errorMsg);
       throw new Error(`Failed to register content: ${errorMsg}`);
     }
 
     const data = await safeParseJSON(response);
     if (!data) {
-      console.error('[LEDEWIRE] CONTENT REGISTRATION RETURNED EMPTY RESPONSE');
-      logLedewire('CONTENT_REGISTRATION_ERROR', { error: 'Empty response' });
       throw new Error('Register content response was empty');
     }
 
-    console.log('[LEDEWIRE] ========== CONTENT REGISTRATION SUCCESS ==========');
-    console.log('[LEDEWIRE] Content ID:', data.id);
-    logLedewire('CONTENT_REGISTRATION_SUCCESS', {
-      contentId: data.id,
-      title: data.title,
-      priceCents: data.price_cents,
-      visibility: data.visibility,
-    });
-
+    console.log('[LEDEWIRE-REG-OK]', data.id);
     return data;
   }
 

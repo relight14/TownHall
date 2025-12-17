@@ -739,13 +739,9 @@ export async function registerRoutes(
       const article = await storage.createArticle(validated);
       
       // Register with Ledewire for micropayments
-      console.log('[ARTICLE] Starting Ledewire registration for:', article.title);
+      const priceCents = validated.price || 99;
+      
       try {
-        const priceCents = validated.price || 99;
-        console.log('[ARTICLE] Price in cents:', priceCents);
-        console.log('[ARTICLE] Content length:', article.content?.length || 0);
-        console.log('[ARTICLE] Summary length:', article.summary?.length || 0);
-        
         const content = await ledewire.registerContent(
           article.title,
           priceCents,
@@ -765,14 +761,12 @@ export async function registerRoutes(
         
         // Update article with Ledewire content ID
         await storage.updateArticleLedewireId(article.id, content.id);
-        console.log(`[ARTICLE] SUCCESS: Registered article "${article.title}" with Ledewire, content ID: ${content.id}`);
         
         // Return updated article
         const updatedArticle = await storage.getArticle(article.id);
         res.json(updatedArticle);
       } catch (ledewireError: any) {
-        console.error('[ARTICLE] FAILED to register with Ledewire:', ledewireError.message);
-        console.error('[ARTICLE] Full error:', ledewireError);
+        console.error('[ARTICLE-LEDEWIRE-ERROR]', ledewireError.message);
         // Still return the article even if Ledewire registration failed
         res.json(article);
       }
