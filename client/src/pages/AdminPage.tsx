@@ -1010,8 +1010,8 @@ function ArticleForm({ article, onClose, onSubmit }: {
     const plainText = tempDiv.textContent || tempDiv.innerText || '';
     const cleaned = plainText.replace(/\s+/g, ' ').trim();
     const sentences = cleaned.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const summary = sentences.slice(0, 2).join('. ').trim();
-    return summary.length > 200 ? summary.substring(0, 197) + '...' : (summary || cleaned.substring(0, 200));
+    const summary = sentences.slice(0, 3).join('. ').trim();
+    return summary.length > 350 ? summary.substring(0, 347) + '...' : (summary || cleaned.substring(0, 350));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
