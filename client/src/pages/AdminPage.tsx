@@ -1177,11 +1177,15 @@ function ArticleForm({ article, onClose, onSubmit }: {
               style={{ height: '400px' }}
               modules={{
                 toolbar: [
-                  [{ 'header': [1, 2, 3, false] }],
+                  [{ 'header': [1, 2, 3, 4, false] }],
                   ['bold', 'italic', 'underline', 'strike'],
-                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  [{ 'script': 'sub'}, { 'script': 'super' }],
+                  [{ 'color': [] }, { 'background': [] }],
                   ['blockquote', 'code-block'],
-                  ['link', 'image'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  [{ 'indent': '-1'}, { 'indent': '+1' }],
+                  [{ 'align': [] }],
+                  ['link', 'image', 'video'],
                   ['clean']
                 ]
               }}
