@@ -5,27 +5,9 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
 interface ArticleFormProps {
-  article?: {
-    title: string;
-    author: string;
-    content: string;
-    thumbnail: string | null;
-    category: string;
-    price: number;
-    featured: number;
-  };
+  article?: any;
   onClose: () => void;
-  onSubmit: (data: {
-    title: string;
-    author: string;
-    content: string;
-    summary: string;
-    thumbnail: string | null;
-    category: string;
-    price: number;
-    featured: number;
-    publishedAt: Date;
-  }) => Promise<void>;
+  onSubmit: (data: any) => Promise<void>;
 }
 
 const quillModules = {
