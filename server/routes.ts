@@ -576,10 +576,13 @@ export async function registerRoutes(
         title,
         priceCents,
         {
-          description,
-          video_url: videoUrl,
-          video_type: videoType,
-          thumbnail,
+          content: description || 'Premium video content',
+          metadata: {
+            type: 'video',
+            video_url: videoUrl,
+            video_type: videoType,
+            thumbnail,
+          },
         }
       );
       
@@ -736,28 +739,40 @@ export async function registerRoutes(
       const article = await storage.createArticle(validated);
       
       // Register with Ledewire for micropayments
+      console.log('[ARTICLE] Starting Ledewire registration for:', article.title);
       try {
         const priceCents = validated.price || 99;
+        console.log('[ARTICLE] Price in cents:', priceCents);
+        console.log('[ARTICLE] Content length:', article.content?.length || 0);
+        console.log('[ARTICLE] Summary length:', article.summary?.length || 0);
+        
         const content = await ledewire.registerContent(
           article.title,
           priceCents,
           { 
-            type: 'article',
-            articleId: article.id,
-            author: article.author,
-            category: article.category,
+            content: article.content || '',
+            teaser: article.summary || '',
+            metadata: {
+              type: 'article',
+              articleId: article.id,
+              author: article.author,
+              category: article.category,
+              publication_date: article.publishedAt?.toISOString(),
+              reading_time: `${article.readTimeMinutes || 5} min`,
+            },
           }
         );
         
         // Update article with Ledewire content ID
         await storage.updateArticleLedewireId(article.id, content.id);
-        console.log(`[ARTICLE] Registered article "${article.title}" with Ledewire, content ID: ${content.id}`);
+        console.log(`[ARTICLE] SUCCESS: Registered article "${article.title}" with Ledewire, content ID: ${content.id}`);
         
         // Return updated article
         const updatedArticle = await storage.getArticle(article.id);
         res.json(updatedArticle);
       } catch (ledewireError: any) {
-        console.error('[ARTICLE] Failed to register with Ledewire:', ledewireError.message);
+        console.error('[ARTICLE] FAILED to register with Ledewire:', ledewireError.message);
+        console.error('[ARTICLE] Full error:', ledewireError);
         // Still return the article even if Ledewire registration failed
         res.json(article);
       }
