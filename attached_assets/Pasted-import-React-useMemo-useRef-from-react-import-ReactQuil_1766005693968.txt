@@ -1,0 +1,151 @@
+import React, { useMemo, useRef } from 'react';
+import ReactQuill, { Quill } from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
+// Custom clipboard matcher to preserve list formatting
+const List = Quill.import('formats/list');
+
+const YourComponent = () => {
+  const quillRef = useRef(null);
+
+  // Memoize modules to prevent re-initialization on re-renders
+  const modules = useMemo(() => ({
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      ['link'],
+      ['clean']
+    ],
+    clipboard: {
+      matchVisual: false,
+      matchers: [
+        // Preserve ordered lists
+        ['ol', (node, delta) => {
+          const ops = [];
+          node.querySelectorAll('li').forEach((li, index) => {
+            if (index > 0) {
+              ops.push({ insert: '\n' });
+            }
+            // Get text content, preserving inline formatting
+            const childDelta = quillRef.current?.getEditor().clipboard.convert(li);
+            if (childDelta && childDelta.ops) {
+              childDelta.ops.forEach(op => {
+                ops.push(op);
+              });
+            }
+            // Apply list attribute
+            ops[ops.length - 1] = {
+              ...ops[ops.length - 1],
+              attributes: { ...ops[ops.length - 1].attributes, list: 'ordered' }
+            };
+          });
+          return { ops };
+        }],
+        // Preserve unordered lists
+        ['ul', (node, delta) => {
+          const ops = [];
+          node.querySelectorAll('li').forEach((li, index) => {
+            if (index > 0) {
+              ops.push({ insert: '\n' });
+            }
+            const childDelta = quillRef.current?.getEditor().clipboard.convert(li);
+            if (childDelta && childDelta.ops) {
+              childDelta.ops.forEach(op => {
+                ops.push(op);
+              });
+            }
+            ops[ops.length - 1] = {
+              ...ops[ops.length - 1],
+              attributes: { ...ops[ops.length - 1].attributes, list: 'bullet' }
+            };
+          });
+          return { ops };
+        }],
+        // Handle standalone list items
+        ['li', (node, delta) => {
+          // Determine if parent is ol or ul
+          const parent = node.parentElement;
+          const listType = parent && parent.tagName === 'OL' ? 'ordered' : 'bullet';
+          
+          return delta.compose(new Quill.import('delta')([{
+            retain: delta.length(),
+            attributes: { list: listType }
+          }]));
+        }]
+      ]
+    }
+  }), []);
+
+  // Expanded formats array to be explicit
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'indent',
+    'link',
+    'clean'
+  ];
+
+  const [value, setValue] = React.useState('');
+
+  const handleChange = (content, delta, source, editor) => {
+    setValue(content);
+    
+    // Get HTML representation
+    const html = editor.getHTML();
+    console.log('HTML output:', html);
+    
+    // Get Delta representation (useful for saving to database)
+    const deltaContent = editor.getContents();
+    console.log('Delta content:', deltaContent);
+  };
+
+  // Function to get HTML when you need to save/render
+  const getHTML = () => {
+    if (quillRef.current) {
+      const editor = quillRef.current.getEditor();
+      return editor.root.innerHTML;
+    }
+    return '';
+  };
+
+  // Function to load content (use this when loading from database)
+  const loadContent = (htmlContent) => {
+    setValue(htmlContent);
+  };
+
+  return (
+    <div>
+      <ReactQuill
+        ref={quillRef}
+        theme="snow"
+        value={value}
+        onChange={handleChange}
+        modules={modules}
+        formats={formats}
+        placeholder="Paste your formatted content here..."
+      />
+      
+      {/* Preview of HTML output */}
+      <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc' }}>
+        <h3>HTML Output Preview:</h3>
+        <div dangerouslySetInnerHTML={{ __html: value }} />
+      </div>
+      
+      {/* Button to get HTML for saving */}
+      <button 
+        onClick={() => {
+          const html = getHTML();
+          console.log('Saved HTML:', html);
+          // Send this to your backend
+        }}
+        style={{ marginTop: '10px' }}
+      >
+        Save Content
+      </button>
+    </div>
+  );
+};
+
+export default YourComponent;
