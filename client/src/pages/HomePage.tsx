@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { Link } from 'react-router-dom';
-import { Clock, Eye, Play, Search, ChevronRight } from 'lucide-react';
+import { Clock, Eye, Play, Search, ChevronRight, LogOut } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import profilePic from '@assets/Chris_C_Profile_1765399638128.webp';
 import AuthModal from '../components/AuthModal';
@@ -291,7 +291,8 @@ export default function HomePage() {
     series,
     featuredEpisodes,
     user,
-    walletBalance
+    walletBalance,
+    logout
   } = useVideoStore();
   
   const [activeCategory, setActiveCategory] = useState('all');
@@ -354,13 +355,23 @@ export default function HomePage() {
                 <Search className="w-5 h-5" />
               </button>
               {user ? (
-                <Link to="/wallet">
-                  <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2" data-testid="button-wallet">
-                    <span className="text-green-400 font-semibold">${walletBalance.toFixed(2)}</span>
-                    <span className="text-gray-300">|</span>
-                    <span>{user.email?.split('@')[0] || 'Account'}</span>
+                <div className="flex items-center gap-2">
+                  <Link to="/wallet">
+                    <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2" data-testid="button-wallet">
+                      <span className="text-green-400 font-semibold">${walletBalance.toFixed(2)}</span>
+                      <span className="text-gray-300">|</span>
+                      <span>{user.email?.split('@')[0] || 'Account'}</span>
+                    </button>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="p-2 text-gray-500 hover:text-gray-900 transition-colors"
+                    title="Log out"
+                    data-testid="button-logout"
+                  >
+                    <LogOut className="w-5 h-5" />
                   </button>
-                </Link>
+                </div>
               ) : (
                 <button 
                   onClick={() => setShowAuthModal(true)}
