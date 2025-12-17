@@ -22,8 +22,22 @@ const quillModules = {
     [{ 'align': [] }],
     ['link', 'image', 'video'],
     ['clean']
-  ]
+  ],
+  clipboard: {
+    matchVisual: false
+  }
 };
+
+const quillFormats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike',
+  'script',
+  'color', 'background',
+  'blockquote', 'code-block',
+  'list', 'bullet', 'indent',
+  'align',
+  'link', 'image', 'video'
+];
 
 export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   const [title, setTitle] = useState(article?.title || '');
@@ -234,6 +248,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
               onChange={setContent}
               style={{ height: '400px' }}
               modules={quillModules}
+              formats={quillFormats}
               data-testid="input-article-content"
             />
           </div>
