@@ -96,24 +96,19 @@
   }
 }
 
-/* Quill Editor - Force black text on white background for proper contrast */
+/* Quill Editor - Default black text on white background, but allow color picker to override */
 .ql-container {
   background-color: #ffffff !important;
-  color: #000000 !important;
+  color: #000000;
 }
 
 .ql-editor {
   background-color: #ffffff !important;
-  color: #000000 !important;
+  color: #000000;
   caret-color: #000000 !important;
 }
 
-.ql-editor * {
-  color: inherit !important;
-}
-
 .ql-editor p,
-.ql-editor span,
 .ql-editor div,
 .ql-editor li,
 .ql-editor h1,
@@ -123,7 +118,12 @@
 .ql-editor h5,
 .ql-editor h6,
 .ql-editor blockquote {
-  color: #000000 !important;
+  color: #000000;
+}
+
+/* Allow inline color styles from color picker to take precedence */
+.ql-editor [style*="color"] {
+  color: inherit;
 }
 
 .ql-editor.ql-blank::before {
