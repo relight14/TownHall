@@ -458,7 +458,7 @@ export default function ArticlePage() {
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-slate-300">Your Balance</span>
-                  <span className="text-white font-semibold">{formatPrice(walletBalance)}</span>
+                  <span className="text-white font-semibold">${walletBalance.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-300">Payment Method</span>
@@ -475,10 +475,10 @@ export default function ArticlePage() {
                 </div>
               )}
 
-              {walletBalance < article.price ? (
+              {walletBalance * 100 < article.price ? (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
                   <p className="text-amber-300 text-sm mb-3">
-                    Insufficient balance. You need {formatPrice(article.price - walletBalance)} more to purchase this article.
+                    Insufficient balance. You need {formatPrice(article.price - walletBalance * 100)} more to purchase this article.
                   </p>
                   <Link 
                     to="/wallet"
@@ -507,7 +507,7 @@ export default function ArticlePage() {
                 </button>
                 <button
                   onClick={handleConfirmPurchase}
-                  disabled={purchasing || walletBalance < article.price}
+                  disabled={purchasing || walletBalance * 100 < article.price}
                   className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 font-medium"
                   data-testid="button-confirm-purchase"
                 >
