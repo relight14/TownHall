@@ -22,6 +22,43 @@ function extractPreviewParagraphs(html: string, count: number = 3): string {
   return previewParagraphs.join('');
 }
 
+function normalizeListHTML(html: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  let orderedCounter = 1;
+  let bulletCounter = 1;
+  
+  const children = Array.from(doc.body.children);
+  
+  for (const child of children) {
+    const tagName = child.tagName.toLowerCase();
+    
+    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
+      orderedCounter = 1;
+      bulletCounter = 1;
+      continue;
+    }
+    
+    if (tagName === 'ol') {
+      const orderedItem = child.querySelector('li[data-list="ordered"]');
+      if (orderedItem) {
+        child.setAttribute('start', String(orderedCounter));
+        orderedCounter++;
+      }
+    }
+    
+    if (tagName === 'ul') {
+      const bulletItem = child.querySelector('li[data-list="bullet"]');
+      if (bulletItem) {
+        bulletCounter++;
+      }
+    }
+  }
+  
+  return doc.body.innerHTML;
+}
+
 interface Article {
   id: string;
   title: string;
@@ -352,7 +389,7 @@ export default function ArticlePage() {
                   prose-pre:bg-gray-100 prose-pre:border prose-pre:border-gray-200
                   prose-img:rounded-xl"
                 data-testid="text-article-content"
-                dangerouslySetInnerHTML={{ __html: article.content }}
+                dangerouslySetInnerHTML={{ __html: normalizeListHTML(article.content) }}
               />
             ) : (
               <div>
@@ -365,7 +402,7 @@ export default function ArticlePage() {
                     prose-strong:text-gray-900
                     prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-900 prose-blockquote:italic"
                   data-testid="text-article-preview"
-                  dangerouslySetInnerHTML={{ __html: extractPreviewParagraphs(article.content, 3) }}
+                  dangerouslySetInnerHTML={{ __html: normalizeListHTML(extractPreviewParagraphs(article.content, 3)) }}
                 />
                 
                 <div className="my-10 p-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl text-center">
