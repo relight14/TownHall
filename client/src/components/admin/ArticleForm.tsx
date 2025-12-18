@@ -168,6 +168,15 @@ function MenuBar({ editor }: { editor: any }) {
       >
         <ImageIcon className="w-4 h-4" />
       </button>
+      
+      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+      
+      <input
+        type="color"
+        onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+        className="w-8 h-8 p-1 rounded cursor-pointer border border-slate-300 bg-white"
+        title="Text Color"
+      />
     </div>
   );
 }
