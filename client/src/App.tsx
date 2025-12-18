@@ -9,8 +9,22 @@ import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
 import AuthModal from './components/AuthModal';
 import { Wallet, LogIn, LogOut, User } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import indigoSoulLogo from '@assets/indigosoul_1764613870278.avif';
+
+interface GoogleOAuthContextType {
+  isAvailable: boolean;
+  isLoading: boolean;
+}
+
+const GoogleOAuthContext = createContext<GoogleOAuthContextType>({ 
+  isAvailable: false, 
+  isLoading: true 
+});
+
+export function useGoogleOAuthStatus() {
+  return useContext(GoogleOAuthContext);
+}
 
 function AppContent() {
   const { user, walletBalance, logout } = useVideoStore();
@@ -58,19 +72,27 @@ function GoogleOAuthWrapper({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-pulse text-gray-400">Loading...</div>
-      </div>
+      <GoogleOAuthContext.Provider value={{ isAvailable: false, isLoading: true }}>
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="animate-pulse text-gray-400">Loading...</div>
+        </div>
+      </GoogleOAuthContext.Provider>
     );
   }
 
   if (!googleClientId) {
-    return <>{children}</>;
+    return (
+      <GoogleOAuthContext.Provider value={{ isAvailable: false, isLoading: false }}>
+        {children}
+      </GoogleOAuthContext.Provider>
+    );
   }
 
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
-      {children}
+      <GoogleOAuthContext.Provider value={{ isAvailable: true, isLoading: false }}>
+        {children}
+      </GoogleOAuthContext.Provider>
     </GoogleOAuthProvider>
   );
 }

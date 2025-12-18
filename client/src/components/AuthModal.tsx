@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useVideoStore } from '../context/VideoStoreContext';
+import { useGoogleOAuthStatus } from '../App';
 import { X, Mail, Lock, User } from 'lucide-react';
 
 interface AuthModalProps {
@@ -20,8 +21,43 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
+interface GoogleLoginButtonProps {
+  onLoginStart: () => void;
+  onLoginSuccess: (accessToken: string) => void;
+  onLoginError: (error: string) => void;
+  loading: boolean;
+}
+
+function GoogleLoginButton({ onLoginStart, onLoginSuccess, onLoginError, loading }: GoogleLoginButtonProps) {
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      onLoginSuccess(tokenResponse.access_token);
+    },
+    onError: (error) => {
+      console.error('Google login error:', error);
+      onLoginError('Google sign-in failed. Please try again.');
+    },
+  });
+
+  return (
+    <button
+      onClick={() => {
+        onLoginStart();
+        googleLogin();
+      }}
+      disabled={loading}
+      className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 py-3 rounded-lg transition-colors font-medium mb-6 disabled:opacity-50"
+      data-testid="button-google-login"
+    >
+      <GoogleIcon className="w-5 h-5" />
+      {loading ? 'Signing in...' : 'Continue with Google'}
+    </button>
+  );
+}
+
 export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   const { login, signup, loginWithGoogle } = useVideoStore();
+  const { isAvailable: googleOAuthAvailable } = useGoogleOAuthStatus();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,31 +88,29 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
     }
   };
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setError('');
-      setLoading(true);
-      try {
-        await loginWithGoogle(tokenResponse.access_token);
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          onClose();
-        }
-      } catch (err: any) {
-        setError(err.message || 'Google authentication failed');
-      } finally {
-        setLoading(false);
-      }
-    },
-    onError: (error) => {
-      console.error('Google login error:', error);
-      setError('Google sign-in failed. Please try again.');
-    },
-  });
+  const handleGoogleLoginStart = () => {
+    setError('');
+    setLoading(true);
+  };
 
-  const handleGoogleLogin = () => {
-    googleLogin();
+  const handleGoogleLoginSuccess = async (accessToken: string) => {
+    try {
+      await loginWithGoogle(accessToken);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        onClose();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLoginError = (errorMessage: string) => {
+    setError(errorMessage);
+    setLoading(false);
   };
 
   return createPortal(
@@ -115,24 +149,25 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
             </div>
           )}
 
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 py-3 rounded-lg transition-colors font-medium mb-6 disabled:opacity-50"
-            data-testid="button-google-login"
-          >
-            <GoogleIcon className="w-5 h-5" />
-            {loading ? 'Signing in...' : 'Continue with Google'}
-          </button>
+          {googleOAuthAvailable && (
+            <>
+              <GoogleLoginButton
+                onLoginStart={handleGoogleLoginStart}
+                onLoginSuccess={handleGoogleLoginSuccess}
+                onLoginError={handleGoogleLoginError}
+                loading={loading}
+              />
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-700"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-slate-900 text-slate-500">or continue with email</span>
-            </div>
-          </div>
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-700"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-slate-900 text-slate-500">or continue with email</span>
+                </div>
+              </div>
+            </>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 mb-6">
