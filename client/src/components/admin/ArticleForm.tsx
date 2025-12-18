@@ -13,6 +13,7 @@ import { Color } from '@tiptap/extension-color';
 import Youtube from '@tiptap/extension-youtube';
 import { Iframe } from './IframeExtension';
 import { useUpload } from '@/hooks/use-upload';
+import { useVideoStore } from '@/context/VideoStoreContext';
 
 interface ArticleFormProps {
   article?: any;
@@ -209,6 +210,7 @@ function MenuBar({ editor }: { editor: any }) {
 }
 
 export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
+  const { adminToken } = useVideoStore();
   const [title, setTitle] = useState(article?.title || '');
   const [subheader, setSubheader] = useState(article?.subheader || '');
   const [thumbnail, setThumbnail] = useState(article?.thumbnail || '');
@@ -220,6 +222,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   
   const { uploadFile, isUploading } = useUpload({
+    getAdminToken: () => adminToken,
     onSuccess: (response) => {
       setThumbnail(response.objectPath);
       setUploadError(null);

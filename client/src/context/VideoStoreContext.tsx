@@ -70,6 +70,7 @@ interface VideoStoreContextType {
   walletBalance: number;
   refreshWalletBalance: () => Promise<void>;
   createPaymentSession: (amountCents: number) => Promise<any>;
+  adminToken: string | null;
   setAdminToken: (token: string | null) => void;
   siteSettings: SiteSettings;
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
@@ -767,6 +768,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       walletBalance,
       refreshWalletBalance,
       createPaymentSession,
+      adminToken,
       setAdminToken,
       siteSettings,
       updateSiteSettings,

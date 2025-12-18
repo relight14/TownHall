@@ -16,6 +16,7 @@ interface UploadResponse {
 interface UseUploadOptions {
   onSuccess?: (response: UploadResponse) => void;
   onError?: (error: Error) => void;
+  getAdminToken?: () => string | null;
 }
 
 /**
@@ -59,14 +60,23 @@ export function useUpload(options: UseUploadOptions = {}) {
   /**
    * Request a presigned URL from the backend.
    * IMPORTANT: Send JSON metadata, NOT the file itself.
+   * Requires admin authentication via X-Admin-Token header.
    */
   const requestUploadUrl = useCallback(
     async (file: File): Promise<UploadResponse> => {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      // Add admin token if available
+      const adminToken = options.getAdminToken?.();
+      if (adminToken) {
+        headers["X-Admin-Token"] = adminToken;
+      }
+      
       const response = await fetch("/api/uploads/request-url", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           name: file.name,
           size: file.size,
@@ -81,7 +91,7 @@ export function useUpload(options: UseUploadOptions = {}) {
 
       return response.json();
     },
-    []
+    [options]
   );
 
   /**
@@ -161,12 +171,20 @@ export function useUpload(options: UseUploadOptions = {}) {
       url: string;
       headers?: Record<string, string>;
     }> => {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      // Add admin token if available
+      const adminToken = options.getAdminToken?.();
+      if (adminToken) {
+        headers["X-Admin-Token"] = adminToken;
+      }
+      
       // Use the actual file properties to request a per-file presigned URL
       const response = await fetch("/api/uploads/request-url", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           name: file.name,
           size: file.size,
@@ -185,7 +203,7 @@ export function useUpload(options: UseUploadOptions = {}) {
         headers: { "Content-Type": file.type || "application/octet-stream" },
       };
     },
-    []
+    [options]
   );
 
   return {

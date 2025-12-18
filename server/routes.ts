@@ -7,13 +7,10 @@ import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema, insertArticl
 import { createSSORoutes, setSSoCookie } from "./sso-module/sso-routes";
 import type { SSOConfig } from "./sso-module/sso-types";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { requireAdminAuth, setAdminToken, clearAdminToken } from "./adminAuth";
 import crypto from "crypto";
 
-// Generate a secure admin session token
 const generateAdminToken = () => crypto.randomBytes(32).toString('hex');
-let currentAdminToken: string | null = null;
-let adminTokenExpiry: number | null = null;
-const ADMIN_TOKEN_TTL = 4 * 60 * 60 * 1000; // 4 hours
 
 // Rate limiting for admin login
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
@@ -47,26 +44,6 @@ function checkRateLimit(ip: string): boolean {
 
 function resetRateLimit(ip: string): void {
   loginAttempts.delete(ip);
-}
-
-// Admin authentication middleware
-function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
-  const adminToken = req.headers['x-admin-token'] as string;
-  
-  if (!adminToken || !currentAdminToken || adminToken !== currentAdminToken) {
-    console.log('[ADMIN AUTH] Unauthorized access attempt to admin route');
-    return res.status(401).json({ error: 'Admin authentication required' });
-  }
-  
-  // Check token expiry
-  if (adminTokenExpiry && Date.now() > adminTokenExpiry) {
-    currentAdminToken = null;
-    adminTokenExpiry = null;
-    console.log('[ADMIN AUTH] Admin token expired');
-    return res.status(401).json({ error: 'Admin session expired' });
-  }
-  
-  next();
 }
 
 export async function registerRoutes(
@@ -149,15 +126,10 @@ export async function registerRoutes(
   
   app.get("/api/admin/verify", (req, res) => {
     const adminToken = req.headers['x-admin-token'] as string;
+    const { isAdminTokenValid } = require('./adminAuth');
     
-    if (!adminToken || !currentAdminToken || adminToken !== currentAdminToken) {
-      return res.status(401).json({ valid: false, error: 'Invalid token' });
-    }
-    
-    if (adminTokenExpiry && Date.now() > adminTokenExpiry) {
-      currentAdminToken = null;
-      adminTokenExpiry = null;
-      return res.status(401).json({ valid: false, error: 'Token expired' });
+    if (!adminToken || !isAdminTokenValid(adminToken)) {
+      return res.status(401).json({ valid: false, error: 'Invalid or expired token' });
     }
     
     res.json({ valid: true });
@@ -201,12 +173,12 @@ export async function registerRoutes(
         // Reset rate limit on successful login
         resetRateLimit(clientIp);
         
-        // Generate new admin token
-        currentAdminToken = generateAdminToken();
-        adminTokenExpiry = Date.now() + ADMIN_TOKEN_TTL;
+        // Generate new admin token and store it in shared auth module
+        const newToken = generateAdminToken();
+        setAdminToken(newToken);
         
         console.log('[ADMIN AUTH] Admin login successful');
-        res.json({ success: true, authenticated: true, adminToken: currentAdminToken });
+        res.json({ success: true, authenticated: true, adminToken: newToken });
       } else {
         console.log('[ADMIN AUTH] Invalid credentials attempt');
         res.status(401).json({ error: 'Invalid credentials' });
@@ -755,7 +727,7 @@ export async function registerRoutes(
             metadata: {
               type: 'article',
               articleId: article.id,
-              author: article.author,
+              author: 'Chris Cillizza',
               category: article.category,
               publication_date: article.publishedAt?.toISOString(),
               reading_time: `${article.readTimeMinutes || 5} min`,

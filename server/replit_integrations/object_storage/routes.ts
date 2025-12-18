@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { requireAdminAuth } from "../../adminAuth";
 
 /**
  * Register object storage routes for file uploads.
@@ -34,8 +35,9 @@ export function registerObjectStorageRoutes(app: Express): void {
    *
    * IMPORTANT: The client should NOT send the file to this endpoint.
    * Send JSON metadata only, then upload the file directly to uploadURL.
+   * Requires admin authentication via X-Admin-Token header.
    */
-  app.post("/api/uploads/request-url", async (req, res) => {
+  app.post("/api/uploads/request-url", requireAdminAuth, async (req, res) => {
     try {
       const { name, size, contentType } = req.body;
 
