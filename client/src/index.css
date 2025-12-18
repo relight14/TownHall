@@ -173,182 +173,74 @@
   border-color: #e5e7eb !important;
 }
 
-/* Quill Ordered List - Fix numbering (1, 2, 3 instead of 1, 1, 1) */
+/* Quill Editor List Styling
+   IMPORTANT: Quill uses its own .ql-ui:before pseudo-elements for list markers.
+   The quill.snow.css (imported by react-quill-new) handles all list rendering.
+   Do NOT add custom ::before rules that would conflict with Quill's system. 
+   We only add minimal styling overrides here - no counter logic or markers. */
 
-/* Standard ol elements - reset counter per list */
-.ql-editor ol {
-  padding-left: 1.5em;
-  list-style-type: none;
-  counter-reset: ordered-list;
+/* Article rendering - Display Quill-saved content on article pages
+   Quill saves lists as: <li data-list="ordered|bullet">content</li>
+   Since Quill's .ql-ui elements are NOT saved in HTML, we must render markers ourselves.
+   Use CSS counters that reset properly for each list group. */
+
+.prose {
+  counter-reset: prose-list;
 }
 
-.ql-editor ol > li {
-  counter-increment: ordered-list;
-  padding-left: 0.5em;
-  position: relative;
-}
-
-.ql-editor ol > li::before {
-  content: counter(ordered-list) ". ";
-  position: absolute;
-  left: -1.5em;
-  width: 1.5em;
-  text-align: right;
-  padding-right: 0.3em;
-}
-
-/* Quill uses data-list attribute - these are siblings, not nested in ol */
-/* Reset counter when an ordered item is NOT immediately preceded by another ordered item */
-.ql-editor li[data-list="ordered"]:not(li[data-list="ordered"] + li[data-list="ordered"]) {
-  counter-reset: quill-list 0;
-}
-
-.ql-editor li[data-list="ordered"] {
-  counter-increment: quill-list;
-  padding-left: 1.5em;
-  position: relative;
-  list-style-type: none;
-}
-
-.ql-editor li[data-list="ordered"]::before {
-  content: counter(quill-list) ". ";
-  position: absolute;
-  left: 0;
-  width: 1.5em;
-  text-align: right;
-  padding-right: 0.3em;
-}
-
-/* Bullet list styling */
-.ql-editor li[data-list="bullet"] {
-  padding-left: 1.5em;
-  position: relative;
-}
-
-.ql-editor li[data-list="bullet"]::before {
-  content: "•";
-  position: absolute;
-  left: 0.5em;
-}
-
-/* Indentation levels */
-.ql-editor .ql-indent-1 {
-  padding-left: 3em !important;
-}
-
-.ql-editor .ql-indent-2 {
-  padding-left: 4.5em !important;
-}
-
-.ql-editor .ql-indent-3 {
-  padding-left: 6em !important;
-}
-
-.ql-editor .ql-indent-4 {
-  padding-left: 7.5em !important;
-}
-
-.ql-editor .ql-indent-5 {
-  padding-left: 9em !important;
-}
-
-.ql-editor .ql-indent-6 {
-  padding-left: 10.5em !important;
-}
-
-.ql-editor .ql-indent-7 {
-  padding-left: 12em !important;
-}
-
-.ql-editor .ql-indent-8 {
-  padding-left: 13.5em !important;
-}
-
-/* Article rendering - ensure Quill content displays properly on article pages */
-.prose ol,
-.prose ul {
-  list-style: none;
-  padding-left: 0;
-}
-
-.prose ol {
-  counter-reset: list-counter;
-  padding-left: 1.5em;
-}
-
-.prose ol > li {
-  counter-increment: list-counter;
-  position: relative;
-  padding-left: 0.5em;
-  margin-bottom: 0.5em;
-}
-
-.prose ol > li::before {
-  content: counter(list-counter) ". ";
-  position: absolute;
-  left: -1.5em;
-  width: 1.5em;
-  text-align: right;
-  padding-right: 0.3em;
-  font-weight: normal;
-}
-
-.prose ul {
-  padding-left: 1.5em;
-}
-
-.prose ul > li {
-  position: relative;
-  padding-left: 0.5em;
-  margin-bottom: 0.5em;
-}
-
-.prose ul > li::before {
-  content: "•";
-  position: absolute;
-  left: -1em;
-  font-weight: bold;
-}
-
-/* Nested list support for prose */
-.prose ol ol,
-.prose ul ul,
-.prose ol ul,
-.prose ul ol {
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
-}
-
-/* Quill data-list attributes in prose context */
-/* Reset counter when a new list block begins (not preceded by another ordered list item) */
+/* Reset counter when NOT preceded by another ordered item (start of new list) */
 .prose li[data-list="ordered"]:not(li[data-list="ordered"] + li[data-list="ordered"]) {
-  counter-reset: list-counter;
+  counter-reset: prose-list 0;
 }
 
 .prose li[data-list="ordered"] {
-  counter-increment: list-counter;
+  counter-increment: prose-list;
   position: relative;
-  padding-left: 1.5em;
+  padding-left: 2em;
+  margin-bottom: 0.25em;
   list-style-type: none;
 }
 
 .prose li[data-list="ordered"]::before {
-  content: counter(list-counter) ". ";
+  content: counter(prose-list) ". ";
   position: absolute;
   left: 0;
   width: 1.5em;
   text-align: right;
-  padding-right: 0.3em;
 }
 
 .prose li[data-list="bullet"] {
   position: relative;
-  padding-left: 1.5em;
+  padding-left: 2em;
+  margin-bottom: 0.25em;
   list-style-type: none;
 }
 
 .prose li[data-list="bullet"]::before {
   content: "•";
   position: absolute;
-  left: 0.5em;
+  left: 0.7em;
+}
+
+/* Indentation for nested lists - match Quill's ql-indent-* pattern */
+.prose li.ql-indent-1 { padding-left: 4.5em; }
+.prose li.ql-indent-2 { padding-left: 7em; }
+.prose li.ql-indent-3 { padding-left: 9.5em; }
+
+/* Standard ol/ul without data-list (non-Quill content or markdown import) */
+.prose ol {
+  list-style: decimal;
+  padding-left: 2em;
+  margin: 0.5em 0;
+}
+
+.prose ul {
+  list-style: disc;
+  padding-left: 2em;
+  margin: 0.5em 0;
+}
+
+.prose ol > li:not([data-list]),
+.prose ul > li:not([data-list]) {
+  margin-bottom: 0.25em;
 }
