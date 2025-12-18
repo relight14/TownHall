@@ -332,11 +332,9 @@ export default function AdminPage() {
       
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <Link href="/">
-            <a className="inline-flex items-center gap-2 px-3 py-2 text-slate-300 bg-slate-800/50 hover:bg-slate-700 hover:text-white rounded-lg transition-colors mb-4" data-testid="link-back-home">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Homepage
-            </a>
+          <Link href="/" className="inline-flex items-center gap-2 px-3 py-2 text-slate-300 bg-slate-800/50 hover:bg-slate-700 hover:text-white rounded-lg transition-colors mb-4" data-testid="link-back-home">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Homepage
           </Link>
           <h1 className="text-4xl text-white mb-2 font-bold">Content Management</h1>
           <p className="text-slate-400">Manage your articles and video content</p>
