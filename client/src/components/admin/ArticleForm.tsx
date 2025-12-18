@@ -10,6 +10,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
+import Youtube from '@tiptap/extension-youtube';
+import { Iframe } from './IframeExtension';
 
 interface ArticleFormProps {
   article?: any;
@@ -221,6 +223,15 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
       }),
       TextStyle,
       Color,
+      Youtube.configure({
+        addPasteHandler: true,
+        width: 640,
+        height: 360,
+        HTMLAttributes: {
+          class: 'w-full max-w-2xl mx-auto rounded-lg',
+        },
+      }),
+      Iframe,
     ],
     content: article?.content || '',
     editorProps: {
