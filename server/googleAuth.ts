@@ -66,7 +66,7 @@ export async function setupGoogleAuth(app: Express) {
     next();
   });
 
-  const clientID = process.env.GOOGLE_CLIENT_ID;
+  const clientID = process.env.VITE_GOOGLE_CLIENT_ID;
 
   if (!clientID) {
     console.warn('[GOOGLE_AUTH] Google OAuth credentials not configured. Google login will not work.');

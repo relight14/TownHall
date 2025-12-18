@@ -48,4 +48,3 @@ integrations = ["github:1.0.0", "javascript_object_storage:2.0.0"]
 [userenv.shared]
 LEDEWIRE_API_URL = "https://api-staging.ledewire.com/v1"
 ADMIN_EMAIL = "cillizzac@gmail.com"
-VITE_GOOGLE_CLIENT_ID = "971599767133-2d86q10s12qf4tm146decaaqcqtpdmej.apps.googleusercontent.com"
