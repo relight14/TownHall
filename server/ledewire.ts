@@ -19,6 +19,10 @@ interface LedewireAuthResponse {
   expires_at: string;
 }
 
+interface LedewireSellerConfig {
+  google_client_id?: string;
+}
+
 interface LedewireContentResponse {
   id: string;
   content_type: string;
@@ -85,6 +89,59 @@ async function getErrorMessage(response: Response): Promise<string> {
 
 class LedewireClient {
   private sellerToken: string | null = null;
+  private cachedConfig: LedewireSellerConfig | null = null;
+
+  async getSellerConfig(): Promise<LedewireSellerConfig> {
+    if (this.cachedConfig) {
+      return this.cachedConfig;
+    }
+
+    const token = await this.getSellerToken();
+    
+    const response = await fetch(`${LEDEWIRE_API_URL}/seller/config`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorMsg = await getErrorMessage(response);
+      console.error('[LEDEWIRE] Failed to get seller config:', errorMsg);
+      throw new Error(`Failed to get seller config: ${errorMsg}`);
+    }
+
+    const data = await safeParseJSON(response);
+    this.cachedConfig = data || {};
+    console.log('[LEDEWIRE] Fetched seller config, google_client_id:', this.cachedConfig.google_client_id ? 'present' : 'missing');
+    return this.cachedConfig;
+  }
+
+  async loginWithGoogle(idToken: string): Promise<LedewireAuthResponse> {
+    logLedewire('GOOGLE_LOGIN_START', { hasIdToken: !!idToken });
+
+    const response = await fetch(`${LEDEWIRE_API_URL}/auth/login/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id_token: idToken }),
+    });
+
+    if (!response.ok) {
+      const errorMsg = await getErrorMessage(response);
+      logLedewire('GOOGLE_LOGIN_ERROR', { status: response.status, error: errorMsg });
+      throw new Error(`Google login failed: ${errorMsg}`);
+    }
+
+    const data = await safeParseJSON(response);
+    if (!data || !data.access_token) {
+      throw new Error('Google login response was empty');
+    }
+
+    logLedewire('GOOGLE_LOGIN_SUCCESS', { hasAccessToken: !!data.access_token });
+    return data;
+  }
 
   async getSellerToken(): Promise<string> {
     if (this.sellerToken) {
