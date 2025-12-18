@@ -80,7 +80,7 @@ export const articles = pgTable("articles", {
   title: text("title").notNull(),
   summary: text("summary").notNull(),
   content: text("content").notNull(), // HTML content
-  author: text("author").notNull(),
+  subheader: text("subheader").notNull(), // Article subtitle/subheader
   thumbnail: text("thumbnail"),
   category: text("category").notNull().default('elections'), // elections, policy, candidate-rankings, speech-analysis
   price: integer("price_cents").notNull().default(99), // price in cents

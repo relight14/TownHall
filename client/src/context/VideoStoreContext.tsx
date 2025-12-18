@@ -42,7 +42,7 @@ interface Article {
   title: string;
   summary: string;
   content: string;
-  author: string;
+  subheader: string;
   thumbnail: string | null;
   category: string;
   viewCount: number;

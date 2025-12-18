@@ -209,7 +209,7 @@ function MenuBar({ editor }: { editor: any }) {
 
 export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   const [title, setTitle] = useState(article?.title || '');
-  const [author, setAuthor] = useState(article?.author || '');
+  const [subheader, setSubheader] = useState(article?.subheader || '');
   const [thumbnail, setThumbnail] = useState(article?.thumbnail || '');
   const [category, setCategory] = useState(article?.category || 'elections');
   const [price, setPrice] = useState(article?.price !== undefined ? String(article.price) : '99');
@@ -306,7 +306,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
     try {
       await onSubmit({
         title,
-        author,
+        subheader,
         content,
         summary: generateSummary(content),
         thumbnail: thumbnail || null,
@@ -332,31 +332,29 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
         </button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Article Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
-              placeholder="Enter article title"
-              required
-              data-testid="input-article-title"
-            />
-          </div>
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Author</label>
-            <input
-              type="text"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
-              placeholder="Author name"
-              required
-              data-testid="input-article-author"
-            />
-          </div>
+        <div>
+          <label className="block text-slate-300 mb-2 text-sm font-medium">Article Title</label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+            placeholder="Enter article title"
+            required
+            data-testid="input-article-title"
+          />
+        </div>
+        <div>
+          <label className="block text-slate-300 mb-2 text-sm font-medium">Subheader</label>
+          <input
+            type="text"
+            value={subheader}
+            onChange={(e) => setSubheader(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+            placeholder="Article subtitle or tagline"
+            required
+            data-testid="input-article-subheader"
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

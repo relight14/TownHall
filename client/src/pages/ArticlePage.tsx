@@ -64,7 +64,7 @@ interface Article {
   title: string;
   summary: string;
   content: string;
-  author: string;
+  subheader: string;
   thumbnail: string | null;
   category: string;
   price: number;
@@ -311,22 +311,26 @@ export default function ArticlePage() {
           )}
 
           <div>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-6">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                <span data-testid="text-article-author">{article.author}</span>
-              </div>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-4">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span data-testid="text-article-date">{formatDate(article.publishedAt)}</span>
               </div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl text-gray-900 font-bold mb-6 leading-tight" data-testid="text-article-title">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl text-gray-900 font-bold mb-3 leading-tight" data-testid="text-article-title">
               {article.title}
             </h1>
 
-            <p className="text-xl text-gray-900 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">
+            <p className="text-lg text-gray-600 font-medium mb-6 italic" data-testid="text-article-subheader">
+              {article.subheader}
+            </p>
+
+            <div className="flex items-center gap-2 mb-6 pb-6 border-b border-gray-200">
+              <span className="text-gray-700 font-medium">By Chris Cillizza</span>
+            </div>
+
+            <p className="text-base text-gray-700 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">
               {stripHtml(article.summary)}
             </p>
 
