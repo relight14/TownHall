@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { X, FileText, Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Quote, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3, Heading4 } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react';
+import { X, FileText, Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Quote, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3, Heading4, Type } from 'lucide-react';
 import { marked } from 'marked';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -20,6 +20,9 @@ interface ArticleFormProps {
 }
 
 function MenuBar({ editor }: { editor: any }) {
+  const colorInputRef = useRef<HTMLInputElement>(null);
+  const [currentColor, setCurrentColor] = useState('#000000');
+  
   if (!editor) return null;
 
   const addLink = useCallback(() => {
@@ -35,6 +38,12 @@ function MenuBar({ editor }: { editor: any }) {
       editor.chain().focus().setImage({ src: url }).run();
     }
   }, [editor]);
+
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    setCurrentColor(color);
+    editor.chain().focus().setColor(color).run();
+  };
 
   return (
     <div className="flex flex-wrap gap-1 p-2 border-b border-slate-300 bg-slate-100 rounded-t-lg">
@@ -173,12 +182,27 @@ function MenuBar({ editor }: { editor: any }) {
       
       <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
       
-      <input
-        type="color"
-        onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
-        className="w-8 h-8 p-1 rounded cursor-pointer border border-slate-300 bg-white"
-        title="Text Color"
-      />
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => colorInputRef.current?.click()}
+          className="p-2 rounded hover:bg-slate-200 transition-colors text-slate-600 flex flex-col items-center justify-center"
+          title="Text Color"
+        >
+          <Type className="w-4 h-4" />
+          <div 
+            className="w-4 h-1 mt-0.5 rounded-sm" 
+            style={{ backgroundColor: currentColor }}
+          />
+        </button>
+        <input
+          ref={colorInputRef}
+          type="color"
+          value={currentColor}
+          onChange={handleColorChange}
+          className="absolute opacity-0 w-0 h-0 pointer-events-none"
+        />
+      </div>
     </div>
   );
 }
