@@ -112,9 +112,10 @@ class LedewireClient {
     }
 
     const data = await safeParseJSON(response);
-    this.cachedConfig = data || {};
-    console.log('[LEDEWIRE] Fetched seller config, google_client_id:', this.cachedConfig.google_client_id ? 'present' : 'missing');
-    return this.cachedConfig;
+    const config: LedewireSellerConfig = data || {};
+    this.cachedConfig = config;
+    console.log('[LEDEWIRE] Fetched seller config, google_client_id:', config.google_client_id ? 'present' : 'missing');
+    return config;
   }
 
   async loginWithGoogle(idToken: string): Promise<LedewireAuthResponse> {

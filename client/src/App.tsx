@@ -9,10 +9,8 @@ import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
 import AuthModal from './components/AuthModal';
 import { Wallet, LogIn, LogOut, User } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import indigoSoulLogo from '@assets/indigosoul_1764613870278.avif';
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 function AppContent() {
   const { user, walletBalance, logout } = useVideoStore();
@@ -34,14 +32,57 @@ function AppContent() {
   );
 }
 
+function GoogleOAuthWrapper({ children }: { children: React.ReactNode }) {
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchGoogleConfig() {
+      try {
+        const response = await fetch('/api/auth/google/config');
+        if (response.ok) {
+          const data = await response.json();
+          setGoogleClientId(data.clientId);
+        } else {
+          console.warn('[App] Google OAuth config not available');
+        }
+      } catch (error) {
+        console.error('[App] Failed to fetch Google OAuth config:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchGoogleConfig();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-pulse text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!googleClientId) {
+    return <>{children}</>;
+  }
+
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      {children}
+    </GoogleOAuthProvider>
+  );
+}
+
 export default function App() {
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthWrapper>
       <VideoStoreProvider>
         <Router>
           <AppContent />
         </Router>
       </VideoStoreProvider>
-    </GoogleOAuthProvider>
+    </GoogleOAuthWrapper>
   );
 }
