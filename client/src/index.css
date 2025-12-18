@@ -96,88 +96,20 @@
   }
 }
 
-/* Quill Editor - Default black text on white background, but allow color picker to override */
-.ql-container {
-  background-color: #ffffff !important;
-  color: #000000;
+/* TipTap Editor Styling */
+.ProseMirror {
+  outline: none;
 }
 
-.ql-editor {
-  background-color: #ffffff !important;
-  color: #000000;
-  caret-color: #000000 !important;
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }
 
-.ql-editor p,
-.ql-editor div,
-.ql-editor li,
-.ql-editor h1,
-.ql-editor h2,
-.ql-editor h3,
-.ql-editor h4,
-.ql-editor h5,
-.ql-editor h6,
-.ql-editor blockquote {
-  color: #000000;
-}
-
-/* Allow inline color styles from color picker to take precedence */
-.ql-editor [style*="color"] {
-  color: inherit;
-}
-
-.ql-editor.ql-blank::before {
-  color: #9ca3af !important;
-  font-style: italic;
-}
-
-.ql-toolbar {
-  background-color: #f3f4f6 !important;
-  border-color: #e5e7eb !important;
-}
-
-.ql-toolbar button,
-.ql-toolbar .ql-picker-label {
-  color: #374151 !important;
-}
-
-.ql-toolbar button:hover,
-.ql-toolbar .ql-picker-label:hover {
-  color: #111827 !important;
-}
-
-.ql-toolbar button.ql-active,
-.ql-toolbar .ql-picker-label.ql-active {
-  color: #2563eb !important;
-}
-
-.ql-toolbar .ql-stroke {
-  stroke: #374151 !important;
-}
-
-.ql-toolbar .ql-fill {
-  fill: #374151 !important;
-}
-
-.ql-toolbar button:hover .ql-stroke,
-.ql-toolbar button.ql-active .ql-stroke {
-  stroke: #2563eb !important;
-}
-
-.ql-toolbar button:hover .ql-fill,
-.ql-toolbar button.ql-active .ql-fill {
-  fill: #2563eb !important;
-}
-
-.ql-container.ql-snow {
-  border-color: #e5e7eb !important;
-}
-
-/* Article List Rendering */
-/* Uses normalizeListHTML() to add 'start' attributes for proper ordered list numbering.
-   Browser handles numbering natively - no CSS counters needed. */
-
-/* Standard list styling */
+/* Article rendering - clean prose styling */
 .prose ol,
 .prose ul {
   padding-left: 2em;
@@ -188,23 +120,11 @@
   margin-bottom: 0.25em;
 }
 
-/* Quill bullet lists - need custom bullets via ::before since Quill uses data-list attribute */
+/* Legacy Quill content support - data-list attributes from old articles */
 .prose li[data-list="bullet"] {
-  list-style-type: none;
+  list-style-type: disc;
 }
 
-.prose li[data-list="bullet"]::before {
-  content: "•";
-  margin-right: 0.5em;
+.prose li[data-list="ordered"] {
+  list-style-type: decimal;
 }
-
-/* Quill indentation levels for nested lists */
-.prose li.ql-indent-1 { padding-left: 2.5em; }
-.prose li.ql-indent-2 { padding-left: 5em; }
-.prose li.ql-indent-3 { padding-left: 7.5em; }
-.prose li.ql-indent-4 { padding-left: 10em; }
-.prose li.ql-indent-5 { padding-left: 12.5em; }
-.prose li.ql-indent-6 { padding-left: 15em; }
-.prose li.ql-indent-7 { padding-left: 17.5em; }
-.prose li.ql-indent-8 { padding-left: 20em; }
-.prose li.ql-indent-9 { padding-left: 22.5em; }

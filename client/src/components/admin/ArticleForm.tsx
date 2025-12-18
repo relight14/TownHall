@@ -1,8 +1,15 @@
-import { useState, useMemo, useRef } from 'react';
-import { X, FileText } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { X, FileText, Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Quote, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3, Heading4 } from 'lucide-react';
 import { marked } from 'marked';
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
+import Placeholder from '@tiptap/extension-placeholder';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
 
 interface ArticleFormProps {
   article?: any;
@@ -10,22 +17,164 @@ interface ArticleFormProps {
   onSubmit: (data: any) => Promise<void>;
 }
 
-const quillFormats = [
-  'header',
-  'bold', 'italic', 'underline', 'strike',
-  'script',
-  'color', 'background',
-  'blockquote', 'code-block',
-  'list', 'bullet', 'indent',
-  'align',
-  'link', 'image', 'video'
-];
+function MenuBar({ editor }: { editor: any }) {
+  if (!editor) return null;
+
+  const addLink = useCallback(() => {
+    const url = window.prompt('Enter URL:');
+    if (url) {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+    }
+  }, [editor]);
+
+  const addImage = useCallback(() => {
+    const url = window.prompt('Enter image URL:');
+    if (url) {
+      editor.chain().focus().setImage({ src: url }).run();
+    }
+  }, [editor]);
+
+  return (
+    <div className="flex flex-wrap gap-1 p-2 border-b border-slate-300 bg-slate-100 rounded-t-lg">
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Heading 1"
+      >
+        <Heading1 className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Heading 2"
+      >
+        <Heading2 className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Heading 3"
+      >
+        <Heading3 className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('heading', { level: 4 }) ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Heading 4"
+      >
+        <Heading4 className="w-4 h-4" />
+      </button>
+      
+      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+      
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('bold') ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Bold"
+      >
+        <Bold className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('italic') ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Italic"
+      >
+        <Italic className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('underline') ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Underline"
+      >
+        <UnderlineIcon className="w-4 h-4" />
+      </button>
+      
+      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+      
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('bulletList') ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Bullet List"
+      >
+        <List className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('orderedList') ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Numbered List"
+      >
+        <ListOrdered className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('blockquote') ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Blockquote"
+      >
+        <Quote className="w-4 h-4" />
+      </button>
+      
+      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+      
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Align Left"
+      >
+        <AlignLeft className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Align Center"
+      >
+        <AlignCenter className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Align Right"
+      >
+        <AlignRight className="w-4 h-4" />
+      </button>
+      
+      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+      
+      <button
+        type="button"
+        onClick={addLink}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('link') ? 'bg-slate-300 text-blue-600' : 'text-slate-600'}`}
+        title="Add Link"
+      >
+        <LinkIcon className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={addImage}
+        className="p-2 rounded hover:bg-slate-200 transition-colors text-slate-600"
+        title="Add Image"
+      >
+        <ImageIcon className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
 
 export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
-  const quillRef = useRef<ReactQuill>(null);
   const [title, setTitle] = useState(article?.title || '');
   const [author, setAuthor] = useState(article?.author || '');
-  const [content, setContent] = useState(article?.content || '');
   const [thumbnail, setThumbnail] = useState(article?.thumbnail || '');
   const [category, setCategory] = useState(article?.category || 'elections');
   const [price, setPrice] = useState(article?.price !== undefined ? String(article.price) : '99');
@@ -35,23 +184,42 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   
   const isEditing = !!article;
 
-  const quillModules = useMemo(() => ({
-    toolbar: [
-      [{ 'header': [1, 2, 3, 4, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'script': 'sub'}, { 'script': 'super' }],
-      [{ 'color': [] }, { 'background': [] }],
-      ['blockquote', 'code-block'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'align': [] }],
-      ['link', 'image', 'video'],
-      ['clean']
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3, 4],
+        },
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          rel: 'noopener noreferrer',
+          target: '_blank',
+        },
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded-lg',
+        },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Placeholder.configure({
+        placeholder: 'Start writing your article...',
+      }),
+      TextStyle,
+      Color,
     ],
-    clipboard: {
-      matchVisual: false
-    }
-  }), []);
+    content: article?.content || '',
+    editorProps: {
+      attributes: {
+        class: 'prose prose-lg max-w-none focus:outline-none min-h-[400px] p-4',
+      },
+    },
+  });
 
   const handleThumbnailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -71,7 +239,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
       reader.onloadend = async () => {
         const markdownText = reader.result as string;
         const htmlContent = await marked.parse(markdownText);
-        setContent(htmlContent);
+        editor?.commands.setContent(htmlContent);
       };
       reader.readAsText(file);
     }
@@ -90,11 +258,12 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const content = editor?.getHTML() || '';
     try {
       await onSubmit({
         title,
         author,
-        content: content,
+        content,
         summary: generateSummary(content),
         thumbnail: thumbnail || null,
         category,
@@ -242,19 +411,15 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
               />
             </label>
           </div>
-          <div className="bg-white rounded-lg overflow-hidden">
-            <ReactQuill
-              ref={quillRef}
-              theme="snow"
-              value={content}
-              onChange={setContent}
-              style={{ height: '400px' }}
-              modules={quillModules}
-              formats={quillFormats}
+          <div className="bg-white rounded-lg overflow-hidden border border-slate-300">
+            <MenuBar editor={editor} />
+            <EditorContent 
+              editor={editor} 
+              className="min-h-[400px]"
               data-testid="input-article-content"
             />
           </div>
-          <p className="text-slate-500 text-xs mt-14">
+          <p className="text-slate-500 text-xs mt-2">
             Paste formatted content directly, or upload a .md file. Images and links will be preserved.
           </p>
         </div>
