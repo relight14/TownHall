@@ -1,10 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
 import { X, FileText } from 'lucide-react';
 import { marked } from 'marked';
-import ReactQuill, { Quill } from 'react-quill-new';
+import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-
-const Delta = Quill.import('delta');
 
 interface ArticleFormProps {
   article?: any;
@@ -51,59 +49,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
       ['clean']
     ],
     clipboard: {
-      matchVisual: false,
-      matchers: [
-        ['ol', (node: HTMLElement, delta: any) => {
-          const newOps: any[] = [];
-          delta.ops.forEach((op: any) => {
-            if (typeof op.insert === 'string' && op.insert.includes('\n')) {
-              const parts = op.insert.split('\n');
-              parts.forEach((part: string, idx: number) => {
-                if (part) {
-                  newOps.push({ insert: part, attributes: op.attributes });
-                }
-                if (idx < parts.length - 1) {
-                  newOps.push({ insert: '\n', attributes: { ...op.attributes, list: 'ordered' } });
-                }
-              });
-            } else {
-              newOps.push(op);
-            }
-          });
-          if (newOps.length > 0) {
-            const lastOp = newOps[newOps.length - 1];
-            if (typeof lastOp.insert === 'string' && !lastOp.insert.endsWith('\n')) {
-              newOps.push({ insert: '\n', attributes: { list: 'ordered' } });
-            }
-          }
-          return new Delta(newOps);
-        }],
-        ['ul', (node: HTMLElement, delta: any) => {
-          const newOps: any[] = [];
-          delta.ops.forEach((op: any) => {
-            if (typeof op.insert === 'string' && op.insert.includes('\n')) {
-              const parts = op.insert.split('\n');
-              parts.forEach((part: string, idx: number) => {
-                if (part) {
-                  newOps.push({ insert: part, attributes: op.attributes });
-                }
-                if (idx < parts.length - 1) {
-                  newOps.push({ insert: '\n', attributes: { ...op.attributes, list: 'bullet' } });
-                }
-              });
-            } else {
-              newOps.push(op);
-            }
-          });
-          if (newOps.length > 0) {
-            const lastOp = newOps[newOps.length - 1];
-            if (typeof lastOp.insert === 'string' && !lastOp.insert.endsWith('\n')) {
-              newOps.push({ insert: '\n', attributes: { list: 'bullet' } });
-            }
-          }
-          return new Delta(newOps);
-        }]
-      ]
+      matchVisual: false
     }
   }), []);
 
