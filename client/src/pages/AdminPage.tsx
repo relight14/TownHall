@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Star, Check, FileText, ArrowLeft } from 'lucide-react';
-import { Link } from 'wouter';
 import { ArticleForm } from '../components/admin/ArticleForm';
 import { FeaturedEpisodesManager } from '../components/admin/FeaturedEpisodesManager';
 
@@ -248,6 +248,7 @@ function PasswordChangeForm({ onClose }: { onClose: () => void }) {
 }
 
 export default function AdminPage() {
+  const navigate = useNavigate();
   const { 
     series, addSeries, addEpisode, updateSeries, updateEpisode, deleteEpisode, setAdminToken,
     siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes, getAllEpisodes,
@@ -332,10 +333,10 @@ export default function AdminPage() {
       
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <Link href="/" className="inline-flex items-center gap-2 px-3 py-2 text-slate-300 bg-slate-800/50 hover:bg-slate-700 hover:text-white rounded-lg transition-colors mb-4" data-testid="link-back-home">
+          <button onClick={() => navigate('/')} className="inline-flex items-center gap-2 px-3 py-2 text-slate-300 bg-slate-800/50 hover:bg-slate-700 hover:text-white rounded-lg transition-colors mb-4" data-testid="link-back-home">
             <ArrowLeft className="w-4 h-4" />
             Back to Homepage
-          </Link>
+          </button>
           <h1 className="text-4xl text-white mb-2 font-bold">Content Management</h1>
           <p className="text-slate-400">Manage your articles and video content</p>
         </div>
