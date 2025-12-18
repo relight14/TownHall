@@ -99,6 +99,8 @@
 /* TipTap Editor Styling */
 .ProseMirror {
   outline: none;
+  background-color: white;
+  color: black;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
