@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Settings, Star, Check, FileText } from 'lucide-react';
+import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Settings, Star, Check, FileText, Home, ArrowLeft } from 'lucide-react';
+import { Link } from 'wouter';
 import { ArticleForm } from '../components/admin/ArticleForm';
 import { FeaturedEpisodesManager } from '../components/admin/FeaturedEpisodesManager';
 
@@ -374,7 +375,7 @@ export default function AdminPage() {
   const [showFeaturedManager, setShowFeaturedManager] = useState(false);
   const [showArticleForm, setShowArticleForm] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
-  const [adminTab, setAdminTab] = useState<'videos' | 'articles'>('videos');
+  const [adminTab, setAdminTab] = useState<'videos' | 'articles'>('articles');
 
   const handleLogout = () => {
     sessionStorage.removeItem('adminAuthenticated');
@@ -451,6 +452,12 @@ export default function AdminPage() {
       
       <div className="mb-8 flex justify-between items-start">
         <div>
+          <Link href="/">
+            <a className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors" data-testid="link-back-home">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Homepage
+            </a>
+          </Link>
           <h1 className="text-4xl text-white mb-2 font-bold">Content Management</h1>
           <p className="text-slate-400">Manage your articles and video content</p>
         </div>
@@ -478,10 +485,10 @@ export default function AdminPage() {
       <div className="mb-6 flex gap-2 p-1 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 w-fit">
         <button
           onClick={() => setAdminTab('articles')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
             adminTab === 'articles'
               ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              : 'text-slate-200 hover:text-white hover:bg-slate-700/50'
           }`}
           data-testid="admin-tab-articles"
         >
@@ -490,10 +497,10 @@ export default function AdminPage() {
         </button>
         <button
           onClick={() => setAdminTab('videos')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
             adminTab === 'videos'
               ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              : 'text-slate-200 hover:text-white hover:bg-slate-700/50'
           }`}
           data-testid="admin-tab-videos"
         >
