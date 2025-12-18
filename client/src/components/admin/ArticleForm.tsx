@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { X, FileText, Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Quote, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3, Heading4, Type } from 'lucide-react';
+import { X, FileText, Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Quote, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3, Heading4, Type, Upload, Loader2 } from 'lucide-react';
 import { marked } from 'marked';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -12,6 +12,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Youtube from '@tiptap/extension-youtube';
 import { Iframe } from './IframeExtension';
+import { useUpload } from '@/hooks/use-upload';
 
 interface ArticleFormProps {
   article?: any;
@@ -216,6 +217,17 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   const [featured, setFeatured] = useState(Boolean(article?.featured));
   const [useFile, setUseFile] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  const { uploadFile, isUploading } = useUpload({
+    onSuccess: (response) => {
+      setThumbnail(response.objectPath);
+      setUploadError(null);
+    },
+    onError: (error) => {
+      setUploadError(error.message);
+    },
+  });
   
   const isEditing = !!article;
 
@@ -265,14 +277,11 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
     },
   });
 
-  const handleThumbnailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThumbnailFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setThumbnail(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setUploadError(null);
+      await uploadFile(file);
     }
   };
 
@@ -424,15 +433,31 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
             />
           ) : (
             <div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleThumbnailFileChange}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer file:font-medium"
-              />
-              {thumbnail && (
-                <div className="mt-3">
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbnailFileChange}
+                  disabled={isUploading}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer file:font-medium disabled:opacity-50"
+                />
+                {isUploading && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Uploading...</span>
+                  </div>
+                )}
+              </div>
+              {uploadError && (
+                <p className="text-red-400 text-sm mt-2">{uploadError}</p>
+              )}
+              {thumbnail && !isUploading && (
+                <div className="mt-3 flex items-center gap-3">
                   <img src={thumbnail} alt="Preview" className="w-32 h-20 object-cover rounded-lg border border-slate-700" />
+                  <span className="text-green-400 text-sm flex items-center gap-1">
+                    <Upload className="w-4 h-4" />
+                    Image uploaded
+                  </span>
                 </div>
               )}
             </div>

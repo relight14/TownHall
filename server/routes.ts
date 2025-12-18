@@ -6,6 +6,7 @@ import { setupGoogleAuth, isAuthenticated, getSession } from "./googleAuth";
 import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema, insertArticleSchema } from "@shared/schema";
 import { createSSORoutes, setSSoCookie } from "./sso-module/sso-routes";
 import type { SSOConfig } from "./sso-module/sso-types";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import crypto from "crypto";
 
 // Generate a secure admin session token
@@ -113,6 +114,9 @@ export async function registerRoutes(
   
   const ssoRoutes = createSSORoutes(ssoConfig);
   app.use("/api/auth", ssoRoutes);
+  
+  // ===== Setup Object Storage Routes =====
+  registerObjectStorageRoutes(app);
   
   // ===== Setup Google OAuth =====
   await setupGoogleAuth(app);
