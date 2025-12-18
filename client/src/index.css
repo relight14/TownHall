@@ -196,11 +196,10 @@
   counter-reset: list-0 list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9;
 }
 
-.prose ol,
-.prose ul {
-  list-style: none;
-  padding-left: 0;
-}
+/* Note: We do NOT reset list-style globally for .prose ol/ul because:
+   1. Standard HTML lists (pasted content) need browser-native numbering
+   2. Quill-format lists use li[data-list] with list-style-type: none set individually
+   This allows both formats to render correctly. */
 
 /* Quill ordered lists in prose - use CSS counters for proper numbering */
 /* Base level (ql-indent-0 or no indent class) */
@@ -290,15 +289,10 @@
 .prose li[data-list="bullet"].ql-indent-9 { padding-left: 24.5em; }
 .prose li[data-list="bullet"].ql-indent-9::before { left: 23em; }
 
-/* Standard ol/ul without data-list (non-Quill content) */
-.prose ol:not(:has(li[data-list])) {
-  list-style: decimal;
-  padding-left: 2em;
-  margin: 0.5em 0;
-}
-
-.prose ul:not(:has(li[data-list])) {
-  list-style: disc;
+/* Standard ol/ul styling - browser defaults handle numbering automatically */
+/* We only add minimal spacing adjustments */
+.prose ol,
+.prose ul {
   padding-left: 2em;
   margin: 0.5em 0;
 }
