@@ -4,6 +4,7 @@ import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { ledewire } from "./ledewire";
 import { setSSoCookie, clearSSoCookie } from "./sso-module/sso-routes";
+import { isTokenExpired, decodeJwtPayload } from "./sso-module/sso-helpers";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 
@@ -218,13 +219,55 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
   
   try {
-    const user = await storage.getUser(userId);
+    let user = await storage.getUser(userId);
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
+    
+    if (user.ledewireAccessToken && isTokenExpired(user.ledewireAccessToken)) {
+      console.log('[AUTH] Ledewire token expired for user:', userId);
+      
+      if (!user.ledewireRefreshToken) {
+        console.log('[AUTH] No refresh token available - clearing session');
+        clearSSoCookie(res);
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "Session expired" });
+      }
+      
+      console.log('[AUTH] Attempting to refresh Ledewire token...');
+      const result = await ledewire.refreshToken(user.ledewireRefreshToken);
+      
+      if (result.success) {
+        const payload = decodeJwtPayload(result.access_token);
+        const ledewireUserId = payload?.buyer_claims?.user_id || payload?.sub || user.ledewireUserId;
+        
+        await storage.updateUserLedewireTokens(
+          userId,
+          result.access_token,
+          result.refresh_token,
+          ledewireUserId
+        );
+        
+        user = await storage.getUser(userId);
+        console.log('[AUTH] Ledewire token refreshed successfully');
+        
+        if (result.refresh_token) {
+          setSSoCookie(res, result.refresh_token);
+        }
+      } else if (result.permanent) {
+        console.log('[AUTH] Token refresh permanently failed:', result.error, '- clearing session');
+        clearSSoCookie(res);
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "Session expired" });
+      } else {
+        console.log('[AUTH] Token refresh transiently failed:', result.error, '- proceeding with stale token');
+      }
+    }
+    
     (req as any).user = user;
     return next();
   } catch (error) {
+    console.error('[AUTH] Error in isAuthenticated middleware:', error);
     return res.status(401).json({ message: "Unauthorized" });
   }
 };

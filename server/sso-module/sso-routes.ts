@@ -22,18 +22,22 @@ export function createSSORoutes(config: SSOConfig): Router {
       
       console.log('[SSO] Attempting token refresh from SSO cookie');
       
-      const refreshedAuth = await config.refreshToken(refreshToken);
+      const result = await config.refreshToken(refreshToken);
       
-      if (!refreshedAuth) {
-        console.log('[SSO] Token refresh failed - clearing cookie');
-        clearSSoCookie(res);
+      if (!result.success) {
+        if (result.permanent) {
+          console.log('[SSO] Token refresh permanently failed:', result.error, '- clearing cookie');
+          clearSSoCookie(res);
+        } else {
+          console.log('[SSO] Token refresh transiently failed:', result.error);
+        }
         return res.status(401).json({ 
           authenticated: false, 
           error: 'Session expired' 
         } as SessionResponse);
       }
       
-      if (isTokenExpired(refreshedAuth.access_token)) {
+      if (isTokenExpired(result.access_token)) {
         console.log('[SSO] Access token is expired or invalid - clearing cookie');
         clearSSoCookie(res);
         return res.status(401).json({ 
@@ -42,7 +46,7 @@ export function createSSORoutes(config: SSOConfig): Router {
         } as SessionResponse);
       }
       
-      const payload = decodeJwtPayload(refreshedAuth.access_token);
+      const payload = decodeJwtPayload(result.access_token);
       const ledewireUserId = payload?.buyer_claims?.user_id || payload?.sub;
       const email = payload?.buyer_claims?.email;
       
@@ -59,20 +63,19 @@ export function createSSORoutes(config: SSOConfig): Router {
       if (user && config.updateUserTokens) {
         await config.updateUserTokens(
           user.id,
-          refreshedAuth.access_token,
-          refreshedAuth.refresh_token,
+          result.access_token,
+          result.refresh_token,
           ledewireUserId
         );
       }
       
-      // Hydrate Express session if callback provided
       if (user && config.onSessionRestored) {
         config.onSessionRestored(req, user.id);
         console.log('[SSO] Hydrated Express session for user:', user.id);
       }
       
-      if (refreshedAuth.refresh_token) {
-        setSSoCookie(res, refreshedAuth.refresh_token);
+      if (result.refresh_token) {
+        setSSoCookie(res, result.refresh_token);
         console.log('[SSO] Updated SSO cookie with new refresh token');
       }
       
@@ -85,7 +88,7 @@ export function createSSORoutes(config: SSOConfig): Router {
           email: user.email,
           name: user.name,
         } : null,
-        ledewireToken: refreshedAuth.access_token,
+        ledewireToken: result.access_token,
         ledewireUserId,
       };
       

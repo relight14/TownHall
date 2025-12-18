@@ -4,8 +4,12 @@ export interface SSOCookieOptions {
   secure?: boolean;
 }
 
+export type RefreshTokenResult = 
+  | { success: true; access_token: string; refresh_token: string }
+  | { success: false; permanent: boolean; error: string };
+
 export interface SSOConfig {
-  refreshToken: (refreshToken: string) => Promise<{ access_token: string; refresh_token: string } | null>;
+  refreshToken: (refreshToken: string) => Promise<RefreshTokenResult>;
   findUserByLedewireId?: (ledewireUserId: string) => Promise<any | null>;
   findUserByEmail?: (email: string) => Promise<any | null>;
   updateUserTokens?: (userId: string, accessToken: string, refreshToken: string, ledewireUserId: string) => Promise<void>;

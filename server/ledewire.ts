@@ -334,7 +334,15 @@ class LedewireClient {
     return data;
   }
 
-  async refreshToken(refreshToken: string): Promise<{ access_token: string; refresh_token: string } | null> {
+  async refreshToken(refreshToken: string): Promise<{ 
+    success: true; 
+    access_token: string; 
+    refresh_token: string; 
+  } | { 
+    success: false; 
+    permanent: boolean; 
+    error: string;
+  }> {
     try {
       const response = await fetch(`${LEDEWIRE_API_URL}/auth/token/refresh`, {
         method: 'POST',
@@ -345,23 +353,37 @@ class LedewireClient {
       });
 
       if (!response.ok) {
-        console.log('[Ledewire] Token refresh failed:', response.status);
-        return null;
+        const isPermanent = response.status >= 400 && response.status < 500;
+        console.log('[Ledewire] Token refresh failed:', response.status, isPermanent ? '(permanent)' : '(transient)');
+        return { 
+          success: false, 
+          permanent: isPermanent,
+          error: `HTTP ${response.status}`
+        };
       }
 
       const data = await safeParseJSON(response);
       if (!data || !data.access_token) {
         console.log('[Ledewire] Token refresh returned empty response');
-        return null;
+        return { 
+          success: false, 
+          permanent: true,
+          error: 'Empty response'
+        };
       }
 
       return {
+        success: true,
         access_token: data.access_token,
         refresh_token: data.refresh_token,
       };
-    } catch (error) {
-      console.error('[Ledewire] Token refresh error:', error);
-      return null;
+    } catch (error: any) {
+      console.error('[Ledewire] Token refresh network error:', error);
+      return { 
+        success: false, 
+        permanent: false,
+        error: error.message || 'Network error'
+      };
     }
   }
 
