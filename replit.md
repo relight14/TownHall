@@ -78,7 +78,10 @@ Preferred communication style: Simple, everyday language.
 
 **Authentication Methods**:
 - Email/password authentication via Ledewire
-- Google SSO via Replit Auth (`server/replitAuth.ts`) - automatically creates Ledewire wallet for new SSO users
+- Google SSO - Google Client ID is fetched dynamically from Ledewire's `/v1/seller/config` endpoint at runtime
+  - No need to manage separate Google OAuth credentials
+  - Google ID tokens are forwarded to Ledewire's `/v1/auth/login/google` for verification
+  - If Google OAuth is unavailable, the app gracefully falls back to email/password only
 - SSO sessions managed via express-session with PostgreSQL storage
 
 **Neon Database**: Serverless PostgreSQL provider using `@neondatabase/serverless` driver for edge-compatible database connections.
