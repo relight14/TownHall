@@ -464,7 +464,7 @@ export default function ArticlePage() {
                     <Lock className="w-8 h-8 text-white" />
                   </div>
                   
-                  <h3 className="text-2xl font-bold text-white mb-2">Continue Reading</h3>
+                  <h3 className="text-2xl font-bold text-white mb-2">Support the work you want to see in the world</h3>
                   <p className="text-slate-300 mb-6 max-w-md mx-auto">
                     Unlock the full article for just {formatPrice(article.price)}
                   </p>
