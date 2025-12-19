@@ -283,6 +283,51 @@ class LedewireClient {
     return data;
   }
 
+  async updateContent(
+    contentId: string,
+    updates: {
+      title?: string;
+      priceCents?: number;
+    }
+  ): Promise<LedewireContentResponse> {
+    const token = await this.getSellerToken();
+    
+    const requestBody: any = {};
+    
+    if (updates.title !== undefined) {
+      requestBody.title = updates.title;
+    }
+    
+    if (updates.priceCents !== undefined) {
+      requestBody.price_cents = updates.priceCents;
+    }
+
+    console.log(`[LEDEWIRE-UPDATE] Updating content ${contentId}:`, requestBody);
+
+    const response = await fetch(`${LEDEWIRE_API_URL}/seller/content/${contentId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorMsg = await getErrorMessage(response);
+      console.error('[LEDEWIRE-UPDATE-FAIL]', response.status, errorMsg);
+      throw new Error(`Failed to update content: ${errorMsg}`);
+    }
+
+    const data = await safeParseJSON(response);
+    if (!data) {
+      throw new Error('Update content response was empty');
+    }
+
+    console.log('[LEDEWIRE-UPDATE-OK]', data.id);
+    return data;
+  }
+
   async getWalletBalance(userToken: string): Promise<LedewireWalletBalanceResponse> {
     const response = await fetch(`${LEDEWIRE_API_URL}/wallet/balance`, {
       method: 'GET',

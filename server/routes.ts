@@ -589,6 +589,12 @@ export async function registerRoutes(
       const { id } = req.params;
       const { title, description, videoUrl, videoType, price, thumbnail } = req.body;
       
+      // Get existing episode to compare for Ledewire sync
+      const existingEpisode = await storage.getEpisode(id);
+      if (!existingEpisode) {
+        return res.status(404).json({ error: 'Episode not found' });
+      }
+      
       // Convert price to cents if provided
       const updates: any = {};
       if (title !== undefined) updates.title = title;
@@ -602,6 +608,28 @@ export async function registerRoutes(
       if (!episode) {
         return res.status(404).json({ error: 'Episode not found' });
       }
+      
+      // Sync price/title changes with Ledewire if content is registered
+      if (existingEpisode.ledewireContentId) {
+        const newPriceCents = price !== undefined ? Math.round(price * 100) : undefined;
+        const priceChanged = newPriceCents !== undefined && newPriceCents !== existingEpisode.price;
+        const titleChanged = title !== undefined && title !== existingEpisode.title;
+        
+        if (priceChanged || titleChanged) {
+          try {
+            const ledewireUpdates: { title?: string; priceCents?: number } = {};
+            if (titleChanged) ledewireUpdates.title = title;
+            if (priceChanged) ledewireUpdates.priceCents = newPriceCents;
+            
+            await ledewire.updateContent(existingEpisode.ledewireContentId, ledewireUpdates);
+            console.log(`[EPISODE-UPDATE] Synced changes to Ledewire for episode ${id}`);
+          } catch (ledewireError: any) {
+            console.error(`[EPISODE-UPDATE] Failed to sync with Ledewire:`, ledewireError.message);
+            // Don't fail the request, just log the error
+          }
+        }
+      }
+      
       res.json({
         ...episode,
         price: episode.price / 100,
@@ -755,6 +783,13 @@ export async function registerRoutes(
   app.put("/api/articles/:id", requireAdminAuth, async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Get the existing article to compare for Ledewire sync
+      const existingArticle = await storage.getArticle(id);
+      if (!existingArticle) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+      
       // Convert publishedAt string to Date if needed
       const body = {
         ...req.body,
@@ -765,6 +800,27 @@ export async function registerRoutes(
       if (!article) {
         return res.status(404).json({ error: 'Article not found' });
       }
+      
+      // Sync price/title changes with Ledewire if content is registered
+      if (existingArticle.ledewireContentId) {
+        const priceChanged = validated.price !== undefined && validated.price !== existingArticle.price;
+        const titleChanged = validated.title !== undefined && validated.title !== existingArticle.title;
+        
+        if (priceChanged || titleChanged) {
+          try {
+            const updates: { title?: string; priceCents?: number } = {};
+            if (titleChanged) updates.title = validated.title;
+            if (priceChanged) updates.priceCents = validated.price;
+            
+            await ledewire.updateContent(existingArticle.ledewireContentId, updates);
+            console.log(`[ARTICLE-UPDATE] Synced changes to Ledewire for article ${id}`);
+          } catch (ledewireError: any) {
+            console.error(`[ARTICLE-UPDATE] Failed to sync with Ledewire:`, ledewireError.message);
+            // Don't fail the request, just log the error
+          }
+        }
+      }
+      
       res.json(article);
     } catch (error: any) {
       console.error('Update article error:', error);
