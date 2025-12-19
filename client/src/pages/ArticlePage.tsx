@@ -357,6 +357,15 @@ export default function ArticlePage() {
                 <Eye className="w-4 h-4" />
                 <span data-testid="text-article-view-count">{formatViewCount(article.viewCount)} views</span>
               </div>
+              {article.price > 0 && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4" />
+                    <span data-testid="text-article-price" className="font-semibold">{formatPrice(article.price)} to unlock</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl text-gray-900 font-bold mb-3 leading-tight" data-testid="text-article-title">

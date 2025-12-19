@@ -62,6 +62,7 @@ interface Article {
   readTimeMinutes: number;
   featured: number;
   publishedAt: string;
+  price: number;
 }
 
 function CategoryBadge({ category }: { category: string }) {
@@ -76,7 +77,14 @@ function LatestArticleItem({ article }: { article: Article }) {
   return (
     <Link to={`/article/${article.id}`}>
       <div className="group py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`latest-article-${article.id}`}>
-        <CategoryBadge category={article.category} />
+        <div className="flex items-start justify-between">
+          <CategoryBadge category={article.category} />
+          {article.price > 0 && (
+            <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded" data-testid={`price-badge-${article.id}`}>
+              ${(article.price / 100).toFixed(2)}
+            </span>
+          )}
+        </div>
         <h3 className="text-base font-semibold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
           {article.title}
         </h3>
@@ -97,7 +105,14 @@ function MostReadArticleItem({ article, rank }: { article: Article; rank: number
   return (
     <Link to={`/article/${article.id}`}>
       <div className="group py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`most-read-article-${article.id}`}>
-        <CategoryBadge category={article.category} />
+        <div className="flex items-start justify-between">
+          <CategoryBadge category={article.category} />
+          {article.price > 0 && (
+            <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded" data-testid={`price-badge-${article.id}`}>
+              ${(article.price / 100).toFixed(2)}
+            </span>
+          )}
+        </div>
         <h3 className="text-base font-semibold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
           {article.title}
         </h3>
@@ -118,7 +133,14 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
   return (
     <Link to={`/article/${article.id}`}>
       <div className="group cursor-pointer" data-testid={`featured-article-${article.id}`}>
-        <CategoryBadge category={article.category} />
+        <div className="flex items-start justify-between">
+          <CategoryBadge category={article.category} />
+          {article.price > 0 && (
+            <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-3 py-1.5 rounded" data-testid={`price-badge-${article.id}`}>
+              ${(article.price / 100).toFixed(2)}
+            </span>
+          )}
+        </div>
         <div className="mt-3 relative aspect-[4/3] overflow-hidden rounded-lg">
           {article.thumbnail ? (
             <ImageWithFallback
@@ -170,6 +192,13 @@ function CategoryArticleCard({ article }: { article: Article }) {
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
               <span className="text-gray-400 text-xl font-serif">So What</span>
+            </div>
+          )}
+          {article.price > 0 && (
+            <div className="absolute top-3 right-3">
+              <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-3 py-1.5 rounded" data-testid={`price-badge-${article.id}`}>
+                ${(article.price / 100).toFixed(2)}
+              </span>
             </div>
           )}
         </div>
