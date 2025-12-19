@@ -217,6 +217,11 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   const [category, setCategory] = useState(article?.category || 'elections');
   const [price, setPrice] = useState(article?.price !== undefined ? String(article.price) : '99');
   const [featured, setFeatured] = useState(Boolean(article?.featured));
+  const [publishedAt, setPublishedAt] = useState(
+    article?.publishedAt 
+      ? new Date(article.publishedAt).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0]
+  );
   const [useFile, setUseFile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -325,7 +330,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
         category,
         price: parseInt(price) || 99,
         featured: featured ? 1 : 0,
-        publishedAt: new Date(),
+        publishedAt: new Date(publishedAt),
       });
     } finally {
       setLoading(false);
@@ -369,7 +374,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-slate-300 mb-2 text-sm font-medium">Category</label>
             <select
@@ -397,6 +402,16 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
               data-testid="input-article-price"
             />
             <p className="text-xs text-slate-500 mt-1">Price in cents (e.g., 99 = $0.99, 199 = $1.99)</p>
+          </div>
+          <div>
+            <label className="block text-slate-300 mb-2 text-sm font-medium">Published Date</label>
+            <input
+              type="date"
+              value={publishedAt}
+              onChange={(e) => setPublishedAt(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+              data-testid="input-article-published-date"
+            />
           </div>
         </div>
 
