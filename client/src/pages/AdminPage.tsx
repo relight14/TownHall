@@ -518,7 +518,10 @@ export default function AdminPage() {
                         </div>
                         <div className="text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full text-sm border border-blue-500/20">${ep.price}</div>
                         <button
-                          onClick={() => setEditingEpisodeId(ep.id)}
+                          onClick={() => {
+                            setEditingEpisodeId(ep.id);
+                            window.scrollTo(0, 0);
+                          }}
                           className="p-2 text-slate-400 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
                           data-testid={`button-edit-episode-${ep.id}`}
                           title="Edit episode"
@@ -611,7 +614,10 @@ export default function AdminPage() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setEditingArticleId(article.id.toString())}
+                    onClick={() => {
+                      setEditingArticleId(article.id.toString());
+                      window.scrollTo(0, 0);
+                    }}
                     className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-slate-700"
                     data-testid={`button-edit-article-${article.id}`}
                   >
