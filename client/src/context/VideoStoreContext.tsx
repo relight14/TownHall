@@ -156,7 +156,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
 
       // Fall back to local session check (Google OAuth session)
       try {
-        const response = await fetch('/api/auth/user');
+        const response = await fetch('/api/auth/user', { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
           setUser({
@@ -510,6 +510,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${ledewireToken}`,
         },
+        credentials: 'include',
         body: JSON.stringify({ episodeId }),
       });
 
@@ -544,6 +545,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         headers: {
           'Authorization': `Bearer ${ledewireToken}`,
         },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -649,6 +651,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         headers: {
           'Authorization': `Bearer ${ledewireToken}`,
         },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -672,6 +675,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${ledewireToken}`,
         },
+        credentials: 'include',
         body: JSON.stringify({ amount_cents: amountCents }),
       });
 
