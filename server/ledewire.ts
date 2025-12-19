@@ -79,6 +79,10 @@ async function getErrorMessage(response: Response): Promise<string> {
     return `HTTP ${response.status}: ${data.raw}`;
   }
   if (data.error) {
+    // Handle error being an object with a message property
+    if (typeof data.error === 'object' && data.error !== null) {
+      return data.error.message || JSON.stringify(data.error);
+    }
     return data.error;
   }
   if (data.message) {
