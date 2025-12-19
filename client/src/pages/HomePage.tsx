@@ -320,7 +320,7 @@ export default function HomePage() {
   const featuredArticle = featuredForCategory[0] || latestForCategory[0];
   
   const displayedLatest = latestForCategory.filter(a => a.id !== featuredArticle?.id).slice(0, 4);
-  const displayedMostRead = mostReadForCategory.filter(a => a.id !== featuredArticle?.id).slice(0, 4);
+  const displayedMostRead = mostReadForCategory.slice(0, 4);
 
   const electionsArticles = getArticlesByCategory('elections');
   const policyArticles = getArticlesByCategory('policy');
