@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X, Clock, Eye } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { useVideoStore } from '../context/VideoStoreContext';
 import AuthModal from '../components/AuthModal';
@@ -20,6 +20,24 @@ function extractPreviewParagraphs(html: string, count: number = 3): string {
     previewParagraphs.push(paragraphs[i].outerHTML);
   }
   return previewParagraphs.join('');
+}
+
+function calculateReadTime(content: string): number {
+  const text = stripHtml(content);
+  const words = text.trim().split(/\s+/).length;
+  const wordsPerMinute = 200;
+  const minutes = Math.ceil(words / wordsPerMinute);
+  return Math.max(1, minutes);
+}
+
+function formatViewCount(count: number): string {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`;
+  }
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`;
+  }
+  return count.toString();
 }
 
 function normalizeListHTML(html: string): string {
@@ -71,6 +89,7 @@ interface Article {
   ledewireContentId: string | null;
   featured: number;
   publishedAt: string;
+  viewCount: number;
 }
 
 function TwitterIcon({ className }: { className?: string }) {
@@ -100,7 +119,7 @@ function LinkedInIcon({ className }: { className?: string }) {
 export default function ArticlePage() {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
-  const { user, ledewireToken, walletBalance, refreshWalletBalance } = useVideoStore();
+  const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = useVideoStore();
   
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,6 +131,7 @@ export default function ArticlePage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const viewCountedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const loadArticle = async () => {
@@ -134,6 +154,17 @@ export default function ArticlePage() {
       loadArticle();
     }
   }, [articleId]);
+
+  useEffect(() => {
+    if (article && articleId && viewCountedRef.current !== articleId) {
+      viewCountedRef.current = articleId;
+      incrementArticleView(articleId).then(() => {
+        setArticle(prev => prev ? { ...prev, viewCount: prev.viewCount + 1 } : null);
+      }).catch(err => {
+        console.error('Failed to increment view count:', err);
+      });
+    }
+  }, [article, articleId, incrementArticleView]);
 
   useEffect(() => {
     const checkPurchaseStatus = async () => {
@@ -311,10 +342,20 @@ export default function ArticlePage() {
           )}
 
           <div>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-4">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
+              <div className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />
                 <span data-testid="text-article-date">{formatDate(article.publishedAt)}</span>
+              </div>
+              <span className="text-gray-300">•</span>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                <span data-testid="text-article-read-time">{calculateReadTime(article.content)} min read</span>
+              </div>
+              <span className="text-gray-300">•</span>
+              <div className="flex items-center gap-1.5">
+                <Eye className="w-4 h-4" />
+                <span data-testid="text-article-view-count">{formatViewCount(article.viewCount)} views</span>
               </div>
             </div>
 
