@@ -49,6 +49,8 @@ interface Article {
   readTimeMinutes: number;
   featured: number;
   publishedAt: string;
+  price: number;
+  author?: string;
 }
 
 interface VideoStoreContextType {

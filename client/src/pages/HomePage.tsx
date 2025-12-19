@@ -55,7 +55,7 @@ interface Article {
   id: string;
   title: string;
   summary: string;
-  author: string;
+  author?: string;
   thumbnail: string | null;
   category: string;
   viewCount: number;
