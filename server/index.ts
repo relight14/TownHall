@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { createOgMiddleware } from "./og-middleware";
 
 const app = express();
 
@@ -88,6 +89,8 @@ app.use((req, res, next) => {
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
+    // Add OG middleware for development (for crawler detection)
+    app.use(createOgMiddleware());
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
