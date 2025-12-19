@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle, X } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle, X, ArrowLeft } from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -205,6 +205,14 @@ export default function WalletPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-white">
       <div className="mb-8">
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors mb-4"
+          data-testid="link-home"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </Link>
         <h1 className="text-3xl font-bold mb-2">My Wallet</h1>
         <p className="text-slate-400">Manage your funds and transaction history</p>
       </div>
