@@ -785,19 +785,19 @@ export async function registerRoutes(
   
   // ===== Purchase Routes =====
   
-  // Article purchase endpoint
-  app.post("/api/articles/:id/purchase", async (req, res) => {
+  // Article purchase endpoint - uses isAuthenticated to get fresh token from session
+  app.post("/api/articles/:id/purchase", isAuthenticated, async (req: any, res) => {
     const { id: articleId } = req.params;
     console.log(`[ARTICLE PURCHASE] Starting purchase for article: ${articleId}`);
     
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        console.log('[ARTICLE PURCHASE] Error: No authorization header');
-        return res.status(401).json({ error: 'Authorization required' });
-      }
+      const user = req.user;
+      const token = user?.ledewireAccessToken;
       
-      const token = authHeader.replace('Bearer ', '');
+      if (!token) {
+        console.log('[ARTICLE PURCHASE] Error: No Ledewire token in session');
+        return res.status(401).json({ error: 'Ledewire authentication required' });
+      }
       
       // Get article details
       const article = await storage.getArticle(articleId);
@@ -845,18 +845,18 @@ export async function registerRoutes(
     }
   });
 
-  // Article purchase verification endpoint
-  app.get("/api/articles/:id/purchase/verify", async (req, res) => {
+  // Article purchase verification endpoint - uses isAuthenticated to get fresh token from session
+  app.get("/api/articles/:id/purchase/verify", isAuthenticated, async (req: any, res) => {
     const { id: articleId } = req.params;
     console.log(`[ARTICLE VERIFY] Checking purchase status for article: ${articleId}`);
     
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        return res.status(401).json({ error: 'Authorization required' });
-      }
+      const user = req.user;
+      const token = user?.ledewireAccessToken;
       
-      const token = authHeader.replace('Bearer ', '');
+      if (!token) {
+        return res.status(401).json({ error: 'Ledewire authentication required' });
+      }
       
       const article = await storage.getArticle(articleId);
       if (!article || !article.ledewireContentId) {
