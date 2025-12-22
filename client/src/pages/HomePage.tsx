@@ -5,6 +5,7 @@ import { Clock, Eye, Play, Search, ChevronRight, LogOut } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import profilePic from '@assets/Chris_C_Profile_1765399638128.webp';
 import AuthModal from '../components/AuthModal';
+import PasswordResetModal from '../components/PasswordResetModal';
 import PurchaseModal from '../components/PurchaseModal';
 
 const categories = [
@@ -327,6 +328,7 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchOpen, setSearchOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
 
@@ -509,7 +511,21 @@ export default function HomePage() {
       {/* Auth Modal */}
       {showAuthModal && (
         <AuthModal 
-          onClose={() => setShowAuthModal(false)} 
+          onClose={() => setShowAuthModal(false)}
+          onForgotPassword={() => {
+            setShowAuthModal(false);
+            setShowPasswordReset(true);
+          }}
+        />
+      )}
+      
+      {showPasswordReset && (
+        <PasswordResetModal 
+          onClose={() => setShowPasswordReset(false)}
+          onBackToLogin={() => {
+            setShowPasswordReset(false);
+            setShowAuthModal(true);
+          }}
         />
       )}
     </div>

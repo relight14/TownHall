@@ -8,6 +8,7 @@ import { X, Mail, Lock, User } from 'lucide-react';
 interface AuthModalProps {
   onClose: () => void;
   onSuccess?: () => void;
+  onForgotPassword?: () => void;
 }
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -55,7 +56,7 @@ function GoogleLoginButton({ onLoginStart, onLoginSuccess, onLoginError, loading
   );
 }
 
-export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
+export default function AuthModal({ onClose, onSuccess, onForgotPassword }: AuthModalProps) {
   const { login, signup, loginWithGoogle } = useVideoStore();
   const { isAvailable: googleOAuthAvailable } = useGoogleOAuthStatus();
   const [isLogin, setIsLogin] = useState(true);
@@ -219,6 +220,16 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
                     data-testid="input-password"
                   />
                 </div>
+                {isLogin && onForgotPassword && (
+                  <button
+                    type="button"
+                    onClick={onForgotPassword}
+                    className="text-blue-400 hover:text-blue-300 text-sm mt-2 transition-colors"
+                    data-testid="button-forgot-password"
+                  >
+                    Forgot password?
+                  </button>
+                )}
               </div>
             </div>
 

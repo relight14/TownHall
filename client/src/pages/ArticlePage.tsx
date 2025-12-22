@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X,
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { useVideoStore } from '../context/VideoStoreContext';
 import AuthModal from '../components/AuthModal';
+import PasswordResetModal from '../components/PasswordResetModal';
 
 function stripHtml(html: string): string {
   const tmp = document.createElement('div');
@@ -128,6 +129,7 @@ export default function ArticlePage() {
   const [hasPurchased, setHasPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
@@ -501,6 +503,20 @@ export default function ArticlePage() {
           onSuccess={() => {
             setShowAuthModal(false);
             setShowPurchaseModal(true);
+          }}
+          onForgotPassword={() => {
+            setShowAuthModal(false);
+            setShowPasswordReset(true);
+          }}
+        />
+      )}
+      
+      {showPasswordReset && (
+        <PasswordResetModal 
+          onClose={() => setShowPasswordReset(false)}
+          onBackToLogin={() => {
+            setShowPasswordReset(false);
+            setShowAuthModal(true);
           }}
         />
       )}

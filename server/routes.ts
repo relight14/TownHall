@@ -383,6 +383,45 @@ export async function registerRoutes(
       res.status(401).json({ error: error.message });
     }
   });
+
+  // Password reset - request code
+  app.post("/api/auth/password/reset-request", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+      
+      const result = await ledewire.requestPasswordReset(email);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Password reset request error:', error);
+      // Always return success to prevent email enumeration
+      res.json({ message: 'If an account with this email exists, a reset code has been sent.' });
+    }
+  });
+
+  // Password reset - confirm with code
+  app.post("/api/auth/password/reset", async (req, res) => {
+    try {
+      const { email, reset_code, password } = req.body;
+      
+      if (!email || !reset_code || !password) {
+        return res.status(400).json({ error: 'Email, reset code, and new password are required' });
+      }
+      
+      if (password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      }
+      
+      const result = await ledewire.resetPassword(email, reset_code, password);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
   
   // ===== Wallet Routes =====
   

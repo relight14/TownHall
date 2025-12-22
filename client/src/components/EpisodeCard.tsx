@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import AuthModal from './AuthModal';
+import PasswordResetModal from './PasswordResetModal';
 import PurchaseModal from './PurchaseModal';
 import VideoPlayer from './VideoPlayer';
 import { Lock, Play, Check } from 'lucide-react';
@@ -80,6 +81,7 @@ function getYouTubeEmbedUrl(url: string): string {
 export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
   const { user, purchasedEpisodes } = useVideoStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -293,6 +295,20 @@ export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
           onSuccess={() => {
             setShowAuthModal(false);
             setShowPurchaseModal(true);
+          }}
+          onForgotPassword={() => {
+            setShowAuthModal(false);
+            setShowPasswordReset(true);
+          }}
+        />
+      )}
+      
+      {showPasswordReset && (
+        <PasswordResetModal 
+          onClose={() => setShowPasswordReset(false)}
+          onBackToLogin={() => {
+            setShowPasswordReset(false);
+            setShowAuthModal(true);
           }}
         />
       )}

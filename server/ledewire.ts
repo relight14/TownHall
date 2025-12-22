@@ -546,6 +546,46 @@ class LedewireClient {
     
     return data;
   }
+
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    const response = await fetch(`${LEDEWIRE_API_URL}/auth/password/reset-request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(errorMsg);
+    }
+
+    const data = await safeParseJSON(response);
+    return data?.data || { message: 'If an account with this email exists, a reset code has been sent.' };
+  }
+
+  async resetPassword(email: string, resetCode: string, password: string): Promise<{ message: string }> {
+    const response = await fetch(`${LEDEWIRE_API_URL}/auth/password/reset`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        email, 
+        reset_code: resetCode, 
+        password 
+      }),
+    });
+
+    if (!response.ok) {
+      const errorMsg = await getErrorMessage(response);
+      throw new Error(errorMsg);
+    }
+
+    const data = await safeParseJSON(response);
+    return data?.data || { message: 'Password has been successfully reset.' };
+  }
 }
 
 export const ledewire = new LedewireClient();

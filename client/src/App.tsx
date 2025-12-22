@@ -8,6 +8,7 @@ import CategoryPage from './pages/CategoryPage';
 import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
 import AuthModal from './components/AuthModal';
+import PasswordResetModal from './components/PasswordResetModal';
 import { Wallet, LogIn, LogOut, User } from 'lucide-react';
 import { useState, useEffect, createContext, useContext } from 'react';
 import indigoSoulLogo from '@assets/indigosoul_1764613870278.avif';
@@ -29,6 +30,7 @@ export function useGoogleOAuthStatus() {
 function AppContent() {
   const { user, walletBalance, logout } = useVideoStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   return (
     <div className="min-h-screen bg-white font-sans">
@@ -41,7 +43,25 @@ function AppContent() {
         <Route path="/wallet" element={<WalletPage />} />
       </Routes>
 
-      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+      {showAuthModal && (
+        <AuthModal 
+          onClose={() => setShowAuthModal(false)}
+          onForgotPassword={() => {
+            setShowAuthModal(false);
+            setShowPasswordReset(true);
+          }}
+        />
+      )}
+      
+      {showPasswordReset && (
+        <PasswordResetModal 
+          onClose={() => setShowPasswordReset(false)}
+          onBackToLogin={() => {
+            setShowPasswordReset(false);
+            setShowAuthModal(true);
+          }}
+        />
+      )}
     </div>
   );
 }
