@@ -91,6 +91,7 @@ interface Article {
   featured: number;
   publishedAt: string;
   viewCount: number;
+  isPreview?: boolean;
 }
 
 function TwitterIcon({ className }: { className?: string }) {
@@ -233,6 +234,17 @@ export default function ArticlePage() {
         setHasPurchased(true);
         refreshWalletBalance();
         setShowPurchaseModal(false);
+        
+        // Refetch article to get full content now that purchase is complete
+        try {
+          const articleResponse = await fetch(`/api/articles/${article.id}`);
+          if (articleResponse.ok) {
+            const fullArticle = await articleResponse.json();
+            setArticle(fullArticle);
+          }
+        } catch (refetchErr) {
+          console.error('Failed to refetch article after purchase:', refetchErr);
+        }
       } else {
         throw new Error('Purchase was not confirmed');
       }
@@ -458,7 +470,7 @@ export default function ArticlePage() {
                     prose-strong:text-gray-900
                     prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-900 prose-blockquote:italic"
                   data-testid="text-article-preview"
-                  dangerouslySetInnerHTML={{ __html: normalizeListHTML(extractPreviewParagraphs(article.content, 3)) }}
+                  dangerouslySetInnerHTML={{ __html: normalizeListHTML(article.isPreview ? article.content : extractPreviewParagraphs(article.content, 3)) }}
                 />
                 
                 <div className="my-10 p-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl text-center">

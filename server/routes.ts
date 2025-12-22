@@ -692,10 +692,35 @@ export async function registerRoutes(
   
   // ===== Article Routes =====
   
+  // Helper function to extract preview paragraphs on the server side
+  function extractServerPreview(html: string, paragraphCount: number = 3): string {
+    // Simple regex-based extraction of first N <p> tags
+    const paragraphRegex = /<p[^>]*>[\s\S]*?<\/p>/gi;
+    const paragraphs = html.match(paragraphRegex) || [];
+    return paragraphs.slice(0, paragraphCount).join('');
+  }
+  
+  // Helper function to sanitize article content for public listing endpoints
+  // Paid articles only get preview content in list views (full content requires individual fetch with auth)
+  function sanitizeArticlesForPublicListing(articles: any[]): any[] {
+    return articles.map(article => {
+      // Any article with price > 0 is considered paid, regardless of ledewireContentId
+      const isPaidArticle = article.price > 0;
+      if (isPaidArticle) {
+        return {
+          ...article,
+          content: extractServerPreview(article.content, 3),
+          isPreview: true,
+        };
+      }
+      return article;
+    });
+  }
+  
   app.get("/api/articles", async (req, res) => {
     try {
       const articles = await storage.getAllArticles();
-      res.json(articles);
+      res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
       console.error('Get articles error:', error);
       res.status(500).json({ error: error.message });
@@ -705,7 +730,7 @@ export async function registerRoutes(
   app.get("/api/articles/featured", async (req, res) => {
     try {
       const articles = await storage.getFeaturedArticles();
-      res.json(articles);
+      res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
       console.error('Get featured articles error:', error);
       res.status(500).json({ error: error.message });
@@ -716,7 +741,7 @@ export async function registerRoutes(
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const articles = await storage.getLatestArticles(limit);
-      res.json(articles);
+      res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
       console.error('Get latest articles error:', error);
       res.status(500).json({ error: error.message });
@@ -727,7 +752,7 @@ export async function registerRoutes(
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const articles = await storage.getMostReadArticles(limit);
-      res.json(articles);
+      res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
       console.error('Get most read articles error:', error);
       res.status(500).json({ error: error.message });
@@ -738,7 +763,7 @@ export async function registerRoutes(
     try {
       const { category } = req.params;
       const articles = await storage.getArticlesByCategory(category);
-      res.json(articles);
+      res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
       console.error('Get articles by category error:', error);
       res.status(500).json({ error: error.message });
@@ -756,13 +781,56 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/articles/:id", async (req, res) => {
+  app.get("/api/articles/:id", async (req: any, res) => {
     try {
       const article = await storage.getArticle(req.params.id);
       if (!article) {
         return res.status(404).json({ error: 'Article not found' });
       }
-      res.json(article);
+      
+      // Check if this is a paid article that requires purchase verification
+      // Any article with price > 0 is considered paid, regardless of ledewireContentId
+      const isPaidArticle = article.price > 0;
+      
+      if (!isPaidArticle) {
+        // Free article - return full content
+        return res.json(article);
+      }
+      
+      // For paid articles, check if user is authenticated and has purchased
+      const userId = req.session?.userId;
+      let hasPurchased = false;
+      
+      if (userId) {
+        try {
+          const user = await storage.getUser(userId);
+          if (user?.ledewireAccessToken && article.ledewireContentId) {
+            const purchaseStatus = await ledewire.verifyPurchase(
+              user.ledewireAccessToken,
+              article.ledewireContentId
+            );
+            hasPurchased = purchaseStatus.has_purchased;
+          }
+        } catch (purchaseCheckError) {
+          // If purchase check fails, assume not purchased (secure default)
+          console.log('[ARTICLE] Purchase check failed, defaulting to not purchased:', purchaseCheckError);
+        }
+      }
+      
+      if (hasPurchased) {
+        // User has purchased - return full content
+        return res.json(article);
+      }
+      
+      // User has NOT purchased - return truncated preview content
+      // Extract first 3 paragraphs as preview (server-side equivalent of client extractPreviewParagraphs)
+      const previewContent = extractServerPreview(article.content, 3);
+      
+      return res.json({
+        ...article,
+        content: previewContent,
+        isPreview: true, // Flag to indicate this is truncated content
+      });
     } catch (error: any) {
       console.error('Get article error:', error);
       res.status(500).json({ error: error.message });
