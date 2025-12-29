@@ -3,6 +3,7 @@ import { X, FileText, Bold, Italic, Underline as UnderlineIcon, List, ListOrdere
 import { marked } from 'marked';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import HardBreak from '@tiptap/extension-hard-break';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
@@ -14,6 +15,76 @@ import Youtube from '@tiptap/extension-youtube';
 import { Iframe } from './IframeExtension';
 import { useUpload } from '@/hooks/use-upload';
 import { useVideoStore } from '@/context/VideoStoreContext';
+
+function cleanPastedHtml(html: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  const allowedStyles = ['text-align', 'text-decoration'];
+  
+  doc.querySelectorAll('*').forEach((el) => {
+    const htmlEl = el as HTMLElement;
+    const computedStyle = htmlEl.style;
+    const preservedStyles: string[] = [];
+    
+    allowedStyles.forEach(prop => {
+      const value = computedStyle.getPropertyValue(prop);
+      if (value) {
+        preservedStyles.push(`${prop}: ${value}`);
+      }
+    });
+    
+    el.removeAttribute('style');
+    el.removeAttribute('class');
+    
+    if (preservedStyles.length > 0) {
+      htmlEl.setAttribute('style', preservedStyles.join('; '));
+    }
+  });
+  
+  doc.querySelectorAll('span').forEach((span) => {
+    const hasUnderline = span.style.textDecoration?.includes('underline');
+    const hasImportantStyle = span.getAttribute('style');
+    
+    if (!hasUnderline && !hasImportantStyle) {
+      const parent = span.parentNode;
+      if (parent) {
+        while (span.firstChild) {
+          parent.insertBefore(span.firstChild, span);
+        }
+        parent.removeChild(span);
+      }
+    }
+  });
+  
+  doc.querySelectorAll('div').forEach((div) => {
+    const hasMedia = div.querySelector('img, iframe, video');
+    if (!hasMedia) {
+      const p = document.createElement('p');
+      const style = div.getAttribute('style');
+      if (style) p.setAttribute('style', style);
+      p.innerHTML = div.innerHTML;
+      div.parentNode?.replaceChild(p, div);
+    }
+  });
+  
+  const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode as Text);
+  }
+  
+  textNodes.forEach(textNode => {
+    const parent = textNode.parentNode;
+    if (parent && parent.nodeName === 'BODY') {
+      const p = document.createElement('p');
+      p.textContent = textNode.textContent;
+      parent.replaceChild(p, textNode);
+    }
+  });
+  
+  return doc.body.innerHTML;
+}
 
 interface ArticleFormProps {
   article?: any;
@@ -245,6 +316,10 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
         heading: {
           levels: [1, 2, 3, 4],
         },
+        hardBreak: false,
+      }),
+      HardBreak.configure({
+        keepMarks: true,
       }),
       Underline,
       Link.configure({
@@ -280,7 +355,10 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
     content: article?.content || '',
     editorProps: {
       attributes: {
-        class: 'prose prose-lg max-w-none focus:outline-none min-h-[400px] p-4',
+        class: 'prose prose-lg max-w-none focus:outline-none min-h-[400px] p-4 [&>p]:mb-4 [&>p:last-child]:mb-0',
+      },
+      transformPastedHTML(html) {
+        return cleanPastedHtml(html);
       },
     },
   });
