@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { X, FileText, Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Quote, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3, Heading4, Type, Upload, Loader2 } from 'lucide-react';
 import { marked } from 'marked';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -362,6 +362,15 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
       },
     },
   });
+
+  useEffect(() => {
+    if (editor && article?.content) {
+      const currentContent = editor.getHTML();
+      if (currentContent !== article.content && article.content.length > currentContent.length) {
+        editor.commands.setContent(article.content);
+      }
+    }
+  }, [editor, article?.content]);
 
   const handleThumbnailFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
