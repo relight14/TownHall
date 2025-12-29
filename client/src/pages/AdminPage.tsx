@@ -252,7 +252,7 @@ export default function AdminPage() {
   const { 
     series, addSeries, addEpisode, updateSeries, updateEpisode, deleteEpisode, setAdminToken,
     siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes, getAllEpisodes,
-    articles, addArticle, updateArticle, deleteArticle, refreshArticles
+    articles, addArticle, updateArticle, deleteArticle, refreshArticles, loadAdminArticles
   } = useVideoStore();
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
@@ -287,6 +287,7 @@ export default function AdminPage() {
           if (response.ok) {
             setIsAuthenticated(true);
             setAdminToken(token);
+            loadAdminArticles(token);
           } else {
             handleLogout();
           }
@@ -312,6 +313,7 @@ export default function AdminPage() {
     return <AdminLoginGate onAuthenticated={(token) => {
       setIsAuthenticated(true);
       setAdminToken(token);
+      loadAdminArticles(token);
     }} />;
   }
 

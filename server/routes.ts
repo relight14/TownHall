@@ -287,6 +287,16 @@ export async function registerRoutes(
     }
   });
   
+  app.get("/api/admin/articles", requireAdminAuth, async (req, res) => {
+    try {
+      const articles = await storage.getAllArticles();
+      res.json(articles);
+    } catch (error: any) {
+      console.error('Error fetching admin articles:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // ===== Authentication Routes =====
   
   app.post("/api/auth/signup", async (req, res) => {

@@ -89,6 +89,7 @@ interface VideoStoreContextType {
   deleteArticle: (articleId: string) => Promise<void>;
   refreshArticles: () => Promise<void>;
   incrementArticleView: (articleId: string) => Promise<void>;
+  loadAdminArticles: (token: string) => Promise<void>;
 }
 
 const VideoStoreContext = createContext<VideoStoreContextType | undefined>(undefined);
@@ -291,6 +292,20 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     await loadFeaturedArticles();
     await loadLatestArticles();
     await loadMostReadArticles();
+  };
+
+  const loadAdminArticles = async (token: string) => {
+    try {
+      const response = await fetch('/api/admin/articles', {
+        headers: { 'X-Admin-Token': token }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setArticles(data);
+      }
+    } catch (error) {
+      console.error('Failed to load admin articles:', error);
+    }
   };
 
   const addArticle = async (newArticle: Omit<Article, 'id' | 'publishedAt'>) => {
@@ -791,6 +806,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       deleteArticle,
       refreshArticles,
       incrementArticleView,
+      loadAdminArticles,
     }}>
       {children}
     </VideoStoreContext.Provider>
