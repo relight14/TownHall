@@ -327,7 +327,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Failed to create article');
       }
 
-      await refreshArticles();
+      await loadAdminArticles(adminToken);
     } catch (error) {
       console.error('Failed to add article:', error);
       throw error;
@@ -353,7 +353,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Failed to update article');
       }
 
-      await refreshArticles();
+      await loadAdminArticles(adminToken);
     } catch (error) {
       console.error('Failed to update article:', error);
       throw error;
@@ -377,7 +377,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Failed to delete article');
       }
 
-      await refreshArticles();
+      await loadAdminArticles(adminToken);
     } catch (error) {
       console.error('Failed to delete article:', error);
       throw error;
