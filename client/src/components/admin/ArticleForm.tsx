@@ -363,10 +363,29 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
     },
   });
 
+  // Update all form fields when article prop changes (e.g., when full content loads after admin auth)
+  useEffect(() => {
+    if (article) {
+      setTitle(article.title || '');
+      setSubheader(article.subheader || '');
+      setThumbnail(article.thumbnail || '');
+      setCategory(article.category || 'elections');
+      setPrice(article.price !== undefined ? String(article.price) : '99');
+      setFeatured(Boolean(article.featured));
+      setPublishedAt(
+        article.publishedAt 
+          ? new Date(article.publishedAt).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0]
+      );
+    }
+  }, [article?.id, article?.content]);
+
+  // Update editor content when article content changes
   useEffect(() => {
     if (editor && article?.content) {
       const currentContent = editor.getHTML();
-      if (currentContent !== article.content && article.content.length > currentContent.length) {
+      // Update if contents differ and we have meaningful new content
+      if (currentContent !== article.content && article.content.trim().length > 0) {
         editor.commands.setContent(article.content);
       }
     }

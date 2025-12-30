@@ -81,6 +81,7 @@ interface VideoStoreContextType {
   getAllEpisodes: () => Episode[];
   articles: Article[];
   adminArticles: Article[];
+  adminArticlesLoaded: boolean;
   featuredArticles: Article[];
   latestArticles: Article[];
   mostReadArticles: Article[];
@@ -111,6 +112,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [featuredEpisodes, setFeaturedEpisodesState] = useState<FeaturedEpisode[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [adminArticles, setAdminArticles] = useState<Article[]>([]);
+  const [adminArticlesLoaded, setAdminArticlesLoaded] = useState<boolean>(false);
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
   const [latestArticles, setLatestArticles] = useState<Article[]>([]);
   const [mostReadArticles, setMostReadArticles] = useState<Article[]>([]);
@@ -303,9 +305,11 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setAdminArticles(data);
+        setAdminArticlesLoaded(true);
       }
     } catch (error) {
       console.error('Failed to load admin articles:', error);
+      setAdminArticlesLoaded(true); // Mark as loaded even on error to show empty state
     }
   };
 
@@ -799,6 +803,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       getAllEpisodes,
       articles,
       adminArticles,
+      adminArticlesLoaded,
       featuredArticles,
       latestArticles,
       mostReadArticles,

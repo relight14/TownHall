@@ -252,7 +252,7 @@ export default function AdminPage() {
   const { 
     series, addSeries, addEpisode, updateSeries, updateEpisode, deleteEpisode, setAdminToken,
     siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes, getAllEpisodes,
-    adminArticles, addArticle, updateArticle, deleteArticle, refreshArticles, loadAdminArticles
+    adminArticles, adminArticlesLoaded, addArticle, updateArticle, deleteArticle, refreshArticles, loadAdminArticles
   } = useVideoStore();
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
@@ -557,8 +557,9 @@ export default function AdminPage() {
       {/* Articles Tab Content */}
       {adminTab === 'articles' && (
       <>
-      {(showArticleForm || editingArticleId) && (
+      {(showArticleForm || editingArticleId) && adminArticlesLoaded && (
         <ArticleForm
+          key={editingArticleId ? `edit-${editingArticleId}-${adminArticles.find(a => a.id.toString() === editingArticleId)?.content?.length || 0}` : 'new'}
           article={editingArticleId ? adminArticles.find(a => a.id.toString() === editingArticleId) : undefined}
           onClose={() => {
             setShowArticleForm(false);
@@ -577,7 +578,13 @@ export default function AdminPage() {
       )}
 
       <div className="space-y-4">
-        {adminArticles.length === 0 ? (
+        {!adminArticlesLoaded ? (
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-slate-600 border-t-white rounded-full mx-auto mb-4" />
+            <h3 className="text-xl text-white mb-2">Loading Articles...</h3>
+            <p className="text-slate-400 mb-4">Please wait while we fetch your articles</p>
+          </div>
+        ) : adminArticles.length === 0 ? (
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
             <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
             <h3 className="text-xl text-white mb-2">No Articles Yet</h3>
