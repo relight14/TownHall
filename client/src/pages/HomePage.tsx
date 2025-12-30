@@ -322,13 +322,18 @@ export default function HomePage() {
     featuredEpisodes,
     user,
     walletBalance,
-    logout
+    logout,
+    refreshArticles
   } = useVideoStore();
   
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchOpen, setSearchOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+
+  useEffect(() => {
+    refreshArticles();
+  }, []);
 
   const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
 

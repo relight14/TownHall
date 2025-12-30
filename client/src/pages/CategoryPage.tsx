@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { ArrowLeft, Clock, Eye, TrendingUp, User } from 'lucide-react';
@@ -19,7 +20,11 @@ const categoryDescriptions: Record<string, string> = {
 export default function CategoryPage() {
   const params = useParams();
   const category = params.category as string;
-  const { articles, featuredArticles } = useVideoStore();
+  const { articles, featuredArticles, refreshArticles } = useVideoStore();
+
+  useEffect(() => {
+    refreshArticles();
+  }, []);
   
   const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
   const categoryArticles = allArticles.filter(a => a.category === category);

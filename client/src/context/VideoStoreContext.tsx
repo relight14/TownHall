@@ -80,6 +80,7 @@ interface VideoStoreContextType {
   setFeaturedEpisodes: (episodeIds: string[]) => Promise<void>;
   getAllEpisodes: () => Episode[];
   articles: Article[];
+  adminArticles: Article[];
   featuredArticles: Article[];
   latestArticles: Article[];
   mostReadArticles: Article[];
@@ -109,19 +110,19 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
   const [featuredEpisodes, setFeaturedEpisodesState] = useState<FeaturedEpisode[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [adminArticles, setAdminArticles] = useState<Article[]>([]);
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
   const [latestArticles, setLatestArticles] = useState<Article[]>([]);
   const [mostReadArticles, setMostReadArticles] = useState<Article[]>([]);
 
-  // Load series, site settings, featured episodes, and articles on mount
+  // Load series, site settings, and featured episodes on mount
+  // Note: Articles are loaded by individual pages to avoid race conditions
+  // - Public pages call loadArticles() which fetches preview content
+  // - Admin page calls loadAdminArticles() which fetches full content
   useEffect(() => {
     loadSeries();
     loadSiteSettings();
     loadFeaturedEpisodes();
-    loadArticles();
-    loadFeaturedArticles();
-    loadLatestArticles();
-    loadMostReadArticles();
   }, []);
 
   // Check for cross-subdomain SSO session first, then local session
@@ -301,7 +302,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       });
       if (response.ok) {
         const data = await response.json();
-        setArticles(data);
+        setAdminArticles(data);
       }
     } catch (error) {
       console.error('Failed to load admin articles:', error);
@@ -797,6 +798,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       setFeaturedEpisodes,
       getAllEpisodes,
       articles,
+      adminArticles,
       featuredArticles,
       latestArticles,
       mostReadArticles,
