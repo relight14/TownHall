@@ -794,6 +794,7 @@ export async function registerRoutes(
     try {
       const article = await storage.getArticle(req.params.id);
       if (!article) {
+        console.log(`[ARTICLE-VIEW] Article not found: ${req.params.id}`);
         return res.status(404).json({ error: 'Article not found' });
       }
       
@@ -801,8 +802,14 @@ export async function registerRoutes(
       // Any article with price > 0 is considered paid, regardless of ledewireContentId
       const isPaidArticle = article.price > 0;
       
+      console.log(`[ARTICLE-VIEW] ========================================`);
+      console.log(`[ARTICLE-VIEW] Article: "${article.title.substring(0, 50)}..."`);
+      console.log(`[ARTICLE-VIEW] Price: ${article.price} cents, isPaidArticle: ${isPaidArticle}`);
+      console.log(`[ARTICLE-VIEW] LedewireContentId: ${article.ledewireContentId || 'MISSING'}`);
+      
       if (!isPaidArticle) {
-        // Free article - return full content
+        console.log(`[ARTICLE-VIEW] Result: FREE article - returning full content`);
+        console.log(`[ARTICLE-VIEW] ========================================`);
         return res.json(article);
       }
       
@@ -810,24 +817,36 @@ export async function registerRoutes(
       const userId = req.session?.userId;
       let hasPurchased = false;
       
+      console.log(`[ARTICLE-VIEW] Session userId: ${userId || 'NOT LOGGED IN'}`);
+      
       if (userId) {
         try {
           const user = await storage.getUser(userId);
+          console.log(`[ARTICLE-VIEW] User found: ${user?.email || 'NO'}`);
+          console.log(`[ARTICLE-VIEW] Has ledewireAccessToken: ${!!user?.ledewireAccessToken}`);
+          
           if (user?.ledewireAccessToken && article.ledewireContentId) {
+            console.log(`[ARTICLE-VIEW] Calling Ledewire verifyPurchase...`);
             const purchaseStatus = await ledewire.verifyPurchase(
               user.ledewireAccessToken,
               article.ledewireContentId
             );
             hasPurchased = purchaseStatus.has_purchased;
+            console.log(`[ARTICLE-VIEW] Ledewire verifyPurchase result: has_purchased=${hasPurchased}`);
+          } else {
+            console.log(`[ARTICLE-VIEW] Cannot verify purchase: missing token or contentId`);
           }
-        } catch (purchaseCheckError) {
+        } catch (purchaseCheckError: any) {
           // If purchase check fails, assume not purchased (secure default)
-          console.log('[ARTICLE] Purchase check failed, defaulting to not purchased:', purchaseCheckError);
+          console.log(`[ARTICLE-VIEW] Purchase check FAILED: ${purchaseCheckError.message}`);
         }
+      } else {
+        console.log(`[ARTICLE-VIEW] No session - user not logged in`);
       }
       
       if (hasPurchased) {
-        // User has purchased - return full content
+        console.log(`[ARTICLE-VIEW] Result: PURCHASED - returning full content`);
+        console.log(`[ARTICLE-VIEW] ========================================`);
         return res.json(article);
       }
       
@@ -835,13 +854,16 @@ export async function registerRoutes(
       // Extract first 3 paragraphs as preview (server-side equivalent of client extractPreviewParagraphs)
       const previewContent = extractServerPreview(article.content, 3);
       
+      console.log(`[ARTICLE-VIEW] Result: NOT PURCHASED - returning preview with isPreview=true`);
+      console.log(`[ARTICLE-VIEW] ========================================`);
+      
       return res.json({
         ...article,
         content: previewContent,
         isPreview: true, // Flag to indicate this is truncated content
       });
     } catch (error: any) {
-      console.error('Get article error:', error);
+      console.error('[ARTICLE-VIEW] ERROR:', error.message);
       res.status(500).json({ error: error.message });
     }
   });
