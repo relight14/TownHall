@@ -151,9 +151,7 @@ export default function ArticlePage() {
           console.log(`[ARTICLE-CLIENT] Sending Authorization header with request`);
         }
         
-        const response = await fetch(`/api/articles/${articleId}`, {
-          headers,
-        });
+        const response = await fetch(`/api/articles/${articleId}`, { headers });
         if (!response.ok) {
           throw new Error('Article not found');
         }
@@ -279,9 +277,7 @@ export default function ArticlePage() {
           if (ledewireToken) {
             refetchHeaders['Authorization'] = `Bearer ${ledewireToken}`;
           }
-          const articleResponse = await fetch(`/api/articles/${article.id}`, {
-            headers: refetchHeaders,
-          });
+          const articleResponse = await fetch(`/api/articles/${article.id}`, { headers: refetchHeaders });
           if (articleResponse.ok) {
             const fullArticle = await articleResponse.json();
             console.log(`[ARTICLE-CLIENT] Full article received, isPreview: ${fullArticle.isPreview}`);
