@@ -7,7 +7,7 @@ import { X, Mail, Lock, User } from 'lucide-react';
 
 interface AuthModalProps {
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (ledewireToken: string) => void;
   onForgotPassword?: () => void;
 }
 
@@ -72,13 +72,14 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
     setLoading(true);
 
     try {
+      let token: string;
       if (isLogin) {
-        await login(email, password);
+        token = await login(email, password);
       } else {
-        await signup(email, password, name);
+        token = await signup(email, password, name);
       }
       if (onSuccess) {
-        onSuccess();
+        onSuccess(token);
       } else {
         onClose();
       }
@@ -96,9 +97,9 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
 
   const handleGoogleLoginSuccess = async (accessToken: string) => {
     try {
-      await loginWithGoogle(accessToken);
+      const token = await loginWithGoogle(accessToken);
       if (onSuccess) {
-        onSuccess();
+        onSuccess(token);
       } else {
         onClose();
       }

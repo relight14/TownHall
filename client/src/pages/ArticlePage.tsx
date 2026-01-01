@@ -553,36 +553,34 @@ export default function ArticlePage() {
       {showAuthModal && (
         <AuthModal 
           onClose={() => setShowAuthModal(false)}
-          onSuccess={async () => {
+          onSuccess={async (freshToken: string) => {
             setShowAuthModal(false);
             
             // After authentication, check if user has already purchased this article
             // before showing the purchase modal
-            if (article?.ledewireContentId) {
+            if (article?.ledewireContentId && freshToken) {
               try {
                 setCheckingPurchase(true);
-                // Get fresh token from context after auth
-                const storedToken = localStorage.getItem('ledewire_token');
-                if (storedToken) {
-                  console.log(`[ARTICLE-CLIENT] Post-auth: checking purchase status...`);
-                  const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
-                    headers: { 'Authorization': `Bearer ${storedToken}` },
-                  });
-                  if (response.ok) {
-                    const data = await response.json();
-                    console.log(`[ARTICLE-CLIENT] Post-auth purchase check: has_purchased=${data.has_purchased}`);
-                    if (data.has_purchased) {
-                      // Already purchased - just refresh the article to get full content
-                      setHasPurchased(true);
-                      const articleResponse = await fetch(`/api/articles/${article.id}`, {
-                        headers: { 'Authorization': `Bearer ${storedToken}` },
-                      });
-                      if (articleResponse.ok) {
-                        const fullArticle = await articleResponse.json();
-                        setArticle(fullArticle);
-                      }
-                      return; // Don't show purchase modal
+                console.log(`[ARTICLE-CLIENT] Post-auth: checking purchase status with fresh token...`);
+                const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
+                  headers: { 'Authorization': `Bearer ${freshToken}` },
+                  credentials: 'include',
+                });
+                if (response.ok) {
+                  const data = await response.json();
+                  console.log(`[ARTICLE-CLIENT] Post-auth purchase check: has_purchased=${data.has_purchased}`);
+                  if (data.has_purchased) {
+                    // Already purchased - just refresh the article to get full content
+                    setHasPurchased(true);
+                    const articleResponse = await fetch(`/api/articles/${article.id}`, {
+                      headers: { 'Authorization': `Bearer ${freshToken}` },
+                      credentials: 'include',
+                    });
+                    if (articleResponse.ok) {
+                      const fullArticle = await articleResponse.json();
+                      setArticle(fullArticle);
                     }
+                    return; // Don't show purchase modal - already purchased!
                   }
                 }
               } catch (err) {
