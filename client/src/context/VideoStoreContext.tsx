@@ -64,9 +64,9 @@ interface VideoStoreContextType {
   purchaseEpisode: (episodeId: string) => Promise<void>;
   checkPurchase: (episodeId: string) => Promise<boolean>;
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
-  loginWithGoogle: (accessToken: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<string>;
+  signup: (email: string, password: string, name: string) => Promise<string>;
+  loginWithGoogle: (accessToken: string) => Promise<string>;
   logout: () => void;
   ledewireToken: string | null;
   walletBalance: number;
