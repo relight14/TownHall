@@ -917,23 +917,21 @@ export async function registerRoutes(
         return res.status(404).json({ error: 'Article not found' });
       }
       
-      // Sync price/title changes with Ledewire if content is registered
+      // Always sync price/title with Ledewire to ensure consistency
       if (existingArticle.ledewireContentId) {
-        const priceChanged = validated.price !== undefined && validated.price !== existingArticle.price;
-        const titleChanged = validated.title !== undefined && validated.title !== existingArticle.title;
-        
-        if (priceChanged || titleChanged) {
-          try {
-            const updates: { title?: string; priceCents?: number } = {};
-            if (titleChanged) updates.title = validated.title;
-            if (priceChanged) updates.priceCents = validated.price;
-            
-            await ledewire.updateContent(existingArticle.ledewireContentId, updates);
-            console.log(`[ARTICLE-UPDATE] Synced changes to Ledewire for article ${id}`);
-          } catch (ledewireError: any) {
-            console.error(`[ARTICLE-UPDATE] Failed to sync with Ledewire:`, ledewireError.message);
-            // Don't fail the request, just log the error
-          }
+        try {
+          // Always send current price and title to keep Ledewire in sync
+          const currentPrice = article.price || existingArticle.price || 99;
+          const currentTitle = article.title || existingArticle.title;
+          
+          await ledewire.updateContent(existingArticle.ledewireContentId, {
+            title: currentTitle,
+            priceCents: currentPrice,
+          });
+          console.log(`[ARTICLE-UPDATE] Synced to Ledewire: article ${id}, price=${currentPrice} cents, title=${currentTitle}`);
+        } catch (ledewireError: any) {
+          console.error(`[ARTICLE-UPDATE] Failed to sync with Ledewire:`, ledewireError.message);
+          // Don't fail the request, just log the error
         }
       }
       
