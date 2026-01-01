@@ -917,13 +917,13 @@ export async function registerRoutes(
         return res.status(404).json({ error: 'Article not found' });
       }
       
-      // Always sync price/title with Ledewire to ensure consistency
+      // Sync with Ledewire - either update existing or register new
+      const currentPrice = article.price || existingArticle.price || 99;
+      const currentTitle = article.title || existingArticle.title;
+      
       if (existingArticle.ledewireContentId) {
+        // Article already registered - sync price/title
         try {
-          // Always send current price and title to keep Ledewire in sync
-          const currentPrice = article.price || existingArticle.price || 99;
-          const currentTitle = article.title || existingArticle.title;
-          
           await ledewire.updateContent(existingArticle.ledewireContentId, {
             title: currentTitle,
             priceCents: currentPrice,
@@ -931,7 +931,37 @@ export async function registerRoutes(
           console.log(`[ARTICLE-UPDATE] Synced to Ledewire: article ${id}, price=${currentPrice} cents, title=${currentTitle}`);
         } catch (ledewireError: any) {
           console.error(`[ARTICLE-UPDATE] Failed to sync with Ledewire:`, ledewireError.message);
-          // Don't fail the request, just log the error
+        }
+      } else if (currentPrice > 0) {
+        // Article has a price but no Ledewire ID - register it now
+        try {
+          console.log(`[ARTICLE-UPDATE] Registering article ${id} with Ledewire (price=${currentPrice} cents)`);
+          const content = await ledewire.registerContent(
+            currentTitle,
+            currentPrice,
+            { 
+              content: article.content || '',
+              teaser: article.summary || '',
+              metadata: {
+                type: 'article',
+                articleId: article.id,
+                author: 'Chris Cillizza',
+                category: article.category,
+                publication_date: article.publishedAt?.toISOString(),
+                reading_time: `${article.readTimeMinutes || 5} min`,
+              },
+            }
+          );
+          
+          // Update article with Ledewire content ID
+          await storage.updateArticleLedewireId(article.id, content.id);
+          console.log(`[ARTICLE-UPDATE] Registered with Ledewire: article ${id}, contentId=${content.id}`);
+          
+          // Return the updated article with the new ledewireContentId
+          const updatedArticle = await storage.getArticle(article.id);
+          return res.json(updatedArticle);
+        } catch (ledewireError: any) {
+          console.error(`[ARTICLE-UPDATE] Failed to register with Ledewire:`, ledewireError.message);
         }
       }
       
