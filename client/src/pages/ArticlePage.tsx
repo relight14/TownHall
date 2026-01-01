@@ -561,12 +561,31 @@ export default function ArticlePage() {
             if (article?.ledewireContentId) {
               try {
                 setCheckingPurchase(true);
-                // Get fresh token from context after auth
-                const storedToken = localStorage.getItem('ledewire_token');
-                if (storedToken) {
-                  console.log(`[ARTICLE-CLIENT] Post-auth: checking purchase status...`);
+                
+                // Wait for the ledewire token to be available in context after login
+                // The context updates the token asynchronously, so we need to wait for it
+                let freshToken = ledewireToken;
+                let retries = 0;
+                const maxRetries = 10;
+                
+                while (!freshToken && retries < maxRetries) {
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  // Re-check the token from context via a closure workaround
+                  // We'll fetch from the API session which should have the token now
+                  const sessionResponse = await fetch('/api/auth/user', { credentials: 'include' });
+                  if (sessionResponse.ok) {
+                    const sessionData = await sessionResponse.json();
+                    freshToken = sessionData.ledewireToken;
+                    if (freshToken) break;
+                  }
+                  retries++;
+                }
+                
+                if (freshToken) {
+                  console.log(`[ARTICLE-CLIENT] Post-auth: checking purchase status with fresh token...`);
                   const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
-                    headers: { 'Authorization': `Bearer ${storedToken}` },
+                    headers: { 'Authorization': `Bearer ${freshToken}` },
+                    credentials: 'include',
                   });
                   if (response.ok) {
                     const data = await response.json();
@@ -575,15 +594,19 @@ export default function ArticlePage() {
                       // Already purchased - just refresh the article to get full content
                       setHasPurchased(true);
                       const articleResponse = await fetch(`/api/articles/${article.id}`, {
-                        headers: { 'Authorization': `Bearer ${storedToken}` },
+                        headers: { 'Authorization': `Bearer ${freshToken}` },
+                        credentials: 'include',
                       });
                       if (articleResponse.ok) {
                         const fullArticle = await articleResponse.json();
                         setArticle(fullArticle);
                       }
-                      return; // Don't show purchase modal
+                      setCheckingPurchase(false);
+                      return; // Don't show purchase modal - already purchased!
                     }
                   }
+                } else {
+                  console.log(`[ARTICLE-CLIENT] Post-auth: could not obtain fresh token after retries`);
                 }
               } catch (err) {
                 console.error('[ARTICLE-CLIENT] Post-auth purchase check failed:', err);
