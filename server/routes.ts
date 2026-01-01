@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ledewire } from "./ledewire";
-import { setupGoogleAuth, isAuthenticated, getSession } from "./googleAuth";
+import { setupGoogleAuth, isAuthenticated, optionalAuth, getSession } from "./googleAuth";
 import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema, insertArticleSchema } from "@shared/schema";
 import { createSSORoutes, setSSoCookie } from "./sso-module/sso-routes";
 import type { SSOConfig } from "./sso-module/sso-types";
@@ -790,77 +790,44 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/articles/:id", async (req: any, res) => {
+  app.get("/api/articles/:id", optionalAuth, async (req: any, res) => {
     try {
       const article = await storage.getArticle(req.params.id);
       if (!article) {
-        console.log(`[ARTICLE-VIEW] Article not found: ${req.params.id}`);
         return res.status(404).json({ error: 'Article not found' });
       }
       
-      // Check if this is a paid article that requires purchase verification
-      // Any article with price > 0 is considered paid, regardless of ledewireContentId
-      const isPaidArticle = article.price > 0;
-      
-      console.log(`[ARTICLE-VIEW] ========================================`);
-      console.log(`[ARTICLE-VIEW] Article: "${article.title.substring(0, 50)}..."`);
-      console.log(`[ARTICLE-VIEW] Price: ${article.price} cents, isPaidArticle: ${isPaidArticle}`);
-      console.log(`[ARTICLE-VIEW] LedewireContentId: ${article.ledewireContentId || 'MISSING'}`);
-      
-      if (!isPaidArticle) {
-        console.log(`[ARTICLE-VIEW] Result: FREE article - returning full content`);
-        console.log(`[ARTICLE-VIEW] ========================================`);
+      // Free articles return full content
+      if (article.price <= 0) {
         return res.json(article);
       }
       
-      // For paid articles, check if user is authenticated and has purchased
-      const userId = req.session?.userId;
+      // For paid articles, check if authenticated user has purchased
+      const user = req.user;
       let hasPurchased = false;
       
-      console.log(`[ARTICLE-VIEW] Session userId: ${userId || 'NOT LOGGED IN'}`);
-      
-      if (userId) {
+      if (user?.ledewireAccessToken && article.ledewireContentId) {
         try {
-          const user = await storage.getUser(userId);
-          console.log(`[ARTICLE-VIEW] User found: ${user?.email || 'NO'}`);
-          console.log(`[ARTICLE-VIEW] Has ledewireAccessToken: ${!!user?.ledewireAccessToken}`);
-          
-          if (user?.ledewireAccessToken && article.ledewireContentId) {
-            console.log(`[ARTICLE-VIEW] Calling Ledewire verifyPurchase...`);
-            const purchaseStatus = await ledewire.verifyPurchase(
-              user.ledewireAccessToken,
-              article.ledewireContentId
-            );
-            hasPurchased = purchaseStatus.has_purchased;
-            console.log(`[ARTICLE-VIEW] Ledewire verifyPurchase result: has_purchased=${hasPurchased}`);
-          } else {
-            console.log(`[ARTICLE-VIEW] Cannot verify purchase: missing token or contentId`);
-          }
-        } catch (purchaseCheckError: any) {
-          // If purchase check fails, assume not purchased (secure default)
-          console.log(`[ARTICLE-VIEW] Purchase check FAILED: ${purchaseCheckError.message}`);
+          const purchaseStatus = await ledewire.verifyPurchase(
+            user.ledewireAccessToken,
+            article.ledewireContentId
+          );
+          hasPurchased = purchaseStatus.has_purchased;
+        } catch (e) {
+          // Purchase check failed - assume not purchased (secure default)
         }
-      } else {
-        console.log(`[ARTICLE-VIEW] No session - user not logged in`);
       }
       
       if (hasPurchased) {
-        console.log(`[ARTICLE-VIEW] Result: PURCHASED - returning full content`);
-        console.log(`[ARTICLE-VIEW] ========================================`);
         return res.json(article);
       }
       
-      // User has NOT purchased - return truncated preview content
-      // Extract first 3 paragraphs as preview (server-side equivalent of client extractPreviewParagraphs)
+      // Not purchased - return preview
       const previewContent = extractServerPreview(article.content, 3);
-      
-      console.log(`[ARTICLE-VIEW] Result: NOT PURCHASED - returning preview with isPreview=true`);
-      console.log(`[ARTICLE-VIEW] ========================================`);
-      
       return res.json({
         ...article,
         content: previewContent,
-        isPreview: true, // Flag to indicate this is truncated content
+        isPreview: true,
       });
     } catch (error: any) {
       console.error('[ARTICLE-VIEW] ERROR:', error.message);

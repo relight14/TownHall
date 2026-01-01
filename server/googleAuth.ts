@@ -245,3 +245,62 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 };
+
+// Optional auth middleware - populates req.user if authenticated, but doesn't block unauthenticated requests
+export const optionalAuth: RequestHandler = async (req, res, next) => {
+  let userId = (req.session as any)?.userId;
+  
+  // If no session, try to find user via Bearer token
+  if (!userId) {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const payload = decodeJwtPayload(token);
+        const ledewireUserId = payload?.buyer_claims?.user_id || payload?.sub;
+        if (ledewireUserId) {
+          const user = await storage.getUserByLedewireId(ledewireUserId);
+          if (user) {
+            userId = user.id;
+          }
+        }
+      } catch (e) {
+        // Token decode failed - continue as unauthenticated
+      }
+    }
+  }
+  
+  // If no user found, just continue (don't block)
+  if (!userId) {
+    return next();
+  }
+  
+  try {
+    let user = await storage.getUser(userId);
+    if (!user) {
+      return next();
+    }
+    
+    // Handle token refresh if needed
+    if (user.ledewireAccessToken && isTokenExpired(user.ledewireAccessToken)) {
+      if (user.ledewireRefreshToken) {
+        const result = await ledewire.refreshToken(user.ledewireRefreshToken);
+        if (result.success) {
+          const payload = decodeJwtPayload(result.access_token);
+          const ledewireUserId = payload?.buyer_claims?.user_id || payload?.sub || user.ledewireUserId;
+          await storage.updateUserLedewireTokens(userId, result.access_token, result.refresh_token, ledewireUserId);
+          user = await storage.getUser(userId);
+          if (result.refresh_token) {
+            setSSoCookie(res, result.refresh_token);
+          }
+        }
+      }
+    }
+    
+    (req as any).user = user;
+    return next();
+  } catch (error) {
+    // On error, continue as unauthenticated
+    return next();
+  }
+};
