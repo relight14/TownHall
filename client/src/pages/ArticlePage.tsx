@@ -121,13 +121,7 @@ function LinkedInIcon({ className }: { className?: string }) {
 export default function ArticlePage() {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
-  const videoStore = useVideoStore();
-  const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = videoStore;
-  
-  // Constants for post-login token wait logic
-  const TOKEN_WAIT_INTERVAL_MS = 100;
-  const TOKEN_WAIT_MAX_RETRIES = 10;
-  const TOKEN_CONTEXT_CHECK_RETRIES = 5;
+  const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = useVideoStore();
   
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
@@ -559,70 +553,36 @@ export default function ArticlePage() {
       {showAuthModal && (
         <AuthModal 
           onClose={() => setShowAuthModal(false)}
-          onSuccess={async () => {
+          onSuccess={async (freshToken: string) => {
             setShowAuthModal(false);
             
             // After authentication, check if user has already purchased this article
             // before showing the purchase modal
-            if (article?.ledewireContentId) {
+            if (article?.ledewireContentId && freshToken) {
               try {
                 setCheckingPurchase(true);
-                
-                // Wait for the ledewire token to be available in context after login
-                // The context updates the token asynchronously, so we need to wait for it
-                let freshToken = videoStore.ledewireToken;
-                let retries = 0;
-                
-                while (!freshToken && retries < TOKEN_WAIT_MAX_RETRIES) {
-                  await new Promise(resolve => setTimeout(resolve, TOKEN_WAIT_INTERVAL_MS));
-                  // First check if context has been updated (check multiple times before API call)
-                  if (retries < TOKEN_CONTEXT_CHECK_RETRIES) {
-                    freshToken = videoStore.ledewireToken;
-                    if (freshToken) {
-                      break;
+                console.log(`[ARTICLE-CLIENT] Post-auth: checking purchase status with fresh token...`);
+                const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
+                  headers: { 'Authorization': `Bearer ${freshToken}` },
+                  credentials: 'include',
+                });
+                if (response.ok) {
+                  const data = await response.json();
+                  console.log(`[ARTICLE-CLIENT] Post-auth purchase check: has_purchased=${data.has_purchased}`);
+                  if (data.has_purchased) {
+                    // Already purchased - just refresh the article to get full content
+                    setHasPurchased(true);
+                    const articleResponse = await fetch(`/api/articles/${article.id}`, {
+                      headers: { 'Authorization': `Bearer ${freshToken}` },
+                      credentials: 'include',
+                    });
+                    if (articleResponse.ok) {
+                      const fullArticle = await articleResponse.json();
+                      setArticle(fullArticle);
                     }
-                  } else {
-                    // Only make API calls after checking context several times
-                    try {
-                      const sessionResponse = await fetch('/api/auth/user', { credentials: 'include' });
-                      if (sessionResponse.ok) {
-                        const sessionData = await sessionResponse.json();
-                        freshToken = sessionData.ledewireToken;
-                        if (freshToken) break;
-                      }
-                    } catch (apiErr) {
-                      console.error('[ARTICLE-CLIENT] Failed to fetch session token:', apiErr);
-                      // Continue retrying on API errors
-                    }
+                    setCheckingPurchase(false);
+                    return; // Don't show purchase modal - already purchased!
                   }
-                  retries++;
-                }
-                
-                if (freshToken) {
-                  console.log(`[ARTICLE-CLIENT] Post-auth: checking purchase status with fresh token...`);
-                  const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
-                    headers: { 'Authorization': `Bearer ${freshToken}` },
-                    credentials: 'include',
-                  });
-                  if (response.ok) {
-                    const data = await response.json();
-                    console.log(`[ARTICLE-CLIENT] Post-auth purchase check: has_purchased=${data.has_purchased}`);
-                    if (data.has_purchased) {
-                      // Already purchased - just refresh the article to get full content
-                      setHasPurchased(true);
-                      const articleResponse = await fetch(`/api/articles/${article.id}`, {
-                        headers: { 'Authorization': `Bearer ${freshToken}` },
-                        credentials: 'include',
-                      });
-                      if (articleResponse.ok) {
-                        const fullArticle = await articleResponse.json();
-                        setArticle(fullArticle);
-                      }
-                      return; // Don't show purchase modal - already purchased!
-                    }
-                  }
-                } else {
-                  console.log(`[ARTICLE-CLIENT] Post-auth: could not obtain fresh token after retries`);
                 }
               } catch (err) {
                 console.error('[ARTICLE-CLIENT] Post-auth purchase check failed:', err);

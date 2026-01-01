@@ -607,6 +607,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       setLedewireToken(data.ledewireToken);
+      return data.ledewireToken;
     } catch (error) {
       console.error('Signup failed:', error);
       throw error;
@@ -632,6 +633,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       setLedewireToken(data.ledewireToken);
+      return data.ledewireToken;
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -657,6 +659,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       setLedewireToken(data.ledewireToken);
+      return data.ledewireToken;
     } catch (error) {
       console.error('Google login failed:', error);
       throw error;
