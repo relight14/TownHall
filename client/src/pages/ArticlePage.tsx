@@ -121,7 +121,8 @@ function LinkedInIcon({ className }: { className?: string }) {
 export default function ArticlePage() {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
-  const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = useVideoStore();
+  const videoStore = useVideoStore();
+  const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = videoStore;
   
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
@@ -564,7 +565,7 @@ export default function ArticlePage() {
                 
                 // Wait for the ledewire token to be available in context after login
                 // The context updates the token asynchronously, so we need to wait for it
-                let freshToken = ledewireToken;
+                let freshToken = videoStore.ledewireToken;
                 let retries = 0;
                 const maxRetries = 10;
                 const contextCheckRetries = 5; // Check context multiple times before hitting API
@@ -573,9 +574,8 @@ export default function ArticlePage() {
                   await new Promise(resolve => setTimeout(resolve, 100));
                   // First check if context has been updated (check multiple times before API call)
                   if (retries < contextCheckRetries) {
-                    const contextToken = ledewireToken;
-                    if (contextToken) {
-                      freshToken = contextToken;
+                    freshToken = videoStore.ledewireToken;
+                    if (freshToken) {
                       break;
                     }
                   } else {
@@ -610,7 +610,6 @@ export default function ArticlePage() {
                         const fullArticle = await articleResponse.json();
                         setArticle(fullArticle);
                       }
-                      setCheckingPurchase(false);
                       return; // Don't show purchase modal - already purchased!
                     }
                   }
