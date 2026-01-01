@@ -165,7 +165,28 @@ export async function setupGoogleAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const userId = (req.session as any)?.userId;
+  let userId = (req.session as any)?.userId;
+  
+  // If no session, try to find user via Bearer token
+  if (!userId) {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const payload = decodeJwtPayload(token);
+        const ledewireUserId = payload?.buyer_claims?.user_id || payload?.sub;
+        if (ledewireUserId) {
+          const user = await storage.getUserByLedewireId(ledewireUserId);
+          if (user) {
+            userId = user.id;
+            console.log('[AUTH] Found user via Bearer token, ledewireUserId:', ledewireUserId);
+          }
+        }
+      } catch (e) {
+        console.log('[AUTH] Failed to decode Bearer token');
+      }
+    }
+  }
   
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
