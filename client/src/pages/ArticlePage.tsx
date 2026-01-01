@@ -580,7 +580,6 @@ export default function ArticlePage() {
                       const fullArticle = await articleResponse.json();
                       setArticle(fullArticle);
                     }
-                    setCheckingPurchase(false);
                     return; // Don't show purchase modal - already purchased!
                   }
                 }
