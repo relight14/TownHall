@@ -567,21 +567,25 @@ export default function ArticlePage() {
                 let freshToken = ledewireToken;
                 let retries = 0;
                 const maxRetries = 10;
+                const contextCheckRetries = 5; // Check context multiple times before hitting API
                 
                 while (!freshToken && retries < maxRetries) {
                   await new Promise(resolve => setTimeout(resolve, 100));
-                  // First check if context has been updated
-                  const contextToken = ledewireToken;
-                  if (contextToken) {
-                    freshToken = contextToken;
-                    break;
-                  }
-                  // If not, fetch from the API session which should have the token now
-                  const sessionResponse = await fetch('/api/auth/user', { credentials: 'include' });
-                  if (sessionResponse.ok) {
-                    const sessionData = await sessionResponse.json();
-                    freshToken = sessionData.ledewireToken;
-                    if (freshToken) break;
+                  // First check if context has been updated (check multiple times before API call)
+                  if (retries < contextCheckRetries) {
+                    const contextToken = ledewireToken;
+                    if (contextToken) {
+                      freshToken = contextToken;
+                      break;
+                    }
+                  } else {
+                    // Only make API calls after checking context several times
+                    const sessionResponse = await fetch('/api/auth/user', { credentials: 'include' });
+                    if (sessionResponse.ok) {
+                      const sessionData = await sessionResponse.json();
+                      freshToken = sessionData.ledewireToken;
+                      if (freshToken) break;
+                    }
                   }
                   retries++;
                 }
@@ -612,10 +616,10 @@ export default function ArticlePage() {
                   }
                 } else {
                   console.log(`[ARTICLE-CLIENT] Post-auth: could not obtain fresh token after retries`);
-                  setCheckingPurchase(false);
                 }
               } catch (err) {
                 console.error('[ARTICLE-CLIENT] Post-auth purchase check failed:', err);
+              } finally {
                 setCheckingPurchase(false);
               }
             }
