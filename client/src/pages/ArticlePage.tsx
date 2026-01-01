@@ -163,7 +163,7 @@ export default function ArticlePage() {
     if (articleId) {
       loadArticle();
     }
-  }, [articleId]);
+  }, [articleId, user]);
 
   useEffect(() => {
     if (article && articleId && viewCountedRef.current !== articleId) {
