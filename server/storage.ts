@@ -22,14 +22,26 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc, inArray, gt, desc, sql } from "drizzle-orm";
-import crypto from "crypto";
+import bcrypt from "bcrypt";
 
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex');
+const BCRYPT_ROUNDS = 12;
+
+async function hashPasswordAsync(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
-export function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+export async function verifyPasswordAsync(password: string, hash: string): Promise<boolean> {
+  // Handle legacy SHA-256 hashes (64 char hex string) vs bcrypt hashes (starts with $2)
+  if (hash.length === 64 && !hash.startsWith('$2')) {
+    // Legacy SHA-256 hash - compare directly but log for migration
+    const crypto = await import('crypto');
+    const legacyMatch = crypto.createHash('sha256').update(password).digest('hex') === hash;
+    if (legacyMatch) {
+      console.log('[SECURITY] Legacy SHA-256 password matched - will be migrated on next password change');
+    }
+    return legacyMatch;
+  }
+  return bcrypt.compare(password, hash);
 }
 
 export interface IStorage {
@@ -216,7 +228,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrUpdateAdmin(email: string, password: string): Promise<AdminSettings> {
-    const passwordHash = hashPassword(password);
+    const passwordHash = await hashPasswordAsync(password);
     const existing = await this.getAdminByEmail(email);
     
     if (existing) {
@@ -236,11 +248,22 @@ export class DatabaseStorage implements IStorage {
   async verifyAdminPassword(email: string, password: string): Promise<boolean> {
     const admin = await this.getAdminByEmail(email);
     if (!admin) return false;
-    return verifyPassword(password, admin.passwordHash);
+    const isValid = await verifyPasswordAsync(password, admin.passwordHash);
+    
+    // Auto-migrate legacy passwords to bcrypt on successful login
+    if (isValid && admin.passwordHash.length === 64 && !admin.passwordHash.startsWith('$2')) {
+      console.log('[SECURITY] Migrating legacy password to bcrypt');
+      const newHash = await hashPasswordAsync(password);
+      await db.update(adminSettings)
+        .set({ passwordHash: newHash, updatedAt: new Date() })
+        .where(eq(adminSettings.email, email));
+    }
+    
+    return isValid;
   }
 
   async updateAdminPassword(email: string, newPassword: string): Promise<void> {
-    const passwordHash = hashPassword(newPassword);
+    const passwordHash = await hashPasswordAsync(newPassword);
     await db.update(adminSettings)
       .set({ passwordHash, updatedAt: new Date() })
       .where(eq(adminSettings.email, email));

@@ -93,13 +93,30 @@ async function getErrorMessage(response: Response): Promise<string> {
 
 class LedewireClient {
   private sellerToken: string | null = null;
+  private sellerTokenExpiresAt: Date | null = null;
   private cachedConfig: LedewireSellerConfig | null = null;
+
+  private isSellerTokenExpired(): boolean {
+    if (!this.sellerToken || !this.sellerTokenExpiresAt) {
+      return true;
+    }
+    // Consider token expired 5 minutes before actual expiry for safety margin
+    const safetyMargin = 5 * 60 * 1000; // 5 minutes
+    return new Date().getTime() > this.sellerTokenExpiresAt.getTime() - safetyMargin;
+  }
+
+  private clearSellerToken(): void {
+    this.sellerToken = null;
+    this.sellerTokenExpiresAt = null;
+  }
 
   async getSellerConfig(): Promise<LedewireSellerConfig> {
     if (this.cachedConfig) {
       return this.cachedConfig;
     }
 
+    // Note: getSellerConfig doesn't use withSellerTokenRefresh because we cache the result
+    // and a 401 here would indicate a fundamental auth problem that should be surfaced
     const token = await this.getSellerToken();
     
     const response = await fetch(`${LEDEWIRE_API_URL}/seller/config`, {
@@ -110,6 +127,11 @@ class LedewireClient {
     });
 
     if (!response.ok) {
+      // If 401, clear token so next attempt will re-authenticate
+      if (response.status === 401) {
+        console.log('[LEDEWIRE] Seller config 401, clearing token for next attempt');
+        this.clearSellerToken();
+      }
       const errorMsg = await getErrorMessage(response);
       console.error('[LEDEWIRE] Failed to get seller config:', errorMsg);
       throw new Error(`Failed to get seller config: ${errorMsg}`);
@@ -149,8 +171,15 @@ class LedewireClient {
   }
 
   async getSellerToken(): Promise<string> {
-    if (this.sellerToken) {
+    // Return cached token if valid and not expired
+    if (this.sellerToken && !this.isSellerTokenExpired()) {
       return this.sellerToken;
+    }
+
+    // Clear expired token
+    if (this.sellerToken) {
+      console.log('[LEDEWIRE] Seller token expired, re-authenticating...');
+      this.clearSellerToken();
     }
 
     if (!CILLIZZA_SELLER_API_KEY || !CILLIZZA_SELLER_API_SECRET) {
@@ -180,6 +209,16 @@ class LedewireClient {
 
       const data: LedewireAuthResponse = await response.json();
       this.sellerToken = data.access_token;
+      
+      // Track expiry from response or default to 30 minutes
+      if (data.expires_at) {
+        this.sellerTokenExpiresAt = new Date(data.expires_at);
+      } else {
+        // Default to 30 minutes if no expiry provided
+        this.sellerTokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      }
+      
+      console.log('[LEDEWIRE] Seller token obtained, expires at:', this.sellerTokenExpiresAt.toISOString());
       return this.sellerToken;
     } catch (err: any) {
       if (err.message.includes('Indigo Soul')) {
@@ -188,6 +227,50 @@ class LedewireClient {
       console.error('Seller token error:', err);
       throw new Error('Failed to authenticate with Ledewire. Please check your seller credentials.');
     }
+  }
+
+  // Custom error class to carry HTTP status
+  private createHttpError(status: number, message: string): Error & { httpStatus?: number } {
+    const error = new Error(message) as Error & { httpStatus?: number };
+    error.httpStatus = status;
+    return error;
+  }
+
+  // Wrapper to handle 401 errors and retry with fresh token
+  private async withSellerTokenRefresh<T>(
+    operation: (token: string) => Promise<{ response: Response; data: T | null }>,
+    errorContext: string = 'Seller API call'
+  ): Promise<T> {
+    const token = await this.getSellerToken();
+    const result = await operation(token);
+    
+    if (result.response.ok) {
+      if (result.data === null) {
+        throw new Error(`${errorContext} returned empty response`);
+      }
+      return result.data;
+    }
+    
+    // If 401, clear token and retry once
+    if (result.response.status === 401) {
+      console.log('[LEDEWIRE] Received 401 from seller API, re-authenticating...');
+      this.clearSellerToken();
+      const newToken = await this.getSellerToken();
+      const retryResult = await operation(newToken);
+      
+      if (!retryResult.response.ok) {
+        const errorMsg = await getErrorMessage(retryResult.response);
+        throw this.createHttpError(retryResult.response.status, `${errorContext} failed: ${errorMsg}`);
+      }
+      if (retryResult.data === null) {
+        throw new Error(`${errorContext} returned empty response after retry`);
+      }
+      return retryResult.data;
+    }
+    
+    // Other error - throw immediately
+    const errorMsg = await getErrorMessage(result.response);
+    throw this.createHttpError(result.response.status, `${errorContext} failed: ${errorMsg}`);
   }
 
   async signupBuyer(email: string, password: string, name: string): Promise<LedewireAuthResponse> {
@@ -241,8 +324,6 @@ class LedewireClient {
       metadata?: any;
     }
   ): Promise<LedewireContentResponse> {
-    const token = await this.getSellerToken();
-    
     const contentBody = options?.content || 'Premium content';
     const teaserBody = options?.teaser || '';
     
@@ -259,28 +340,22 @@ class LedewireClient {
       requestBody.teaser = Buffer.from(teaserBody).toString('base64');
     }
 
-    const response = await fetch(`${LEDEWIRE_API_URL}/seller/content`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    return this.withSellerTokenRefresh(async (token) => {
+      const response = await fetch(`${LEDEWIRE_API_URL}/seller/content`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-    if (!response.ok) {
-      const errorMsg = await getErrorMessage(response);
-      console.error('[LEDEWIRE-REG-FAIL]', response.status, errorMsg);
-      throw new Error(`Failed to register content: ${errorMsg}`);
-    }
-
-    const data = await safeParseJSON(response);
-    if (!data) {
-      throw new Error('Register content response was empty');
-    }
-
-    console.log('[LEDEWIRE-REG-OK]', data.id);
-    return data;
+      const data = response.ok ? await safeParseJSON(response) : null;
+      if (response.ok && data) {
+        console.log('[LEDEWIRE-REG-OK]', data.id);
+      }
+      return { response, data };
+    }, 'Register content');
   }
 
   async updateContent(
@@ -290,8 +365,6 @@ class LedewireClient {
       priceCents?: number;
     }
   ): Promise<LedewireContentResponse> {
-    const token = await this.getSellerToken();
-    
     const requestBody: any = {};
     
     if (updates.title !== undefined) {
@@ -304,28 +377,22 @@ class LedewireClient {
 
     console.log(`[LEDEWIRE-UPDATE] Updating content ${contentId}:`, requestBody);
 
-    const response = await fetch(`${LEDEWIRE_API_URL}/seller/content/${contentId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    return this.withSellerTokenRefresh(async (token) => {
+      const response = await fetch(`${LEDEWIRE_API_URL}/seller/content/${contentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-    if (!response.ok) {
-      const errorMsg = await getErrorMessage(response);
-      console.error('[LEDEWIRE-UPDATE-FAIL]', response.status, errorMsg);
-      throw new Error(`Failed to update content: ${errorMsg}`);
-    }
-
-    const data = await safeParseJSON(response);
-    if (!data) {
-      throw new Error('Update content response was empty');
-    }
-
-    console.log('[LEDEWIRE-UPDATE-OK]', data.id);
-    return data;
+      const data = response.ok ? await safeParseJSON(response) : null;
+      if (response.ok && data) {
+        console.log('[LEDEWIRE-UPDATE-OK]', data.id);
+      }
+      return { response, data };
+    }, `Update content ${contentId}`);
   }
 
   async getWalletBalance(userToken: string): Promise<LedewireWalletBalanceResponse> {
