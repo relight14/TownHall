@@ -570,8 +570,13 @@ export default function ArticlePage() {
                 
                 while (!freshToken && retries < maxRetries) {
                   await new Promise(resolve => setTimeout(resolve, 100));
-                  // Re-check the token from context via a closure workaround
-                  // We'll fetch from the API session which should have the token now
+                  // First check if context has been updated
+                  const contextToken = ledewireToken;
+                  if (contextToken) {
+                    freshToken = contextToken;
+                    break;
+                  }
+                  // If not, fetch from the API session which should have the token now
                   const sessionResponse = await fetch('/api/auth/user', { credentials: 'include' });
                   if (sessionResponse.ok) {
                     const sessionData = await sessionResponse.json();
@@ -607,10 +612,10 @@ export default function ArticlePage() {
                   }
                 } else {
                   console.log(`[ARTICLE-CLIENT] Post-auth: could not obtain fresh token after retries`);
+                  setCheckingPurchase(false);
                 }
               } catch (err) {
                 console.error('[ARTICLE-CLIENT] Post-auth purchase check failed:', err);
-              } finally {
                 setCheckingPurchase(false);
               }
             }
