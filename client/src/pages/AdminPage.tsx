@@ -623,7 +623,12 @@ export default function AdminPage() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
+                      // Reload articles to ensure we have full content before editing
+                      const token = sessionStorage.getItem('adminToken');
+                      if (token) {
+                        await loadAdminArticles(token);
+                      }
                       setEditingArticleId(article.id.toString());
                       window.scrollTo(0, 0);
                     }}

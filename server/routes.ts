@@ -7,7 +7,7 @@ import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema, insertArticl
 import { createSSORoutes, setSSoCookie } from "./sso-module/sso-routes";
 import type { SSOConfig } from "./sso-module/sso-types";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { requireAdminAuth, setAdminToken, clearAdminToken } from "./adminAuth";
+import { requireAdminAuth, setAdminToken, clearAdminToken, isAdminTokenValid } from "./adminAuth";
 import crypto from "crypto";
 
 const generateAdminToken = () => crypto.randomBytes(32).toString('hex');
@@ -126,7 +126,6 @@ export async function registerRoutes(
   
   app.get("/api/admin/verify", (req, res) => {
     const adminToken = req.headers['x-admin-token'] as string;
-    const { isAdminTokenValid } = require('./adminAuth');
     
     if (!adminToken || !isAdminTokenValid(adminToken)) {
       return res.status(401).json({ valid: false, error: 'Invalid or expired token' });
