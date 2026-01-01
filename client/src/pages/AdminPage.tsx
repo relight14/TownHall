@@ -518,7 +518,7 @@ export default function AdminPage() {
                           <h4 className="text-white font-medium">{ep.title}</h4>
                           <p className="text-slate-400 text-sm">{ep.description}</p>
                         </div>
-                        <div className="text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full text-sm border border-blue-500/20">${ep.price}</div>
+                        <div className="text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full text-sm border border-blue-500/20">${ep.price.toFixed(2)}</div>
                         <button
                           onClick={() => {
                             setEditingEpisodeId(ep.id);
@@ -842,7 +842,7 @@ function EpisodeForm({ seriesId, episode, onSubmit, onCancel }: {
   const [description, setDescription] = useState(episode?.description || '');
   const [videoUrl, setVideoUrl] = useState(episode?.videoUrl || '');
   const [videoType, setVideoType] = useState<'vimeo' | 'youtube'>(episode?.videoType || 'vimeo');
-  const [price, setPrice] = useState(episode?.price?.toString() || '9.99');
+  const [price, setPrice] = useState(episode?.price !== undefined ? episode.price.toFixed(2) : '9.99');
   const [thumbnail, setThumbnail] = useState(episode?.thumbnail || '');
   const [useFile, setUseFile] = useState(false);
   

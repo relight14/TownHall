@@ -286,7 +286,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   const [subheader, setSubheader] = useState(article?.subheader || '');
   const [thumbnail, setThumbnail] = useState(article?.thumbnail || '');
   const [category, setCategory] = useState(article?.category || 'elections');
-  const [price, setPrice] = useState(article?.price !== undefined ? String(article.price) : '99');
+  const [price, setPrice] = useState(article?.price !== undefined ? (article.price / 100).toFixed(2) : '0.99');
   const [featured, setFeatured] = useState(Boolean(article?.featured));
   const [publishedAt, setPublishedAt] = useState(
     article?.publishedAt 
@@ -374,7 +374,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
       setSubheader(article.subheader || '');
       setThumbnail(article.thumbnail || '');
       setCategory(article.category || 'elections');
-      setPrice(article.price !== undefined ? String(article.price) : '99');
+      setPrice(article.price !== undefined ? (article.price / 100).toFixed(2) : '0.99');
       setFeatured(Boolean(article.featured));
       setPublishedAt(
         article.publishedAt 
@@ -444,7 +444,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
         summary: generateSummary(content),
         thumbnail: thumbnail || null,
         category,
-        price: parseInt(price) || 99,
+        price: Math.round(parseFloat(price) * 100) || 99,
         featured: featured ? 1 : 0,
         publishedAt: new Date(publishedAt),
       });
@@ -506,18 +506,18 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
             </select>
           </div>
           <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Price (in cents)</label>
+            <label className="block text-slate-300 mb-2 text-sm font-medium">Price ($)</label>
             <input
               type="number"
               min="0"
-              step="1"
+              step="0.01"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
-              placeholder="99"
+              placeholder="0.99"
               data-testid="input-article-price"
             />
-            <p className="text-xs text-slate-500 mt-1">Price in cents (e.g., 99 = $0.99, 199 = $1.99)</p>
+            <p className="text-xs text-slate-500 mt-1">Enter price in dollars (e.g., 0.99, 1.50, 2.00)</p>
           </div>
           <div>
             <label className="block text-slate-300 mb-2 text-sm font-medium">Published Date</label>

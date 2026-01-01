@@ -216,7 +216,7 @@ export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
 
           {!isPurchased && !showPreview && (
             <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-              ${episode.price}
+              ${episode.price.toFixed(2)}
             </div>
           )}
           

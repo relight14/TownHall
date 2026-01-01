@@ -68,7 +68,7 @@ export default function PurchaseModal({ episode, onClose, onSuccess }: PurchaseM
           <div className="bg-slate-800/50 rounded-lg p-4 mb-6 border border-slate-700">
             <div className="flex justify-between items-center mb-2">
               <span className="text-slate-300">Episode Price</span>
-              <span className="text-white font-semibold">${episode.price}</span>
+              <span className="text-white font-semibold">${episode.price.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-300">Payment Method</span>
@@ -106,7 +106,7 @@ export default function PurchaseModal({ episode, onClose, onSuccess }: PurchaseM
               ) : (
                 <>
                   <Check className="w-5 h-5" />
-                  Confirm ${episode.price}
+                  Confirm ${episode.price.toFixed(2)}
                 </>
               )}
             </button>
