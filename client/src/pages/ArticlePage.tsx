@@ -124,6 +124,11 @@ export default function ArticlePage() {
   const videoStore = useVideoStore();
   const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = videoStore;
   
+  // Constants for post-login token wait logic
+  const TOKEN_WAIT_INTERVAL_MS = 100;
+  const TOKEN_WAIT_MAX_RETRIES = 10;
+  const TOKEN_CONTEXT_CHECK_RETRIES = 5;
+  
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -567,24 +572,27 @@ export default function ArticlePage() {
                 // The context updates the token asynchronously, so we need to wait for it
                 let freshToken = videoStore.ledewireToken;
                 let retries = 0;
-                const maxRetries = 10;
-                const contextCheckRetries = 5; // Check context multiple times before hitting API
                 
-                while (!freshToken && retries < maxRetries) {
-                  await new Promise(resolve => setTimeout(resolve, 100));
+                while (!freshToken && retries < TOKEN_WAIT_MAX_RETRIES) {
+                  await new Promise(resolve => setTimeout(resolve, TOKEN_WAIT_INTERVAL_MS));
                   // First check if context has been updated (check multiple times before API call)
-                  if (retries < contextCheckRetries) {
+                  if (retries < TOKEN_CONTEXT_CHECK_RETRIES) {
                     freshToken = videoStore.ledewireToken;
                     if (freshToken) {
                       break;
                     }
                   } else {
                     // Only make API calls after checking context several times
-                    const sessionResponse = await fetch('/api/auth/user', { credentials: 'include' });
-                    if (sessionResponse.ok) {
-                      const sessionData = await sessionResponse.json();
-                      freshToken = sessionData.ledewireToken;
-                      if (freshToken) break;
+                    try {
+                      const sessionResponse = await fetch('/api/auth/user', { credentials: 'include' });
+                      if (sessionResponse.ok) {
+                        const sessionData = await sessionResponse.json();
+                        freshToken = sessionData.ledewireToken;
+                        if (freshToken) break;
+                      }
+                    } catch (apiErr) {
+                      console.error('[ARTICLE-CLIENT] Failed to fetch session token:', apiErr);
+                      // Continue retrying on API errors
                     }
                   }
                   retries++;
