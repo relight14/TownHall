@@ -142,16 +142,7 @@ export default function ArticlePage() {
         setLoading(true);
         console.log(`[ARTICLE-CLIENT] ========================================`);
         console.log(`[ARTICLE-CLIENT] Fetching article: ${articleId}`);
-        console.log(`[ARTICLE-CLIENT] User logged in: ${user ? 'YES' : 'NO'}, Token: ${ledewireToken ? 'present' : 'MISSING'}`);
-        
-        // Include Authorization header if user is authenticated
-        const headers: HeadersInit = {};
-        if (ledewireToken) {
-          headers['Authorization'] = `Bearer ${ledewireToken}`;
-          console.log(`[ARTICLE-CLIENT] Sending Authorization header with request`);
-        }
-        
-        const response = await fetch(`/api/articles/${articleId}`, { headers });
+        const response = await fetch(`/api/articles/${articleId}`);
         if (!response.ok) {
           throw new Error('Article not found');
         }
@@ -172,7 +163,7 @@ export default function ArticlePage() {
     if (articleId) {
       loadArticle();
     }
-  }, [articleId, user, ledewireToken]);
+  }, [articleId, user]);
 
   useEffect(() => {
     if (article && articleId && viewCountedRef.current !== articleId) {
@@ -273,11 +264,7 @@ export default function ArticlePage() {
         // Refetch article to get full content now that purchase is complete
         try {
           console.log(`[ARTICLE-CLIENT] Refetching article for full content...`);
-          const refetchHeaders: HeadersInit = {};
-          if (ledewireToken) {
-            refetchHeaders['Authorization'] = `Bearer ${ledewireToken}`;
-          }
-          const articleResponse = await fetch(`/api/articles/${article.id}`, { headers: refetchHeaders });
+          const articleResponse = await fetch(`/api/articles/${article.id}`);
           if (articleResponse.ok) {
             const fullArticle = await articleResponse.json();
             console.log(`[ARTICLE-CLIENT] Full article received, isPreview: ${fullArticle.isPreview}`);
