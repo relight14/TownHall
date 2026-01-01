@@ -142,7 +142,15 @@ export default function ArticlePage() {
         setLoading(true);
         console.log(`[ARTICLE-CLIENT] ========================================`);
         console.log(`[ARTICLE-CLIENT] Fetching article: ${articleId}`);
-        const response = await fetch(`/api/articles/${articleId}`);
+        console.log(`[ARTICLE-CLIENT] User logged in: ${user ? 'YES' : 'NO'}, Token: ${ledewireToken ? 'present' : 'MISSING'}`);
+        
+        const headers: HeadersInit = {};
+        if (ledewireToken) {
+          headers['Authorization'] = `Bearer ${ledewireToken}`;
+          console.log(`[ARTICLE-CLIENT] Sending Authorization header with request`);
+        }
+        
+        const response = await fetch(`/api/articles/${articleId}`, { headers });
         if (!response.ok) {
           throw new Error('Article not found');
         }
@@ -163,7 +171,7 @@ export default function ArticlePage() {
     if (articleId) {
       loadArticle();
     }
-  }, [articleId, user]);
+  }, [articleId, user, ledewireToken]);
 
   useEffect(() => {
     if (article && articleId && viewCountedRef.current !== articleId) {
@@ -264,7 +272,11 @@ export default function ArticlePage() {
         // Refetch article to get full content now that purchase is complete
         try {
           console.log(`[ARTICLE-CLIENT] Refetching article for full content...`);
-          const articleResponse = await fetch(`/api/articles/${article.id}`);
+          const refetchHeaders: HeadersInit = {};
+          if (ledewireToken) {
+            refetchHeaders['Authorization'] = `Bearer ${ledewireToken}`;
+          }
+          const articleResponse = await fetch(`/api/articles/${article.id}`, { headers: refetchHeaders });
           if (articleResponse.ok) {
             const fullArticle = await articleResponse.json();
             console.log(`[ARTICLE-CLIENT] Full article received, isPreview: ${fullArticle.isPreview}`);
@@ -541,8 +553,46 @@ export default function ArticlePage() {
       {showAuthModal && (
         <AuthModal 
           onClose={() => setShowAuthModal(false)}
-          onSuccess={() => {
+          onSuccess={async () => {
             setShowAuthModal(false);
+            
+            // After authentication, check if user has already purchased this article
+            // before showing the purchase modal
+            if (article?.ledewireContentId) {
+              try {
+                setCheckingPurchase(true);
+                // Get fresh token from context after auth
+                const storedToken = localStorage.getItem('ledewire_token');
+                if (storedToken) {
+                  console.log(`[ARTICLE-CLIENT] Post-auth: checking purchase status...`);
+                  const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
+                    headers: { 'Authorization': `Bearer ${storedToken}` },
+                  });
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log(`[ARTICLE-CLIENT] Post-auth purchase check: has_purchased=${data.has_purchased}`);
+                    if (data.has_purchased) {
+                      // Already purchased - just refresh the article to get full content
+                      setHasPurchased(true);
+                      const articleResponse = await fetch(`/api/articles/${article.id}`, {
+                        headers: { 'Authorization': `Bearer ${storedToken}` },
+                      });
+                      if (articleResponse.ok) {
+                        const fullArticle = await articleResponse.json();
+                        setArticle(fullArticle);
+                      }
+                      return; // Don't show purchase modal
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error('[ARTICLE-CLIENT] Post-auth purchase check failed:', err);
+              } finally {
+                setCheckingPurchase(false);
+              }
+            }
+            
+            // Not purchased yet - show purchase modal
             setShowPurchaseModal(true);
           }}
           onForgotPassword={() => {
