@@ -151,7 +151,9 @@ export default function ArticlePage() {
           console.log(`[ARTICLE-CLIENT] Sending Authorization header with request`);
         }
         
-        const response = await fetch(`/api/articles/${articleId}`, { headers });
+        const response = await fetch(`/api/articles/${articleId}`, {
+          headers,
+        });
         if (!response.ok) {
           throw new Error('Article not found');
         }
@@ -236,75 +238,6 @@ export default function ArticlePage() {
     setShowPurchaseModal(true);
   };
 
-  // Handle successful authentication - check if user already purchased before showing purchase modal
-  const handleAuthSuccess = async () => {
-    console.log(`[ARTICLE-CLIENT] handleAuthSuccess called - checking purchase status after login`);
-    setShowAuthModal(false);
-    
-    if (!article?.ledewireContentId) {
-      console.log(`[ARTICLE-CLIENT] No ledewireContentId, showing purchase modal`);
-      setShowPurchaseModal(true);
-      return;
-    }
-    
-    // Need to get the fresh token from context since user just authenticated
-    // The token should be available after a short delay as the context updates
-    setCheckingPurchase(true);
-    
-    // Small delay to let context update with new token
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    try {
-      // Get the current token from localStorage as backup since context might not be updated yet
-      const storedToken = localStorage.getItem('ledewire_token');
-      const tokenToUse = storedToken || ledewireToken;
-      
-      if (!tokenToUse) {
-        console.log(`[ARTICLE-CLIENT] No token available after auth, showing purchase modal`);
-        setShowPurchaseModal(true);
-        return;
-      }
-      
-      console.log(`[ARTICLE-CLIENT] Checking purchase status with fresh token...`);
-      const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
-        headers: {
-          'Authorization': `Bearer ${tokenToUse}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`[ARTICLE-CLIENT] Post-auth purchase check: has_purchased=${data.has_purchased}`);
-        
-        if (data.has_purchased) {
-          console.log(`[ARTICLE-CLIENT] User already purchased - refreshing article for full content`);
-          setHasPurchased(true);
-          
-          // Refetch article to get full content
-          const articleResponse = await fetch(`/api/articles/${article.id}`, {
-            headers: { 'Authorization': `Bearer ${tokenToUse}` },
-          });
-          if (articleResponse.ok) {
-            const fullArticle = await articleResponse.json();
-            console.log(`[ARTICLE-CLIENT] Full article loaded, isPreview: ${fullArticle.isPreview}`);
-            setArticle(fullArticle);
-          }
-        } else {
-          console.log(`[ARTICLE-CLIENT] User has not purchased - showing purchase modal`);
-          setShowPurchaseModal(true);
-        }
-      } else {
-        console.log(`[ARTICLE-CLIENT] Purchase check failed, showing purchase modal as fallback`);
-        setShowPurchaseModal(true);
-      }
-    } catch (err: any) {
-      console.error(`[ARTICLE-CLIENT] Error checking purchase after auth:`, err.message);
-      setShowPurchaseModal(true);
-    } finally {
-      setCheckingPurchase(false);
-    }
-  };
-
   const handleConfirmPurchase = async () => {
     console.log(`[ARTICLE-CLIENT] handleConfirmPurchase called`);
     if (!article?.ledewireContentId) {
@@ -346,7 +279,9 @@ export default function ArticlePage() {
           if (ledewireToken) {
             refetchHeaders['Authorization'] = `Bearer ${ledewireToken}`;
           }
-          const articleResponse = await fetch(`/api/articles/${article.id}`, { headers: refetchHeaders });
+          const articleResponse = await fetch(`/api/articles/${article.id}`, {
+            headers: refetchHeaders,
+          });
           if (articleResponse.ok) {
             const fullArticle = await articleResponse.json();
             console.log(`[ARTICLE-CLIENT] Full article received, isPreview: ${fullArticle.isPreview}`);
@@ -623,7 +558,10 @@ export default function ArticlePage() {
       {showAuthModal && (
         <AuthModal 
           onClose={() => setShowAuthModal(false)}
-          onSuccess={handleAuthSuccess}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            setShowPurchaseModal(true);
+          }}
           onForgotPassword={() => {
             setShowAuthModal(false);
             setShowPasswordReset(true);
