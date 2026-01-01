@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import SeriesPage from './pages/SeriesPage';
 import ArticlePage from './pages/ArticlePage';
 import CategoryPage from './pages/CategoryPage';
+import VideosPage from './pages/VideosPage';
 import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
 import AuthModal from './components/AuthModal';
@@ -39,6 +40,7 @@ function AppContent() {
         <Route path="/series/:seriesId" element={<SeriesPage />} />
         <Route path="/article/:articleId" element={<ArticlePage />} />
         <Route path="/category/:category" element={<CategoryPage />} />
+        <Route path="/videos" element={<VideosPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/wallet" element={<WalletPage />} />
       </Routes>
