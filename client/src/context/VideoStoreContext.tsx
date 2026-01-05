@@ -144,6 +144,14 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const userRef = useRef<User | null>(null);
+  const tokenRef = useRef<string | null>(null);
+
+  // Keep refs in sync with state for interval callback
+  useEffect(() => {
+    userRef.current = user;
+    tokenRef.current = ledewireToken;
+  }, [user, ledewireToken]);
 
   const clearSession = useCallback(() => {
     console.log('[AUTH] Clearing stale session');
@@ -238,8 +246,11 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
 
     // Set up periodic session refresh every 5 minutes
     refreshIntervalRef.current = setInterval(() => {
-      if (user && ledewireToken) {
-        if (isTokenExpired(ledewireToken)) {
+      const currentUser = userRef.current;
+      const currentToken = tokenRef.current;
+      
+      if (currentUser && currentToken) {
+        if (isTokenExpired(currentToken)) {
           console.log('[AUTH] Token expired, attempting refresh...');
           refreshSession().then(success => {
             if (!success) {
@@ -752,10 +763,11 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshWalletBalance = async () => {
-    if (!ledewireToken) return;
+    const currentToken = tokenRef.current || ledewireToken;
+    if (!currentToken) return;
 
     // Check if token is expired before making request
-    if (isTokenExpired(ledewireToken)) {
+    if (isTokenExpired(currentToken)) {
       console.log('[WALLET] Token expired, attempting refresh before balance check...');
       const refreshed = await refreshSession();
       if (!refreshed) {
@@ -763,12 +775,15 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         clearSession();
         return;
       }
+      // After refresh, the useEffect watching ledewireToken will call us again
+      // with the fresh token, so we can return here
+      return;
     }
 
     try {
       const response = await fetch('/api/wallet/balance', {
         headers: {
-          'Authorization': `Bearer ${ledewireToken}`,
+          'Authorization': `Bearer ${currentToken}`,
         },
         credentials: 'include',
       });
@@ -780,6 +795,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
           console.log('[WALLET] Session refresh failed after 401, clearing session');
           clearSession();
         }
+        // If refresh succeeded, the useEffect will call us again with fresh token
         return;
       }
 
