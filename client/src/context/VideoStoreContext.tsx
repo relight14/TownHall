@@ -1,4 +1,20 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false;
+    
+    const now = Math.floor(Date.now() / 1000);
+    const bufferSeconds = 60;
+    return now >= (payload.exp - bufferSeconds);
+  } catch {
+    return true;
+  }
+}
 
 interface Episode {
   id: string;
@@ -127,6 +143,46 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     loadFeaturedEpisodes();
   }, []);
 
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearSession = useCallback(() => {
+    console.log('[AUTH] Clearing stale session');
+    setUser(null);
+    setLedewireToken(null);
+    setPurchasedEpisodes([]);
+    setWalletBalance(0);
+  }, []);
+
+  const refreshSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const ssoResponse = await fetch('/api/auth/session', { credentials: 'include' });
+      if (ssoResponse.ok) {
+        const ssoData = await ssoResponse.json();
+        if (ssoData.authenticated && ssoData.ledewireToken) {
+          console.log('[SSO] Session refreshed successfully');
+          if (ssoData.user) {
+            setUser({
+              id: ssoData.user.id,
+              email: ssoData.user.email || '',
+              name: ssoData.user.name || ssoData.user.email || 'User',
+            });
+          } else if (ssoData.ledewireUserId) {
+            setUser({
+              id: ssoData.ledewireUserId,
+              email: '',
+              name: 'User',
+            });
+          }
+          setLedewireToken(ssoData.ledewireToken);
+          return true;
+        }
+      }
+    } catch (error) {
+      console.log('[SSO] Session refresh failed:', error);
+    }
+    return false;
+  }, []);
+
   // Check for cross-subdomain SSO session first, then local session
   useEffect(() => {
     const checkSSOSession = async () => {
@@ -179,6 +235,26 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       }
     };
     checkSSOSession();
+
+    // Set up periodic session refresh every 5 minutes
+    refreshIntervalRef.current = setInterval(() => {
+      if (user && ledewireToken) {
+        if (isTokenExpired(ledewireToken)) {
+          console.log('[AUTH] Token expired, attempting refresh...');
+          refreshSession().then(success => {
+            if (!success) {
+              clearSession();
+            }
+          });
+        }
+      }
+    }, 5 * 60 * 1000);
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
   }, []);
 
   // Load wallet balance when token changes
@@ -678,6 +754,17 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const refreshWalletBalance = async () => {
     if (!ledewireToken) return;
 
+    // Check if token is expired before making request
+    if (isTokenExpired(ledewireToken)) {
+      console.log('[WALLET] Token expired, attempting refresh before balance check...');
+      const refreshed = await refreshSession();
+      if (!refreshed) {
+        console.log('[WALLET] Token refresh failed, clearing session');
+        clearSession();
+        return;
+      }
+    }
+
     try {
       const response = await fetch('/api/wallet/balance', {
         headers: {
@@ -685,6 +772,16 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         },
         credentials: 'include',
       });
+
+      if (response.status === 401) {
+        console.log('[WALLET] Got 401, attempting session refresh...');
+        const refreshed = await refreshSession();
+        if (!refreshed) {
+          console.log('[WALLET] Session refresh failed after 401, clearing session');
+          clearSession();
+        }
+        return;
+      }
 
       if (response.ok) {
         const data = await response.json();
