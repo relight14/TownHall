@@ -1,22 +1,47 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { NodeViewProps, NodeViewWrapper, nodePasteRule, ReactNodeViewRenderer } from '@tiptap/react';
+import { mergeAttributes, Node } from '@tiptap/core';
+import { Tweet } from 'react-tweet';
+import React from 'react';
 
-const TWITTER_URL_REGEX = /https?:\/\/(twitter\.com|x\.com)\/\w+\/status\/(\d+)/;
+const TweetComponent = ({ node }: NodeViewProps) => {
+  const url = node.attrs.url;
+  const tweetIdRegex = /\/status\/(\d+)/g;
+  const id = tweetIdRegex.exec(url)?.[1];
 
-export const SocialEmbed = Node.create({
-  name: 'socialEmbed',
+  return React.createElement(
+    NodeViewWrapper,
+    { className: 'twitter-embed my-4' },
+    React.createElement(Tweet, { id: id || '' })
+  );
+};
+
+export const TwitterEmbed = Node.create({
+  name: 'twitter',
+
   group: 'block',
+
   atom: true,
-  selectable: true,
+
   draggable: true,
+
+  addPasteRules() {
+    const twitterUrl = /^https:\/\/(twitter\.com|x\.com)\/.*\/status\/.*/g;
+
+    return [
+      nodePasteRule({
+        find: twitterUrl,
+        type: this.type,
+        getAttributes: (match) => {
+          return { url: match.input };
+        },
+      }),
+    ];
+  },
 
   addAttributes() {
     return {
       url: {
         default: '',
-      },
-      platform: {
-        default: 'twitter',
       },
     };
   },
@@ -24,121 +49,23 @@ export const SocialEmbed = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'blockquote.twitter-tweet',
+        tag: 'div[data-twitter-url]',
         getAttrs: (node) => {
           if (typeof node === 'string') return false;
           const element = node as HTMLElement;
-          const link = element.querySelector('a[href*="twitter.com"], a[href*="x.com"]');
-          const url = link?.getAttribute('href') || '';
-          return {
-            url,
-            platform: 'twitter',
-          };
-        },
-      },
-      {
-        tag: 'div.social-embed-wrapper',
-        getAttrs: (node) => {
-          if (typeof node === 'string') return false;
-          const element = node as HTMLElement;
-          return {
-            url: element.getAttribute('data-url') || '',
-            platform: element.getAttribute('data-platform') || 'twitter',
-          };
+          return { url: element.getAttribute('data-twitter-url') };
         },
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    const { url, platform } = HTMLAttributes;
-    return ['div', mergeAttributes({
-      class: 'social-embed-wrapper',
-      'data-platform': platform,
-      'data-url': url,
-    }), ['div', { class: 'social-embed-content' }]];
+    return ['div', mergeAttributes({ 'data-twitter-url': HTMLAttributes.url, class: 'twitter-embed' })];
   },
 
   addNodeView() {
-    return ({ node }) => {
-      const dom = document.createElement('div');
-      dom.className = 'social-embed-wrapper my-4 flex justify-center';
-      dom.setAttribute('data-platform', node.attrs.platform);
-      dom.setAttribute('data-url', node.attrs.url);
-      
-      const content = document.createElement('div');
-      content.className = 'social-embed-content';
-      
-      if (node.attrs.platform === 'twitter' && node.attrs.url) {
-        const blockquote = document.createElement('blockquote');
-        blockquote.className = 'twitter-tweet';
-        const link = document.createElement('a');
-        link.href = node.attrs.url;
-        blockquote.appendChild(link);
-        content.appendChild(blockquote);
-        
-        dom.appendChild(content);
-        
-        const loadTwitterWidget = () => {
-          if ((window as any).twttr?.widgets) {
-            (window as any).twttr.widgets.load(dom);
-          } else {
-            if (!document.querySelector('script[src*="platform.twitter.com/widgets.js"]')) {
-              const script = document.createElement('script');
-              script.src = 'https://platform.twitter.com/widgets.js';
-              script.async = true;
-              script.onload = () => {
-                (window as any).twttr?.widgets?.load(dom);
-              };
-              document.body.appendChild(script);
-            } else {
-              setTimeout(loadTwitterWidget, 100);
-            }
-          }
-        };
-        
-        setTimeout(loadTwitterWidget, 50);
-      } else {
-        content.textContent = `Embed: ${node.attrs.url}`;
-        dom.appendChild(content);
-      }
-
-      return {
-        dom,
-        contentDOM: null,
-      };
-    };
-  },
-
-  addProseMirrorPlugins() {
-    const nodeType = this.type;
-    
-    return [
-      new Plugin({
-        key: new PluginKey('socialEmbedPaste'),
-        props: {
-          handlePaste(view, event) {
-            const text = event.clipboardData?.getData('text/plain') || '';
-            const match = text.match(TWITTER_URL_REGEX);
-            
-            if (match) {
-              const url = match[0];
-              const { tr } = view.state;
-              const node = nodeType.create({ url, platform: 'twitter' });
-              
-              const { from, to } = view.state.selection;
-              tr.replaceRangeWith(from, to, node);
-              view.dispatch(tr);
-              
-              return true;
-            }
-            
-            return false;
-          },
-        },
-      }),
-    ];
+    return ReactNodeViewRenderer(TweetComponent);
   },
 });
 
-export default SocialEmbed;
+export default TwitterEmbed;

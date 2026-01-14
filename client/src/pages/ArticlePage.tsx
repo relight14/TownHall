@@ -76,11 +76,10 @@ function normalizeListHTML(html: string): string {
     }
   }
   
-  doc.querySelectorAll('.social-embed-wrapper').forEach((wrapper) => {
-    const url = wrapper.getAttribute('data-url');
-    const platform = wrapper.getAttribute('data-platform');
+  doc.querySelectorAll('div[data-twitter-url]').forEach((wrapper) => {
+    const url = wrapper.getAttribute('data-twitter-url');
     
-    if (platform === 'twitter' && url) {
+    if (url) {
       const blockquote = document.createElement('blockquote');
       blockquote.className = 'twitter-tweet';
       const link = document.createElement('a');
