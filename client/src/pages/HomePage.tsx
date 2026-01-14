@@ -143,12 +143,12 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
             </span>
           )}
         </div>
-        <div className="mt-3 relative aspect-[4/3] overflow-hidden rounded-lg">
+        <div className="mt-3 relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
           {article.thumbnail ? (
             <ImageWithFallback
               src={article.thumbnail}
               alt={article.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
@@ -184,12 +184,12 @@ function CategoryArticleCard({ article }: { article: Article }) {
   return (
     <Link to={`/article/${article.id}`}>
       <div className="group cursor-pointer" data-testid={`category-article-${article.id}`}>
-        <div className="relative aspect-[3/2] overflow-hidden rounded-lg">
+        <div className="relative aspect-[3/2] overflow-hidden rounded-lg bg-gray-100">
           {article.thumbnail ? (
             <ImageWithFallback
               src={article.thumbnail}
               alt={article.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
@@ -233,11 +233,11 @@ function VideoCard({ episode, seriesTitle }: { episode: any; seriesTitle: string
   return (
     <Link to={`/series/${episode.seriesId}`}>
       <div className="group cursor-pointer" data-testid={`video-card-${episode.id}`}>
-        <div className="relative aspect-video overflow-hidden rounded-lg">
+        <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
           <ImageWithFallback
             src={episode.thumbnail}
             alt={episode.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center">

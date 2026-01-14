@@ -387,11 +387,11 @@ export default function ArticlePage() {
 
         <article className="bg-white text-gray-900">
           {article.thumbnail && (
-            <div className="aspect-[21/9] overflow-hidden rounded-lg mb-8">
+            <div className="aspect-[21/9] overflow-hidden rounded-lg mb-8 bg-gray-100 flex items-center justify-center">
               <ImageWithFallback 
                 src={article.thumbnail} 
                 alt={article.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
           )}
