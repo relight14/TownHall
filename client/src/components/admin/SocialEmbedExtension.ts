@@ -1,22 +1,93 @@
 import { NodeViewProps, NodeViewWrapper, nodePasteRule, ReactNodeViewRenderer } from '@tiptap/react';
 import { mergeAttributes, Node } from '@tiptap/core';
 import { Tweet } from 'react-tweet';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
-const TweetComponent = ({ node }: NodeViewProps) => {
-  const url = node.attrs.url;
-  const tweetIdRegex = /\/status\/(\d+)/g;
-  const id = tweetIdRegex.exec(url)?.[1];
+type Platform = 'twitter' | 'substack' | 'threads' | 'bluesky' | 'generic';
+
+function detectPlatform(url: string): Platform {
+  if (/twitter\.com|x\.com/.test(url)) return 'twitter';
+  if (/substack\.com/.test(url)) return 'substack';
+  if (/threads\.net/.test(url)) return 'threads';
+  if (/bsky\.app/.test(url)) return 'bluesky';
+  return 'generic';
+}
+
+const TwitterComponent = ({ url }: { url: string }) => {
+  const tweetIdRegex = /\/status\/(\d+)/;
+  const match = url.match(tweetIdRegex);
+  const id = match?.[1];
+  
+  if (!id) return React.createElement('div', { className: 'p-4 bg-gray-100 rounded' }, 'Invalid tweet URL');
+  
+  return React.createElement(Tweet, { id });
+};
+
+const GenericEmbedComponent = ({ url, platform }: { url: string; platform: Platform }) => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const platformLabels: Record<Platform, string> = {
+    twitter: 'Twitter',
+    substack: 'Substack',
+    threads: 'Threads',
+    bluesky: 'Bluesky',
+    generic: 'Link',
+  };
+
+  const platformColors: Record<Platform, string> = {
+    twitter: 'bg-blue-50 border-blue-200',
+    substack: 'bg-orange-50 border-orange-200',
+    threads: 'bg-gray-50 border-gray-200',
+    bluesky: 'bg-sky-50 border-sky-200',
+    generic: 'bg-gray-50 border-gray-200',
+  };
 
   return React.createElement(
-    NodeViewWrapper,
-    { className: 'twitter-embed my-4' },
-    React.createElement(Tweet, { id: id || '' })
+    'div',
+    { 
+      className: `p-4 rounded-lg border-2 ${platformColors[platform]} my-4`,
+    },
+    React.createElement(
+      'div',
+      { className: 'flex items-center gap-2 mb-2' },
+      React.createElement('span', { className: 'text-xs font-medium text-gray-500 uppercase' }, platformLabels[platform]),
+    ),
+    React.createElement(
+      'a',
+      { 
+        href: url, 
+        target: '_blank', 
+        rel: 'noopener noreferrer',
+        className: 'text-blue-600 hover:underline break-all text-sm',
+      },
+      url
+    ),
+    loading && React.createElement('div', { className: 'text-xs text-gray-400 mt-2' }, 'Loading preview...')
   );
 };
 
+const SocialEmbedComponent = ({ node }: NodeViewProps) => {
+  const url = node.attrs.url;
+  const platform = detectPlatform(url);
+
+  return React.createElement(
+    NodeViewWrapper,
+    { className: 'social-embed my-4 flex justify-center' },
+    platform === 'twitter'
+      ? React.createElement(TwitterComponent, { url })
+      : React.createElement(GenericEmbedComponent, { url, platform })
+  );
+};
+
+const SOCIAL_URL_REGEX = /^https:\/\/(twitter\.com|x\.com|substack\.com|threads\.net|bsky\.app)\/[^\s]+$/g;
+
 export const TwitterEmbed = Node.create({
-  name: 'twitter',
+  name: 'socialEmbed',
 
   group: 'block',
 
@@ -25,11 +96,9 @@ export const TwitterEmbed = Node.create({
   draggable: true,
 
   addPasteRules() {
-    const twitterUrl = /^https:\/\/(twitter\.com|x\.com)\/.*\/status\/.*/g;
-
     return [
       nodePasteRule({
-        find: twitterUrl,
+        find: SOCIAL_URL_REGEX,
         type: this.type,
         getAttributes: (match) => {
           return { url: match.input };
@@ -49,6 +118,14 @@ export const TwitterEmbed = Node.create({
   parseHTML() {
     return [
       {
+        tag: 'div[data-social-url]',
+        getAttrs: (node) => {
+          if (typeof node === 'string') return false;
+          const element = node as HTMLElement;
+          return { url: element.getAttribute('data-social-url') };
+        },
+      },
+      {
         tag: 'div[data-twitter-url]',
         getAttrs: (node) => {
           if (typeof node === 'string') return false;
@@ -60,11 +137,11 @@ export const TwitterEmbed = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes({ 'data-twitter-url': HTMLAttributes.url, class: 'twitter-embed' })];
+    return ['div', mergeAttributes({ 'data-social-url': HTMLAttributes.url, class: 'social-embed' })];
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(TweetComponent);
+    return ReactNodeViewRenderer(SocialEmbedComponent);
   },
 });
 
