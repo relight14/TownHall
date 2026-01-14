@@ -21,11 +21,15 @@ function cleanPastedHtml(html: string): string {
   const doc = parser.parseFromString(html, 'text/html');
   
   const allowedStyles = ['text-align', 'text-decoration'];
+  const socialEmbedClasses = ['twitter-tweet', 'instagram-media', 'fb-post', 'tiktok-embed'];
   
   doc.querySelectorAll('*').forEach((el) => {
     const htmlEl = el as HTMLElement;
+    const currentClass = el.getAttribute('class') || '';
     const computedStyle = htmlEl.style;
     const preservedStyles: string[] = [];
+    
+    const isSocialEmbed = socialEmbedClasses.some(cls => currentClass.includes(cls));
     
     allowedStyles.forEach(prop => {
       const value = computedStyle.getPropertyValue(prop);
@@ -35,7 +39,12 @@ function cleanPastedHtml(html: string): string {
     });
     
     el.removeAttribute('style');
-    el.removeAttribute('class');
+    
+    if (isSocialEmbed) {
+      // Keep classes for social media embeds
+    } else {
+      el.removeAttribute('class');
+    }
     
     if (preservedStyles.length > 0) {
       htmlEl.setAttribute('style', preservedStyles.join('; '));
@@ -58,7 +67,7 @@ function cleanPastedHtml(html: string): string {
   });
   
   doc.querySelectorAll('div').forEach((div) => {
-    const hasMedia = div.querySelector('img, iframe, video');
+    const hasMedia = div.querySelector('img, iframe, video, blockquote.twitter-tweet, blockquote.instagram-media');
     if (!hasMedia) {
       const p = document.createElement('p');
       const style = div.getAttribute('style');
