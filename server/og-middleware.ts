@@ -113,6 +113,12 @@ function makeAbsoluteUrl(url: string, baseUrl: string): string {
   return `${baseUrl}/${url}`;
 }
 
+function isValidOgImageUrl(url: string | null): boolean {
+  if (!url) return false;
+  if (url.startsWith('data:')) return false;
+  return true;
+}
+
 export function createOgMiddleware() {
   return async (req: Request, res: Response, next: NextFunction) => {
     const userAgent = req.headers['user-agent'];
@@ -131,8 +137,8 @@ export function createOgMiddleware() {
         const article = await storage.getArticle(articleId);
         
         if (article) {
-          const imageUrl = article.thumbnail 
-            ? makeAbsoluteUrl(article.thumbnail, baseUrl)
+          const imageUrl = isValidOgImageUrl(article.thumbnail)
+            ? makeAbsoluteUrl(article.thumbnail!, baseUrl)
             : `${baseUrl}/og-default.webp`;
           
           const cleanDescription = article.subheader || DEFAULT_DESCRIPTION;
