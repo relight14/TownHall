@@ -12,6 +12,28 @@ import crypto from "crypto";
 
 const generateAdminToken = () => crypto.randomBytes(32).toString('hex');
 
+function sanitizeThumbnailUrl(thumbnail: string | null | undefined): string | null {
+  if (!thumbnail) return null;
+  
+  if (thumbnail.startsWith('data:')) {
+    return null;
+  }
+  
+  if (thumbnail.includes('substackcdn.com/image/fetch/')) {
+    const match = thumbnail.match(/https%3A%2F%2F[^,\s]+/);
+    if (match) {
+      try {
+        return decodeURIComponent(match[0]);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+  
+  return thumbnail;
+}
+
 // Rate limiting for admin login
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -837,9 +859,10 @@ export async function registerRoutes(
 
   app.post("/api/articles", requireAdminAuth, async (req, res) => {
     try {
-      // Convert publishedAt string to Date if needed
+      // Sanitize thumbnail URL and convert publishedAt string to Date
       const body = {
         ...req.body,
+        thumbnail: sanitizeThumbnailUrl(req.body.thumbnail),
         publishedAt: req.body.publishedAt ? new Date(req.body.publishedAt) : new Date(),
       };
       const validated = insertArticleSchema.parse(body);
@@ -895,9 +918,10 @@ export async function registerRoutes(
         return res.status(404).json({ error: 'Article not found' });
       }
       
-      // Convert publishedAt string to Date if needed
+      // Sanitize thumbnail and convert publishedAt string to Date if needed
       const body = {
         ...req.body,
+        thumbnail: req.body.thumbnail !== undefined ? sanitizeThumbnailUrl(req.body.thumbnail) : undefined,
         publishedAt: req.body.publishedAt ? new Date(req.body.publishedAt) : undefined,
       };
       const validated = insertArticleSchema.partial().parse(body);
