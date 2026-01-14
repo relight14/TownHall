@@ -874,6 +874,12 @@ export async function registerRoutes(
       const priceCents = validated.price || 99;
       
       try {
+        // Construct the article source URL
+        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+          : process.env.REPLIT_DEPLOYMENT_URL || 'https://example.com';
+        const sourceUrl = `${baseUrl}/article/${article.id}`;
+        
         const content = await ledewire.registerContent(
           article.title,
           priceCents,
@@ -887,6 +893,7 @@ export async function registerRoutes(
               category: article.category,
               publication_date: article.publishedAt?.toISOString(),
               reading_time: `${article.readTimeMinutes || 5} min`,
+              source_url: sourceUrl,
             },
           }
         );
@@ -949,6 +956,13 @@ export async function registerRoutes(
         // Article has a price but no Ledewire ID - register it now
         try {
           console.log(`[ARTICLE-UPDATE] Registering article ${id} with Ledewire (price=${currentPrice} cents)`);
+          
+          // Construct the article source URL
+          const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+            ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+            : process.env.REPLIT_DEPLOYMENT_URL || 'https://example.com';
+          const sourceUrl = `${baseUrl}/article/${article.id}`;
+          
           const content = await ledewire.registerContent(
             currentTitle,
             currentPrice,
@@ -962,6 +976,7 @@ export async function registerRoutes(
                 category: article.category,
                 publication_date: article.publishedAt?.toISOString(),
                 reading_time: `${article.readTimeMinutes || 5} min`,
+                source_url: sourceUrl,
               },
             }
           );
