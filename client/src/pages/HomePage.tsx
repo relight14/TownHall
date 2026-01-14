@@ -150,7 +150,9 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
               src={article.thumbnail}
               alt={article.title}
               maxHeight="480px"
+              maxHeightMobile="320px"
               minHeight="280px"
+              minHeightMobile="200px"
               fallbackAspectRatio={16/9}
               hoverScale={true}
               shadow={true}
@@ -374,21 +376,21 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center gap-2 sm:gap-3">
               <img 
                 src={profilePic} 
                 alt="Profile" 
-                className="w-10 h-10 rounded-full object-cover"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                 data-testid="img-profile"
               />
             </div>
             
             <Link to="/">
-              <span className="text-2xl font-bold text-gray-900 tracking-tight" data-testid="logo">So What</span>
+              <span className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight" data-testid="logo">So What</span>
             </Link>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button 
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -397,27 +399,27 @@ export default function HomePage() {
                 <Search className="w-5 h-5" />
               </button>
               {user ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <Link to="/wallet">
-                    <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2" data-testid="button-wallet">
+                    <button className="bg-gray-900 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base" data-testid="button-wallet">
                       <span className="text-green-400 font-semibold">${walletBalance.toFixed(2)}</span>
-                      <span className="text-gray-300">|</span>
-                      <span>{user.email?.split('@')[0] || 'Account'}</span>
+                      <span className="text-gray-300 hidden sm:inline">|</span>
+                      <span className="hidden sm:inline">{user.email?.split('@')[0] || 'Account'}</span>
                     </button>
                   </Link>
                   <button
                     onClick={logout}
-                    className="p-2 text-gray-500 hover:text-gray-900 transition-colors"
+                    className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-900 transition-colors"
                     title="Log out"
                     data-testid="button-logout"
                   >
-                    <LogOut className="w-5 h-5" />
+                    <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               ) : (
                 <button 
                   onClick={() => setShowAuthModal(true)}
-                  className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors" 
+                  className="bg-gray-900 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors text-sm sm:text-base" 
                   data-testid="button-login"
                 >
                   Log in
