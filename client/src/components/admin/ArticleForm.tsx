@@ -13,6 +13,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Youtube from '@tiptap/extension-youtube';
 import { Iframe } from './IframeExtension';
+import { SocialEmbed } from './SocialEmbedExtension';
 import { useUpload } from '@/hooks/use-upload';
 import { useVideoStore } from '@/context/VideoStoreContext';
 
@@ -360,6 +361,7 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
         },
       }),
       Iframe,
+      SocialEmbed,
     ],
     content: article?.content || '',
     editorProps: {
