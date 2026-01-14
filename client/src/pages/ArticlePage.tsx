@@ -76,10 +76,10 @@ function normalizeListHTML(html: string): string {
     }
   }
   
-  doc.querySelectorAll('div[data-twitter-url]').forEach((wrapper) => {
-    const url = wrapper.getAttribute('data-twitter-url');
+  doc.querySelectorAll('div[data-twitter-url], div[data-social-url]').forEach((wrapper) => {
+    const url = wrapper.getAttribute('data-twitter-url') || wrapper.getAttribute('data-social-url');
     
-    if (url) {
+    if (url && /twitter\.com|x\.com/.test(url)) {
       const blockquote = document.createElement('blockquote');
       blockquote.className = 'twitter-tweet';
       const link = document.createElement('a');
@@ -88,6 +88,15 @@ function normalizeListHTML(html: string): string {
       blockquote.appendChild(link);
       wrapper.innerHTML = '';
       wrapper.appendChild(blockquote);
+    } else if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.className = 'block p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 text-blue-600 break-all';
+      link.textContent = url;
+      wrapper.innerHTML = '';
+      wrapper.appendChild(link);
     }
   });
   
