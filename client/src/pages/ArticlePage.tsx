@@ -388,13 +388,14 @@ export default function ArticlePage() {
 
         <article className="bg-white text-gray-900">
           {article.thumbnail && (
-            <div className="mb-8">
+            <div className="mb-10">
               <DynamicImage 
                 src={article.thumbnail} 
                 alt={article.title}
-                maxHeight="500px"
-                minHeight="200px"
-                fallbackAspectRatio={21/9}
+                maxHeight="520px"
+                minHeight="240px"
+                fallbackAspectRatio={16/9}
+                shadow={true}
               />
             </div>
           )}

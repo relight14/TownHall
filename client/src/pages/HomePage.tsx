@@ -144,18 +144,19 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
             </span>
           )}
         </div>
-        <div className="mt-3 relative">
+        <div className="mt-4 relative">
           {article.thumbnail ? (
             <DynamicImage
               src={article.thumbnail}
               alt={article.title}
-              maxHeight="320px"
-              minHeight="180px"
-              fallbackAspectRatio={4/3}
+              maxHeight="480px"
+              minHeight="280px"
+              fallbackAspectRatio={16/9}
               hoverScale={true}
+              shadow={true}
             />
           ) : (
-            <div className="w-full aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center rounded-lg">
+            <div className="w-full aspect-[16/9] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-xl shadow-lg shadow-black/10">
               <span className="text-gray-400 text-4xl font-serif">So What</span>
             </div>
           )}
@@ -193,13 +194,14 @@ function CategoryArticleCard({ article }: { article: Article }) {
             <DynamicImage
               src={article.thumbnail}
               alt={article.title}
-              maxHeight="200px"
-              minHeight="120px"
+              maxHeight="220px"
+              minHeight="140px"
               fallbackAspectRatio={3/2}
               hoverScale={true}
+              shadow={true}
             />
           ) : (
-            <div className="w-full aspect-[3/2] bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center rounded-lg">
+            <div className="w-full aspect-[3/2] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-xl shadow-lg shadow-black/10">
               <span className="text-gray-400 text-xl font-serif">So What</span>
             </div>
           )}
