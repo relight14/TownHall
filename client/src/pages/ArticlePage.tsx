@@ -89,14 +89,57 @@ function normalizeListHTML(html: string): string {
       wrapper.innerHTML = '';
       wrapper.appendChild(blockquote);
     } else if (url) {
+      const isSubstack = /substack\.com/.test(url);
+      const isBluesky = /bsky\.app/.test(url);
+      const isThreads = /threads\.net/.test(url);
+      
+      const card = document.createElement('div');
+      card.className = isSubstack 
+        ? 'p-4 bg-orange-50 border-2 border-orange-300 rounded-xl max-w-md mx-auto shadow-sm'
+        : isBluesky 
+        ? 'p-4 bg-sky-50 border-2 border-sky-300 rounded-xl max-w-md mx-auto shadow-sm'
+        : isThreads
+        ? 'p-4 bg-gray-50 border-2 border-gray-300 rounded-xl max-w-md mx-auto shadow-sm'
+        : 'p-4 bg-gray-50 border border-gray-200 rounded-lg';
+      
+      const header = document.createElement('div');
+      header.className = 'flex items-center gap-2 mb-3';
+      
+      if (isSubstack) {
+        header.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="#FF6719"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg><span class="text-sm font-semibold text-orange-600">Substack</span>`;
+      } else if (isBluesky) {
+        header.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="#0085FF"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></svg><span class="text-sm font-semibold text-sky-600">Bluesky</span>`;
+      } else if (isThreads) {
+        header.innerHTML = `<span class="text-sm font-semibold text-gray-800">Threads</span>`;
+      }
+      
+      card.appendChild(header);
+      
       const link = document.createElement('a');
       link.href = url;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.className = 'block p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 text-blue-600 break-all';
+      link.className = isSubstack ? 'block text-orange-600 hover:underline break-all text-sm mb-3' 
+        : isBluesky ? 'block text-sky-600 hover:underline break-all text-sm mb-3'
+        : 'block text-gray-600 hover:underline break-all text-sm mb-3';
       link.textContent = url;
+      card.appendChild(link);
+      
+      const button = document.createElement('a');
+      button.href = url;
+      button.target = '_blank';
+      button.rel = 'noopener noreferrer';
+      const platform = isSubstack ? 'Substack' : isBluesky ? 'Bluesky' : isThreads ? 'Threads' : 'Link';
+      button.className = isSubstack 
+        ? 'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-100 border border-orange-300 text-orange-600 hover:opacity-80'
+        : isBluesky
+        ? 'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-sky-100 border border-sky-300 text-sky-600 hover:opacity-80'
+        : 'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 border border-gray-300 text-gray-600 hover:opacity-80';
+      button.textContent = `View on ${platform} →`;
+      card.appendChild(button);
+      
       wrapper.innerHTML = '';
-      wrapper.appendChild(link);
+      wrapper.appendChild(card);
     }
   });
   
