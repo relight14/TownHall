@@ -139,7 +139,7 @@ export function FeaturedEpisodesManager({
                         <GripVertical className="w-3 h-3 rotate-90" />
                       </button>
                     </div>
-                    <img src={ep.thumbnail} alt={ep.title} className="w-16 h-10 object-contain bg-black rounded" />
+                    <img src={ep.thumbnail} alt={ep.title} className="w-16 h-10 object-cover rounded" />
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm truncate">{ep.title}</p>
                       <p className="text-slate-500 text-xs truncate">{getSeriesTitle(ep.seriesId)}</p>
@@ -168,7 +168,7 @@ export function FeaturedEpisodesManager({
                     onClick={() => toggleEpisode(ep.id)}
                     className="flex items-center gap-2 bg-slate-900 rounded-lg p-2 border border-slate-700 cursor-pointer hover:border-amber-500/50 transition-colors"
                   >
-                    <img src={ep.thumbnail} alt={ep.title} className="w-16 h-10 object-contain bg-black rounded" />
+                    <img src={ep.thumbnail} alt={ep.title} className="w-16 h-10 object-cover rounded" />
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm truncate">{ep.title}</p>
                       <p className="text-slate-500 text-xs truncate">{getSeriesTitle(ep.seriesId)}</p>

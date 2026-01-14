@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Image } from 'lucide-react';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackSrc?: string;
+  onAspectRatioLoad?: (aspectRatio: number) => void;
 }
 
-export function ImageWithFallback({ src, alt, fallbackSrc, className, ...props }: ImageWithFallbackProps) {
+export function ImageWithFallback({ src, alt, fallbackSrc, className, onAspectRatioLoad, ...props }: ImageWithFallbackProps) {
   const [error, setError] = useState(false);
+
+  const handleLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    if (onAspectRatioLoad) {
+      const img = e.currentTarget;
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      onAspectRatioLoad(aspectRatio);
+    }
+    props.onLoad?.(e);
+  }, [onAspectRatioLoad, props.onLoad]);
 
   if (error || !src) {
     return (
@@ -21,6 +31,7 @@ export function ImageWithFallback({ src, alt, fallbackSrc, className, ...props }
       src={src}
       alt={alt}
       onError={() => setError(true)}
+      onLoad={handleLoad}
       className={className}
       {...props}
     />

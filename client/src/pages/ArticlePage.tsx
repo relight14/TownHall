@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X, Clock, Eye } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
+import { DynamicImage } from '../components/ui/dynamic-image';
 import { useVideoStore } from '../context/VideoStoreContext';
 import AuthModal from '../components/AuthModal';
 import PasswordResetModal from '../components/PasswordResetModal';
@@ -387,11 +388,13 @@ export default function ArticlePage() {
 
         <article className="bg-white text-gray-900">
           {article.thumbnail && (
-            <div className="aspect-[21/9] overflow-hidden rounded-lg mb-8 bg-gray-100 flex items-center justify-center">
-              <ImageWithFallback 
+            <div className="mb-8">
+              <DynamicImage 
                 src={article.thumbnail} 
                 alt={article.title}
-                className="w-full h-full object-contain"
+                maxHeight="500px"
+                minHeight="200px"
+                fallbackAspectRatio={21/9}
               />
             </div>
           )}

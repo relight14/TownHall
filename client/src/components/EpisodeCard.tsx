@@ -181,11 +181,11 @@ export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
         className="group relative bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800 hover:border-blue-500/50 transition-all duration-300 cursor-pointer hover:shadow-xl hover:shadow-blue-500/10"
         data-testid={`card-episode-${episode.id}`}
       >
-        <div className="relative aspect-video overflow-hidden bg-black flex items-center justify-center">
+        <div className="relative aspect-video overflow-hidden">
           <ImageWithFallback 
             src={episode.thumbnail} 
             alt={episode.title}
-            className={`w-full h-full object-contain transition-all duration-500 ${isHovered ? 'scale-110' : ''} ${showPreview ? 'opacity-0' : 'opacity-100'}`}
+            className={`w-full h-full object-cover transition-all duration-500 ${isHovered ? 'scale-110' : ''} ${showPreview ? 'opacity-0' : 'opacity-100'}`}
           />
           
           {showPreview && (
