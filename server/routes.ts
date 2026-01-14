@@ -483,28 +483,19 @@ export async function registerRoutes(
       const token = authHeader.replace('Bearer ', '');
       const purchases = await ledewire.getPurchases(token);
       
-      // Enrich purchases with content details (title, source_url)
-      const enrichedPurchases = await Promise.all(
-        purchases.map(async (purchase) => {
-          try {
-            const content = await ledewire.getContent(purchase.content_id);
-            return {
-              ...purchase,
-              title: content.title,
-              source_url: content.metadata?.source_url || null,
-              content_type: content.metadata?.type || 'article',
-            };
-          } catch (error) {
-            // If content fetch fails, return purchase without enrichment
-            return {
-              ...purchase,
-              title: 'Unknown Content',
-              source_url: null,
-              content_type: 'unknown',
-            };
-          }
-        })
-      );
+      // The Ledewire API returns content details embedded in each purchase
+      // Extract the title and metadata from the embedded content object
+      const enrichedPurchases = purchases.map((purchase: any) => {
+        const embeddedContent = purchase.content;
+        const embeddedMetadata = embeddedContent?.metadata;
+        
+        return {
+          ...purchase,
+          title: embeddedContent?.title || 'Unknown Content',
+          source_url: embeddedMetadata?.source_url || null,
+          content_type: embeddedMetadata?.type || 'article',
+        };
+      });
       
       res.json(enrichedPurchases);
     } catch (error: any) {
