@@ -23,14 +23,30 @@ const TwitterComponent = ({ url }: { url: string }) => {
   return React.createElement(Tweet, { id });
 };
 
-const GenericEmbedComponent = ({ url, platform }: { url: string; platform: Platform }) => {
-  const [loading, setLoading] = useState(true);
+const SubstackEmbed = ({ url }: { url: string }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!document.querySelector('script[src="https://substack.com/embedjs/embed.js"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://substack.com/embedjs/embed.js';
+      script.async = true;
+      document.body.appendChild(script);
+    } else {
+      if ((window as any).SubstackFeedWidget) {
+        (window as any).SubstackFeedWidget.load();
+      }
+    }
+  }, [url]);
 
+  return React.createElement(
+    'div',
+    { ref: containerRef, className: 'substack-post-embed' },
+    React.createElement('a', { 'data-post-link': true, href: url })
+  );
+};
+
+const GenericEmbedComponent = ({ url, platform }: { url: string; platform: Platform }) => {
   const platformLabels: Record<Platform, string> = {
     twitter: 'Twitter',
     substack: 'Substack',
@@ -66,8 +82,7 @@ const GenericEmbedComponent = ({ url, platform }: { url: string; platform: Platf
         className: 'text-blue-600 hover:underline break-all text-sm',
       },
       url
-    ),
-    loading && React.createElement('div', { className: 'text-xs text-gray-400 mt-2' }, 'Loading preview...')
+    )
   );
 };
 
@@ -75,12 +90,19 @@ const SocialEmbedComponent = ({ node }: NodeViewProps) => {
   const url = node.attrs.url;
   const platform = detectPlatform(url);
 
+  let content;
+  if (platform === 'twitter') {
+    content = React.createElement(TwitterComponent, { url });
+  } else if (platform === 'substack') {
+    content = React.createElement(SubstackEmbed, { url });
+  } else {
+    content = React.createElement(GenericEmbedComponent, { url, platform });
+  }
+
   return React.createElement(
     NodeViewWrapper,
     { className: 'social-embed my-4 flex justify-center' },
-    platform === 'twitter'
-      ? React.createElement(TwitterComponent, { url })
-      : React.createElement(GenericEmbedComponent, { url, platform })
+    content
   );
 };
 

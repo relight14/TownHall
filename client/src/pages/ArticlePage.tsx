@@ -88,6 +88,15 @@ function normalizeListHTML(html: string): string {
       blockquote.appendChild(link);
       wrapper.innerHTML = '';
       wrapper.appendChild(blockquote);
+    } else if (url && /substack\.com/.test(url)) {
+      const embedDiv = document.createElement('div');
+      embedDiv.className = 'substack-post-embed';
+      const link = document.createElement('a');
+      link.setAttribute('data-post-link', 'true');
+      link.href = url;
+      embedDiv.appendChild(link);
+      wrapper.innerHTML = '';
+      wrapper.appendChild(embedDiv);
     } else if (url) {
       const link = document.createElement('a');
       link.href = url;
@@ -231,6 +240,14 @@ export default function ArticlePage() {
             document.body.appendChild(script);
           } else {
             (window as any).instgrm.Embeds?.process();
+          }
+        }
+        if (article.content.includes('substack-post-embed') || article.content.includes('substack.com')) {
+          if (!document.querySelector('script[src="https://substack.com/embedjs/embed.js"]')) {
+            const script = document.createElement('script');
+            script.src = 'https://substack.com/embedjs/embed.js';
+            script.async = true;
+            document.body.appendChild(script);
           }
         }
       };
