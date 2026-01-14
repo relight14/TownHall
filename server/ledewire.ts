@@ -653,6 +653,46 @@ class LedewireClient {
     const data = await safeParseJSON(response);
     return data?.data || { message: 'Password has been successfully reset.' };
   }
+
+  async getPurchases(userToken: string): Promise<LedewirePurchaseResponse[]> {
+    logLedewire('GET_PURCHASES_START', { hasUserToken: !!userToken });
+
+    const response = await fetch(`${LEDEWIRE_API_URL}/purchases`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${userToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorMsg = await getErrorMessage(response);
+      logLedewire('GET_PURCHASES_ERROR', { error: errorMsg });
+      throw new Error(errorMsg);
+    }
+
+    const data = await safeParseJSON(response);
+    logLedewire('GET_PURCHASES_SUCCESS', { count: data?.length || 0 });
+    return data || [];
+  }
+
+  async getContent(contentId: string): Promise<LedewireContentResponse> {
+    return this.withSellerTokenRefresh(async (token) => {
+      const response = await fetch(`${LEDEWIRE_API_URL}/seller/content/${contentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorMsg = await getErrorMessage(response);
+        throw new Error(errorMsg);
+      }
+
+      const data = await safeParseJSON(response);
+      return data;
+    });
+  }
 }
 
 export const ledewire = new LedewireClient();
