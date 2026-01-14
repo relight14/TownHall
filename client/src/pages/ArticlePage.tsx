@@ -77,9 +77,18 @@ function normalizeListHTML(html: string): string {
   }
   
   doc.querySelectorAll('.social-embed-wrapper').forEach((wrapper) => {
-    const rawHtml = wrapper.getAttribute('data-raw-html');
-    if (rawHtml) {
-      wrapper.innerHTML = rawHtml;
+    const url = wrapper.getAttribute('data-url');
+    const platform = wrapper.getAttribute('data-platform');
+    
+    if (platform === 'twitter' && url) {
+      const blockquote = document.createElement('blockquote');
+      blockquote.className = 'twitter-tweet';
+      const link = document.createElement('a');
+      link.href = url;
+      link.textContent = 'Loading tweet...';
+      blockquote.appendChild(link);
+      wrapper.innerHTML = '';
+      wrapper.appendChild(blockquote);
     }
   });
   
