@@ -186,6 +186,36 @@ export default function ArticlePage() {
   }, [article, articleId, incrementArticleView]);
 
   useEffect(() => {
+    if (article?.content) {
+      const loadSocialEmbeds = () => {
+        if (article.content.includes('twitter-tweet') || article.content.includes('twitter.com')) {
+          if (!(window as any).twttr) {
+            const script = document.createElement('script');
+            script.src = 'https://platform.twitter.com/widgets.js';
+            script.async = true;
+            script.charset = 'utf-8';
+            document.body.appendChild(script);
+          } else {
+            (window as any).twttr.widgets?.load();
+          }
+        }
+        if (article.content.includes('instagram-media') || article.content.includes('instagram.com')) {
+          if (!(window as any).instgrm) {
+            const script = document.createElement('script');
+            script.src = '//www.instagram.com/embed.js';
+            script.async = true;
+            document.body.appendChild(script);
+          } else {
+            (window as any).instgrm.Embeds?.process();
+          }
+        }
+      };
+      const timer = setTimeout(loadSocialEmbeds, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [article?.content, hasPurchased]);
+
+  useEffect(() => {
     const checkPurchaseStatus = async () => {
       console.log(`[ARTICLE-CLIENT] checkPurchaseStatus called`);
       console.log(`[ARTICLE-CLIENT] user: ${user?.email || 'NOT LOGGED IN'}`);

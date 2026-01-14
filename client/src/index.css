@@ -283,3 +283,28 @@
 .prose li[data-list="ordered"] {
   list-style-type: decimal;
 }
+
+/* Social media embed styling */
+.prose .twitter-tweet,
+.prose blockquote.twitter-tweet {
+  margin: 1.5em auto !important;
+  max-width: 550px;
+}
+
+.prose .instagram-media {
+  margin: 1.5em auto !important;
+  max-width: 540px;
+}
+
+.ProseMirror .twitter-tweet,
+.ProseMirror blockquote.twitter-tweet {
+  margin: 1em auto;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+
+.ProseMirror .instagram-media {
+  margin: 1em auto;
+}
