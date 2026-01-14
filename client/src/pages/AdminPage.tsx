@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVideoStore } from '../context/VideoStoreContext';
+import { useSeries } from '../hooks/series/useSeries';
 import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Star, Check, FileText, ArrowLeft } from 'lucide-react';
 import { ArticleForm } from '../components/admin/ArticleForm';
 import { FeaturedEpisodesManager } from '../components/admin/FeaturedEpisodesManager';
@@ -250,10 +251,16 @@ function PasswordChangeForm({ onClose }: { onClose: () => void }) {
 export default function AdminPage() {
   const navigate = useNavigate();
   const { 
-    series, addSeries, addEpisode, updateSeries, updateEpisode, deleteEpisode, setAdminToken,
-    siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes, getAllEpisodes,
+    addSeries, addEpisode, updateSeries, updateEpisode, deleteEpisode, setAdminToken,
+    siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes,
     adminArticles, adminArticlesLoaded, addArticle, updateArticle, deleteArticle, refreshArticles, loadAdminArticles
   } = useVideoStore();
+  const { data: series = [] } = useSeries();
+  
+  // Helper function to get all episodes from series
+  const getAllEpisodes = () => {
+    return series.flatMap(s => s.episodes.map(ep => ({ ...ep, seriesId: s.id })));
+  };
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);

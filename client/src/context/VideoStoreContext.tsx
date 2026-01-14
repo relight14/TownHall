@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { queryClient } from '../lib/queryClient';
+import { seriesKeys } from '../hooks/series/queryKeys';
 
 function isTokenExpired(token: string): boolean {
   try {
@@ -70,7 +72,6 @@ interface Article {
 }
 
 interface VideoStoreContextType {
-  series: Series[];
   addSeries: (series: Omit<Series, 'id' | 'episodes'>) => Promise<void>;
   addEpisode: (seriesId: string, episode: Omit<Episode, 'id'>) => Promise<void>;
   updateSeries: (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => Promise<void>;
@@ -94,7 +95,6 @@ interface VideoStoreContextType {
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   featuredEpisodes: FeaturedEpisode[];
   setFeaturedEpisodes: (episodeIds: string[]) => Promise<void>;
-  getAllEpisodes: () => Episode[];
   articles: Article[];
   adminArticles: Article[];
   adminArticlesLoaded: boolean;
@@ -118,7 +118,6 @@ const defaultSiteSettings: SiteSettings = {
 };
 
 export function VideoStoreProvider({ children }: { children: ReactNode }) {
-  const [series, setSeries] = useState<Series[]>([]);
   const [purchasedEpisodes, setPurchasedEpisodes] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [ledewireToken, setLedewireToken] = useState<string | null>(null);
@@ -133,12 +132,11 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [latestArticles, setLatestArticles] = useState<Article[]>([]);
   const [mostReadArticles, setMostReadArticles] = useState<Article[]>([]);
 
-  // Load series, site settings, and featured episodes on mount
+  // Load site settings and featured episodes on mount
   // Note: Articles are loaded by individual pages to avoid race conditions
   // - Public pages call loadArticles() which fetches preview content
   // - Admin page calls loadAdminArticles() which fetches full content
   useEffect(() => {
-    loadSeries();
     loadSiteSettings();
     loadFeaturedEpisodes();
   }, []);
@@ -275,17 +273,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [ledewireToken]);
 
-  const loadSeries = async () => {
-    try {
-      const response = await fetch('/api/series');
-      if (response.ok) {
-        const data = await response.json();
-        setSeries(data);
-      }
-    } catch (error) {
-      console.error('Failed to load series:', error);
-    }
-  };
 
   const loadSiteSettings = async () => {
     try {
@@ -502,7 +489,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Failed to create series');
       }
 
-      await loadSeries();
+      // Invalidate series query to refetch updated data
+      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     } catch (error) {
       console.error('Failed to add series:', error);
       throw error;
@@ -531,7 +519,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Failed to create episode');
       }
 
-      await loadSeries();
+      // Invalidate series query to refetch updated data
+      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     } catch (error) {
       console.error('Failed to add episode:', error);
       throw error;
@@ -557,7 +546,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Failed to update series');
       }
 
-      await loadSeries();
+      // Invalidate series query to refetch updated data
+      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     } catch (error) {
       console.error('Failed to update series:', error);
       throw error;
@@ -583,7 +573,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Failed to update episode');
       }
 
-      await loadSeries();
+      // Invalidate series query to refetch updated data
+      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     } catch (error) {
       console.error('Failed to update episode:', error);
       throw error;
@@ -607,7 +598,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Failed to delete episode');
       }
 
-      await loadSeries();
+      // Invalidate series query to refetch updated data
+      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     } catch (error) {
       console.error('Failed to delete episode:', error);
       throw error;
@@ -893,13 +885,10 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const getAllEpisodes = (): Episode[] => {
-    return series.flatMap(s => s.episodes.map(ep => ({ ...ep, seriesId: s.id })));
-  };
+  // getAllEpisodes removed - use useSeries hook and flatten episodes locally
 
   return (
     <VideoStoreContext.Provider value={{
-      series,
       addSeries,
       addEpisode,
       updateSeries,
@@ -923,7 +912,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       updateSiteSettings,
       featuredEpisodes,
       setFeaturedEpisodes,
-      getAllEpisodes,
       articles,
       adminArticles,
       adminArticlesLoaded,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
+import { useSeries } from '../hooks/series/useSeries';
 import { Link } from 'react-router-dom';
 import { Clock, Eye, Play, Search, ChevronRight, LogOut } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
@@ -318,13 +319,13 @@ export default function HomePage() {
     mostReadArticles, 
     featuredArticles,
     getArticlesByCategory,
-    series,
     featuredEpisodes,
     user,
     walletBalance,
     logout,
     refreshArticles
   } = useVideoStore();
+  const { data: series = [] } = useSeries();
   
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchOpen, setSearchOpen] = useState(false);
