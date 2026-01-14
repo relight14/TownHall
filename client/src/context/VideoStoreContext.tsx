@@ -1,6 +1,4 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
-import { queryClient } from '../lib/queryClient';
-import { seriesKeys } from '../hooks/series/queryKeys';
 
 function isTokenExpired(token: string): boolean {
   try {
@@ -72,11 +70,6 @@ interface Article {
 }
 
 interface VideoStoreContextType {
-  addSeries: (series: Omit<Series, 'id' | 'episodes'>) => Promise<void>;
-  addEpisode: (seriesId: string, episode: Omit<Episode, 'id'>) => Promise<void>;
-  updateSeries: (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => Promise<void>;
-  updateEpisode: (episodeId: string, updates: Omit<Partial<Episode>, 'id'>) => Promise<void>;
-  deleteEpisode: (episodeId: string) => Promise<void>;
   purchasedEpisodes: string[];
   purchaseEpisode: (episodeId: string) => Promise<void>;
   checkPurchase: (episodeId: string) => Promise<boolean>;
@@ -470,141 +463,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addSeries = async (newSeries: Omit<Series, 'id' | 'episodes'>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch('/api/series', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify(newSeries),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create series');
-      }
-
-      // Invalidate series query to refetch updated data
-      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
-    } catch (error) {
-      console.error('Failed to add series:', error);
-      throw error;
-    }
-  };
-
-  const addEpisode = async (seriesId: string, newEpisode: Omit<Episode, 'id'>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch('/api/episodes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify({
-          ...newEpisode,
-          seriesId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create episode');
-      }
-
-      // Invalidate series query to refetch updated data
-      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
-    } catch (error) {
-      console.error('Failed to add episode:', error);
-      throw error;
-    }
-  };
-
-  const updateSeries = async (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch(`/api/series/${seriesId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update series');
-      }
-
-      // Invalidate series query to refetch updated data
-      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
-    } catch (error) {
-      console.error('Failed to update series:', error);
-      throw error;
-    }
-  };
-
-  const updateEpisode = async (episodeId: string, updates: Omit<Partial<Episode>, 'id'>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch(`/api/episodes/${episodeId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update episode');
-      }
-
-      // Invalidate series query to refetch updated data
-      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
-    } catch (error) {
-      console.error('Failed to update episode:', error);
-      throw error;
-    }
-  };
-
-  const deleteEpisode = async (episodeId: string) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch(`/api/episodes/${episodeId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Admin-Token': adminToken,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete episode');
-      }
-
-      // Invalidate series query to refetch updated data
-      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
-    } catch (error) {
-      console.error('Failed to delete episode:', error);
-      throw error;
-    }
-  };
 
   const purchaseEpisode = async (episodeId: string) => {
     if (!ledewireToken) {
@@ -889,11 +747,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
 
   return (
     <VideoStoreContext.Provider value={{
-      addSeries,
-      addEpisode,
-      updateSeries,
-      updateEpisode,
-      deleteEpisode,
       purchasedEpisodes,
       purchaseEpisode,
       checkPurchase,
