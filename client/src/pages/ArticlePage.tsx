@@ -76,6 +76,13 @@ function normalizeListHTML(html: string): string {
     }
   }
   
+  doc.querySelectorAll('.social-embed-wrapper').forEach((wrapper) => {
+    const rawHtml = wrapper.getAttribute('data-raw-html');
+    if (rawHtml) {
+      wrapper.innerHTML = rawHtml;
+    }
+  });
+  
   return doc.body.innerHTML;
 }
 
