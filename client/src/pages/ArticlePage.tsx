@@ -472,11 +472,11 @@ export default function ArticlePage() {
   const canViewContent = !isPaid || hasPurchased;
 
   return (
-    <div className="min-h-screen bg-white pb-20 text-gray-900">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-gray-900">
+    <div className="min-h-screen bg-white pb-12 sm:pb-20 text-gray-900">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12 text-gray-900">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-8 transition-colors text-sm sm:text-base"
           data-testid="link-back-home"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -485,12 +485,14 @@ export default function ArticlePage() {
 
         <article className="bg-white text-gray-900">
           {article.thumbnail && (
-            <div className="mb-10">
+            <div className="mb-6 sm:mb-10">
               <DynamicImage 
                 src={article.thumbnail} 
                 alt={article.title}
                 maxHeight="640px"
-                minHeight="280px"
+                maxHeightMobile="280px"
+                minHeight="200px"
+                minHeightMobile="160px"
                 fallbackAspectRatio={16/9}
                 shadow={true}
               />
@@ -498,37 +500,37 @@ export default function ArticlePage() {
           )}
 
           <div>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4" />
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span data-testid="text-article-date">{formatDate(article.publishedAt)}</span>
               </div>
               <span className="text-gray-300">•</span>
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" />
+              <div className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span data-testid="text-article-read-time">{calculateReadTime(article.content)} min read</span>
               </div>
-              <span className="text-gray-300">•</span>
-              <div className="flex items-center gap-1.5">
-                <Eye className="w-4 h-4" />
+              <span className="text-gray-300 hidden sm:inline">•</span>
+              <div className="flex items-center gap-1">
+                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span data-testid="text-article-view-count">{formatViewCount(article.viewCount)} views</span>
               </div>
               {article.price > 0 && (
                 <>
                   <span className="text-gray-300">•</span>
-                  <div className="flex items-center gap-1.5">
-                    <CreditCard className="w-4 h-4" />
+                  <div className="flex items-center gap-1">
+                    <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span data-testid="text-article-price" className="font-semibold">{formatPrice(article.price)} to unlock</span>
                   </div>
                 </>
               )}
             </div>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl text-gray-900 font-bold mb-3 leading-tight" data-testid="text-article-title">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-gray-900 font-bold mb-2 sm:mb-3 leading-tight" data-testid="text-article-title">
               {article.title}
             </h1>
 
-            <p className="text-lg text-gray-600 font-medium mb-6 italic" data-testid="text-article-subheader">
+            <p className="text-base sm:text-lg text-gray-600 font-medium mb-4 sm:mb-6 italic" data-testid="text-article-subheader">
               {article.subheader}
             </p>
 
