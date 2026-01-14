@@ -1,9 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle, X, ArrowLeft } from 'lucide-react';
+import { Wallet, CreditCard, Clock, Plus, CheckCircle, XCircle, X, ArrowLeft, ExternalLink, FileText, Video, Loader2 } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+interface Purchase {
+  id: string;
+  content_id: string;
+  buyer_id: string;
+  seller_id: string;
+  amount_cents: number;
+  timestamp: string;
+  status: string;
+  title: string;
+  source_url: string | null;
+  content_type: string;
+}
 
 interface PaymentFormProps {
   clientSecret: string;
@@ -115,7 +128,7 @@ function PaymentForm({ clientSecret, onSuccess, onCancel, amount }: PaymentFormP
 }
 
 export default function WalletPage() {
-  const { walletBalance, user, createPaymentSession, refreshWalletBalance } = useVideoStore();
+  const { walletBalance, user, createPaymentSession, refreshWalletBalance, ledewireToken } = useVideoStore();
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [amount, setAmount] = useState('10.00');
   const [loading, setLoading] = useState(false);
@@ -126,6 +139,43 @@ export default function WalletPage() {
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [purchasesLoading, setPurchasesLoading] = useState(false);
+  const [purchasesError, setPurchasesError] = useState('');
+
+  const fetchPurchases = useCallback(async () => {
+    if (!ledewireToken) return;
+    
+    setPurchasesLoading(true);
+    setPurchasesError('');
+    
+    try {
+      const response = await fetch('/api/wallet/purchases', {
+        headers: {
+          'Authorization': `Bearer ${ledewireToken}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch purchase history');
+      }
+      
+      const data = await response.json();
+      setPurchases(data);
+    } catch (err: any) {
+      console.error('Failed to fetch purchases:', err);
+      setPurchasesError(err.message || 'Failed to load purchase history');
+    } finally {
+      setPurchasesLoading(false);
+    }
+  }, [ledewireToken]);
+
+  useEffect(() => {
+    if (ledewireToken) {
+      fetchPurchases();
+    }
+  }, [ledewireToken, fetchPurchases]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -441,12 +491,72 @@ export default function WalletPage() {
         <div className="p-6 border-b border-slate-800">
           <h3 className="text-lg font-medium flex items-center gap-2">
             <Clock className="w-5 h-5 text-slate-400" />
-            Transaction History
+            Purchase History
           </h3>
         </div>
-        <div className="p-6 text-center text-slate-400">
-          <p>Transaction history coming soon</p>
-          <p className="text-sm mt-2">Your purchases will appear here</p>
+        <div className="divide-y divide-slate-800">
+          {purchasesLoading ? (
+            <div className="p-6 text-center">
+              <Loader2 className="w-6 h-6 text-slate-400 animate-spin mx-auto" />
+              <p className="text-slate-400 mt-2">Loading purchases...</p>
+            </div>
+          ) : purchasesError ? (
+            <div className="p-6 text-center text-red-400">
+              <p>{purchasesError}</p>
+            </div>
+          ) : purchases.length === 0 ? (
+            <div className="p-6 text-center text-slate-400">
+              <p>No purchases yet</p>
+              <p className="text-sm mt-2">Your purchases will appear here</p>
+            </div>
+          ) : (
+            purchases.map((purchase) => (
+              <div key={purchase.id} className="p-4 hover:bg-slate-800/50 transition-colors" data-testid={`purchase-item-${purchase.id}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+                      {purchase.content_type === 'video' ? (
+                        <Video className="w-5 h-5 text-blue-400" />
+                      ) : (
+                        <FileText className="w-5 h-5 text-green-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {purchase.source_url ? (
+                        <a 
+                          href={purchase.source_url} 
+                          className="text-white font-medium hover:text-blue-400 transition-colors flex items-center gap-1.5 truncate"
+                          data-testid={`purchase-link-${purchase.id}`}
+                        >
+                          <span className="truncate">{purchase.title}</span>
+                          <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                        </a>
+                      ) : (
+                        <span className="text-white font-medium truncate block">{purchase.title}</span>
+                      )}
+                      <div className="flex items-center gap-2 mt-1 text-sm text-slate-400">
+                        <span>{new Date(purchase.timestamp).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}</span>
+                        <span>•</span>
+                        <span className="capitalize">{purchase.content_type}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-white font-medium">
+                      ${(purchase.amount_cents / 100).toFixed(2)}
+                    </span>
+                    <div className="text-xs text-green-400 mt-0.5 capitalize">
+                      {purchase.status}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

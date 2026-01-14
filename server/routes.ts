@@ -472,6 +472,46 @@ export async function registerRoutes(
       res.status(500).json({ error: error.message });
     }
   });
+
+  app.get("/api/wallet/purchases", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Authorization required' });
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      const purchases = await ledewire.getPurchases(token);
+      
+      // Enrich purchases with content details (title, source_url)
+      const enrichedPurchases = await Promise.all(
+        purchases.map(async (purchase) => {
+          try {
+            const content = await ledewire.getContent(purchase.content_id);
+            return {
+              ...purchase,
+              title: content.title,
+              source_url: content.metadata?.source_url || null,
+              content_type: content.metadata?.type || 'article',
+            };
+          } catch (error) {
+            // If content fetch fails, return purchase without enrichment
+            return {
+              ...purchase,
+              title: 'Unknown Content',
+              source_url: null,
+              content_type: 'unknown',
+            };
+          }
+        })
+      );
+      
+      res.json(enrichedPurchases);
+    } catch (error: any) {
+      console.error('Get purchases error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
   
   app.post("/api/wallet/payment-session", async (req, res) => {
     try {
