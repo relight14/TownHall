@@ -489,8 +489,8 @@ export default function ArticlePage() {
               <DynamicImage 
                 src={article.thumbnail} 
                 alt={article.title}
-                maxHeight="520px"
-                minHeight="240px"
+                maxHeight="640px"
+                minHeight="280px"
                 fallbackAspectRatio={16/9}
                 shadow={true}
               />
