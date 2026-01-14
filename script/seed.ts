@@ -1,3 +1,5 @@
+import { config } from 'dotenv';
+import { resolve } from 'path';
 import { db } from "../server/db";
 import {
   adminSettings,
@@ -8,7 +10,9 @@ import {
   articles as articlesTable,
   users,
 } from "../shared/schema";
-console.log('DATABASE_URL:', process.env.DATABASE_URL);
+
+// Load environment variables from root .env file
+config({ path: resolve(process.cwd(), '.env') });
 
 /**
  * Database Seed Script
