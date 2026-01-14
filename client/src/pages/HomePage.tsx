@@ -188,19 +188,15 @@ function CategoryArticleCard({ article }: { article: Article }) {
   return (
     <Link to={`/article/${article.id}`}>
       <div className="group cursor-pointer" data-testid={`category-article-${article.id}`}>
-        <div className="relative">
+        <div className="relative aspect-[3/2] overflow-hidden rounded-xl shadow-lg shadow-black/10">
           {article.thumbnail ? (
-            <DynamicImage
+            <ImageWithFallback
               src={article.thumbnail}
               alt={article.title}
-              maxHeight="220px"
-              minHeight="140px"
-              fallbackAspectRatio={3/2}
-              hoverScale={true}
-              shadow={true}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
-            <div className="w-full aspect-[3/2] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-xl shadow-lg shadow-black/10">
+            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
               <span className="text-gray-400 text-xl font-serif">So What</span>
             </div>
           )}
