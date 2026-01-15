@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { useSeries } from '../hooks/series/useSeries';
+import { useArticles, useFeaturedArticles, useLatestArticles, useMostReadArticles, type Article } from '../hooks/articles';
 import { Link } from 'react-router-dom';
 import { Clock, Eye, Play, Search, ChevronRight, LogOut } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
@@ -54,18 +55,40 @@ function stripHtml(html: string): string {
   return tmp.textContent || tmp.innerText || '';
 }
 
-interface Article {
-  id: string;
-  title: string;
-  summary: string;
-  author?: string;
-  thumbnail: string | null;
-  category: string;
-  viewCount: number;
-  readTimeMinutes: number;
-  featured: number;
-  publishedAt: string;
-  price: number;
+function ArticlesSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+        <div className="lg:col-span-3 order-2 lg:order-1">
+          <div className="h-6 bg-gray-200 rounded w-20 mb-4"></div>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="py-4 border-b border-gray-100">
+              <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="h-5 bg-gray-200 rounded w-full mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-24"></div>
+            </div>
+          ))}
+        </div>
+        <div className="lg:col-span-6 order-1 lg:order-2">
+          <div className="h-4 bg-gray-200 rounded w-20 mb-3"></div>
+          <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4"></div>
+          <div className="h-8 bg-gray-200 rounded w-3/4 mb-3"></div>
+          <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+        <div className="lg:col-span-3 order-3">
+          <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="py-4 border-b border-gray-100">
+              <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="h-5 bg-gray-200 rounded w-full mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-24"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function CategoryBadge({ category }: { category: string }) {
@@ -321,27 +344,25 @@ function VideoAnalysisSection({ episodes, series }: { episodes: any[]; series: a
 
 export default function HomePage() {
   const { 
-    articles, 
-    latestArticles, 
-    mostReadArticles, 
-    featuredArticles,
-    getArticlesByCategory,
     featuredEpisodes,
     user,
     walletBalance,
     logout,
-    refreshArticles
   } = useVideoStore();
   const { data: series = [] } = useSeries();
+  
+  // Article queries with loading states
+  const { data: articles = [], isLoading: articlesLoading } = useArticles();
+  const { data: featuredArticles = [], isLoading: featuredLoading } = useFeaturedArticles();
+  const { data: latestArticles = [], isLoading: latestLoading } = useLatestArticles(5);
+  const { data: mostReadArticles = [], isLoading: mostReadLoading } = useMostReadArticles(5);
+  
+  const isLoading = articlesLoading || featuredLoading || latestLoading || mostReadLoading;
   
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchOpen, setSearchOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
-
-  useEffect(() => {
-    refreshArticles();
-  }, []);
 
   const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
 
@@ -365,6 +386,12 @@ export default function HomePage() {
   
   const displayedLatest = latestForCategory.filter(a => a.id !== featuredArticle?.id).slice(0, 4);
   const displayedMostRead = mostReadForCategory.slice(0, 4);
+
+  const getArticlesByCategory = (category: string): Article[] => {
+    return allArticles
+      .filter(a => a.category === category)
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  };
 
   const electionsArticles = getArticlesByCategory('elections');
   const policyArticles = getArticlesByCategory('policy');
@@ -464,8 +491,11 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Loading State */}
+        {isLoading && <ArticlesSkeleton />}
+
         {/* Hero Section - 3 Column Layout */}
-        {featuredArticle && (
+        {!isLoading && featuredArticle && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             {/* Left Column - Latest */}
             <div className="lg:col-span-3 order-2 lg:order-1">
@@ -501,7 +531,7 @@ export default function HomePage() {
         )}
 
         {/* Empty State */}
-        {!featuredArticle && (
+        {!isLoading && !featuredArticle && (
           <div className="text-center py-20">
             <p className="text-gray-500 text-xl">No articles available yet.</p>
             <p className="text-gray-400 mt-2">Use the Admin panel to add your first article.</p>

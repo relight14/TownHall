@@ -1,0 +1,143 @@
+---
+description: TanStack Query hooks pattern for data fetching and mutations
+globs: client/src/hooks/**/*.ts, client/src/hooks/**/*.tsx
+alwaysApply: false
+---
+
+# TanStack Query Hooks Pattern
+
+## Folder Structure
+
+Each data domain gets its own folder in `hooks/`:
+
+```
+hooks/
+├── series/
+│   ├── queryKeys.ts      # Query key constants
+│   ├── useSeries.ts      # Query hooks (fetching)
+│   ├── useSeriesMutations.ts  # Mutation hooks (create/update/delete)
+│   ├── index.ts          # Barrel exports
+│   └── README.md         # Documentation
+├── articles/
+│   ├── queryKeys.ts
+│   ├── useArticles.ts
+│   ├── useArticleMutations.ts
+│   ├── index.ts
+│   └── README.md
+```
+
+## Query Keys (queryKeys.ts)
+
+Always define query keys as constants:
+
+```typescript
+export const seriesKeys = {
+  all: ['series'] as const,
+  lists: () => [...seriesKeys.all, 'list'] as const,
+  detail: (id: string) => [...seriesKeys.all, 'detail', id] as const,
+  api: {
+    all: ['/api/series'] as const,
+    detail: (id: string) => ['/api/series', id] as const,
+  },
+} as const;
+```
+
+Benefits:
+- Type safety and autocomplete
+- Single source of truth
+- Prevents typos
+- Easy refactoring
+
+## Query Hooks (useX.ts)
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { seriesKeys } from './queryKeys';
+
+export interface Series {
+  id: string;
+  title: string;
+  // ... other fields
+}
+
+export function useSeries() {
+  return useQuery<Series[]>({
+    queryKey: seriesKeys.api.all,
+  });
+}
+```
+
+## Mutation Hooks (useXMutations.ts)
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { seriesKeys } from './queryKeys';
+
+export function useCreateSeries(adminToken?: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => apiRequest('POST', '/api/series', data, adminToken),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
+    },
+  });
+}
+```
+
+## Index Exports (index.ts)
+
+```typescript
+export { useSeries, type Series } from './useSeries';
+export { useCreateSeries, useUpdateSeries } from './useSeriesMutations';
+export { seriesKeys } from './queryKeys';
+```
+
+## Usage in Components
+
+```typescript
+// Fetching data
+import { useSeries } from '../hooks/series';
+
+const { data: series = [], isLoading, error } = useSeries();
+
+// Mutations (admin)
+import { useCreateSeries } from '../hooks/series';
+
+const createSeries = useCreateSeries(adminToken);
+createSeries.mutate(newData, {
+  onSuccess: () => console.log('Created!'),
+});
+```
+
+## Loading States
+
+Always add skeleton loaders when using queries:
+
+```typescript
+function MySkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="h-6 bg-gray-200 rounded w-20 mb-4"></div>
+      {/* ... */}
+    </div>
+  );
+}
+
+function MyComponent() {
+  const { data, isLoading } = useSeries();
+  
+  if (isLoading) return <MySkeleton />;
+  // ...
+}
+```
+
+## Rules
+
+1. **One folder per data domain** - Don't mix series and articles hooks
+2. **Always use queryKeys constants** - Never hardcode query key strings
+3. **Export types from query hooks** - Keep interfaces with their data
+4. **Invalidate on mutations** - Always call `invalidateQueries` in `onSuccess`
+5. **Default to empty arrays** - Use `const { data = [] }` for list queries
+6. **Add loading states** - Every query should have a skeleton/loading UI
+7. **Keep mutations separate** - Query hooks and mutation hooks in separate files
+8. **Document with README.md** - Each hooks folder needs documentation
