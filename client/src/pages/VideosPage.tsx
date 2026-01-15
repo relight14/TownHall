@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useVideoStore } from '../context/VideoStoreContext';
+import { useSeries } from '../hooks/series/useSeries';
 import { ArrowLeft, Play } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import capitolImage from '@assets/stock_images/us_capitol_building__80cc4b93.jpg';
@@ -44,7 +44,7 @@ function SeriesCard({ series }: { series: any }) {
 }
 
 export default function VideosPage() {
-  const { series } = useVideoStore();
+  const { data: series = [] } = useSeries();
 
   return (
     <div className="relative min-h-screen pb-20">

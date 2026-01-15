@@ -70,12 +70,6 @@ interface Article {
 }
 
 interface VideoStoreContextType {
-  series: Series[];
-  addSeries: (series: Omit<Series, 'id' | 'episodes'>) => Promise<void>;
-  addEpisode: (seriesId: string, episode: Omit<Episode, 'id'>) => Promise<void>;
-  updateSeries: (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => Promise<void>;
-  updateEpisode: (episodeId: string, updates: Omit<Partial<Episode>, 'id'>) => Promise<void>;
-  deleteEpisode: (episodeId: string) => Promise<void>;
   purchasedEpisodes: string[];
   purchaseEpisode: (episodeId: string) => Promise<void>;
   checkPurchase: (episodeId: string) => Promise<boolean>;
@@ -94,7 +88,6 @@ interface VideoStoreContextType {
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   featuredEpisodes: FeaturedEpisode[];
   setFeaturedEpisodes: (episodeIds: string[]) => Promise<void>;
-  getAllEpisodes: () => Episode[];
   articles: Article[];
   adminArticles: Article[];
   adminArticlesLoaded: boolean;
@@ -118,7 +111,6 @@ const defaultSiteSettings: SiteSettings = {
 };
 
 export function VideoStoreProvider({ children }: { children: ReactNode }) {
-  const [series, setSeries] = useState<Series[]>([]);
   const [purchasedEpisodes, setPurchasedEpisodes] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [ledewireToken, setLedewireToken] = useState<string | null>(null);
@@ -133,12 +125,11 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [latestArticles, setLatestArticles] = useState<Article[]>([]);
   const [mostReadArticles, setMostReadArticles] = useState<Article[]>([]);
 
-  // Load series, site settings, and featured episodes on mount
+  // Load site settings and featured episodes on mount
   // Note: Articles are loaded by individual pages to avoid race conditions
   // - Public pages call loadArticles() which fetches preview content
   // - Admin page calls loadAdminArticles() which fetches full content
   useEffect(() => {
-    loadSeries();
     loadSiteSettings();
     loadFeaturedEpisodes();
   }, []);
@@ -275,17 +266,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [ledewireToken]);
 
-  const loadSeries = async () => {
-    try {
-      const response = await fetch('/api/series');
-      if (response.ok) {
-        const data = await response.json();
-        setSeries(data);
-      }
-    } catch (error) {
-      console.error('Failed to load series:', error);
-    }
-  };
 
   const loadSiteSettings = async () => {
     try {
@@ -483,136 +463,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addSeries = async (newSeries: Omit<Series, 'id' | 'episodes'>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch('/api/series', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify(newSeries),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create series');
-      }
-
-      await loadSeries();
-    } catch (error) {
-      console.error('Failed to add series:', error);
-      throw error;
-    }
-  };
-
-  const addEpisode = async (seriesId: string, newEpisode: Omit<Episode, 'id'>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch('/api/episodes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify({
-          ...newEpisode,
-          seriesId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create episode');
-      }
-
-      await loadSeries();
-    } catch (error) {
-      console.error('Failed to add episode:', error);
-      throw error;
-    }
-  };
-
-  const updateSeries = async (seriesId: string, updates: Omit<Partial<Series>, 'id' | 'episodes'>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch(`/api/series/${seriesId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update series');
-      }
-
-      await loadSeries();
-    } catch (error) {
-      console.error('Failed to update series:', error);
-      throw error;
-    }
-  };
-
-  const updateEpisode = async (episodeId: string, updates: Omit<Partial<Episode>, 'id'>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch(`/api/episodes/${episodeId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update episode');
-      }
-
-      await loadSeries();
-    } catch (error) {
-      console.error('Failed to update episode:', error);
-      throw error;
-    }
-  };
-
-  const deleteEpisode = async (episodeId: string) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch(`/api/episodes/${episodeId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Admin-Token': adminToken,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete episode');
-      }
-
-      await loadSeries();
-    } catch (error) {
-      console.error('Failed to delete episode:', error);
-      throw error;
-    }
-  };
 
   const purchaseEpisode = async (episodeId: string) => {
     if (!ledewireToken) {
@@ -893,18 +743,10 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const getAllEpisodes = (): Episode[] => {
-    return series.flatMap(s => s.episodes.map(ep => ({ ...ep, seriesId: s.id })));
-  };
+  // getAllEpisodes removed - use useSeries hook and flatten episodes locally
 
   return (
     <VideoStoreContext.Provider value={{
-      series,
-      addSeries,
-      addEpisode,
-      updateSeries,
-      updateEpisode,
-      deleteEpisode,
       purchasedEpisodes,
       purchaseEpisode,
       checkPurchase,
@@ -923,7 +765,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       updateSiteSettings,
       featuredEpisodes,
       setFeaturedEpisodes,
-      getAllEpisodes,
       articles,
       adminArticles,
       adminArticlesLoaded,

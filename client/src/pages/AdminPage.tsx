@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVideoStore } from '../context/VideoStoreContext';
+import { useSeries } from '../hooks/series/useSeries';
+import { useCreateSeries, useUpdateSeries, useCreateEpisode, useUpdateEpisode, useDeleteEpisode } from '../hooks/series/useSeriesMutations';
 import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Star, Check, FileText, ArrowLeft } from 'lucide-react';
 import { ArticleForm } from '../components/admin/ArticleForm';
 import { FeaturedEpisodesManager } from '../components/admin/FeaturedEpisodesManager';
@@ -250,10 +252,24 @@ function PasswordChangeForm({ onClose }: { onClose: () => void }) {
 export default function AdminPage() {
   const navigate = useNavigate();
   const { 
-    series, addSeries, addEpisode, updateSeries, updateEpisode, deleteEpisode, setAdminToken,
-    siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes, getAllEpisodes,
+    setAdminToken,
+    siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes,
     adminArticles, adminArticlesLoaded, addArticle, updateArticle, deleteArticle, refreshArticles, loadAdminArticles
   } = useVideoStore();
+  const { data: series = [] } = useSeries();
+  
+  // Get admin token for mutations
+  const adminToken = sessionStorage.getItem('adminToken');
+  const createSeriesMutation = useCreateSeries(adminToken);
+  const updateSeriesMutation = useUpdateSeries(adminToken);
+  const createEpisodeMutation = useCreateEpisode(adminToken);
+  const updateEpisodeMutation = useUpdateEpisode(adminToken);
+  const deleteEpisodeMutation = useDeleteEpisode(adminToken);
+  
+  // Helper function to get all episodes from series
+  const getAllEpisodes = () => {
+    return series.flatMap(s => s.episodes.map(ep => ({ ...ep, seriesId: s.id })));
+  };
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
@@ -432,7 +448,12 @@ export default function AdminPage() {
       {showSeriesForm && (
         <SeriesForm 
           onClose={() => setShowSeriesForm(false)}
-          onSubmit={addSeries}
+          onSubmit={(data) => {
+            createSeriesMutation.mutate(data, {
+              onSuccess: () => setShowSeriesForm(false),
+              onError: (error) => console.error('Failed to create series:', error)
+            });
+          }}
         />
       )}
 
@@ -440,13 +461,14 @@ export default function AdminPage() {
         <SeriesForm 
           series={series.find(s => s.id === editingSeriesId)}
           onClose={() => setEditingSeriesId(null)}
-          onSubmit={async (data) => {
-            try {
-              await updateSeries(editingSeriesId, data);
-              setEditingSeriesId(null);
-            } catch (error) {
-              console.error('Failed to update series:', error);
-            }
+          onSubmit={(data) => {
+            updateSeriesMutation.mutate(
+              { id: editingSeriesId, ...data },
+              {
+                onSuccess: () => setEditingSeriesId(null),
+                onError: (error) => console.error('Failed to update series:', error)
+              }
+            );
           }}
         />
       )}
@@ -488,8 +510,13 @@ export default function AdminPage() {
               <EpisodeForm
                 seriesId={s.id}
                 onSubmit={(episode) => {
-                  addEpisode(s.id, episode);
-                  setSelectedSeriesId(null);
+                  createEpisodeMutation.mutate(
+                    { seriesId: s.id, ...episode },
+                    {
+                      onSuccess: () => setSelectedSeriesId(null),
+                      onError: (error) => console.error('Failed to create episode:', error)
+                    }
+                  );
                 }}
                 onCancel={() => setSelectedSeriesId(null)}
               />
@@ -503,9 +530,14 @@ export default function AdminPage() {
                       <EpisodeForm
                         seriesId={s.id}
                         episode={ep}
-                        onSubmit={async (episodeData) => {
-                          await updateEpisode(ep.id, episodeData);
-                          setEditingEpisodeId(null);
+                        onSubmit={(episodeData) => {
+                          updateEpisodeMutation.mutate(
+                            { id: ep.id, ...episodeData },
+                            {
+                              onSuccess: () => setEditingEpisodeId(null),
+                              onError: (error) => console.error('Failed to update episode:', error)
+                            }
+                          );
                         }}
                         onCancel={() => setEditingEpisodeId(null)}
                       />
@@ -533,7 +565,9 @@ export default function AdminPage() {
                         <button
                           onClick={() => {
                             if (confirm('Are you sure you want to delete this episode?')) {
-                              deleteEpisode(ep.id);
+                              deleteEpisodeMutation.mutate(ep.id, {
+                                onError: (error) => console.error('Failed to delete episode:', error)
+                              });
                             }
                           }}
                           className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"

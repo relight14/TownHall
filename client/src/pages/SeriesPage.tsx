@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useVideoStore } from '../context/VideoStoreContext';
+import { useSeries } from '../hooks/series/useSeries';
 import EpisodeCard from '../components/EpisodeCard';
 import { ArrowLeft } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
@@ -7,7 +7,7 @@ import { VideoEmbed } from '../components/VideoEmbed';
 
 export default function SeriesPage() {
   const { seriesId } = useParams<{ seriesId: string }>();
-  const { series } = useVideoStore();
+  const { data: series = [] } = useSeries();
   
   const currentSeries = series.find(s => s.id === seriesId);
 
