@@ -3,7 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X, Clock, Eye } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { DynamicImage } from '../components/ui/dynamic-image';
+import { useQueryClient } from '@tanstack/react-query';
 import { useVideoStore } from '../context/VideoStoreContext';
+import { useArticle, articleKeys, type Article } from '../hooks/articles';
 import AuthModal from '../components/AuthModal';
 import PasswordResetModal from '../components/PasswordResetModal';
 
@@ -146,21 +148,6 @@ function normalizeListHTML(html: string): string {
   return doc.body.innerHTML;
 }
 
-interface Article {
-  id: string;
-  title: string;
-  summary: string;
-  content: string;
-  subheader: string;
-  thumbnail: string | null;
-  category: string;
-  price: number;
-  ledewireContentId: string | null;
-  featured: number;
-  publishedAt: string;
-  viewCount: number;
-  isPreview?: boolean;
-}
 
 function TwitterIcon({ className }: { className?: string }) {
   return (
@@ -189,11 +176,20 @@ function LinkedInIcon({ className }: { className?: string }) {
 export default function ArticlePage() {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = useVideoStore();
   
-  const [article, setArticle] = useState<Article | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use TanStack Query for article fetching
+  const { data: article, isLoading: loading, error: queryError } = useArticle(articleId, ledewireToken);
+  const error = queryError?.message || null;
+  
+  // Helper to refetch article data
+  const refetchArticle = () => {
+    if (articleId) {
+      queryClient.invalidateQueries({ queryKey: articleKeys.api.detail(articleId) });
+    }
+  };
+  
   const [copied, setCopied] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(false);
@@ -205,48 +201,9 @@ export default function ArticlePage() {
   const viewCountedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const loadArticle = async () => {
-      try {
-        setLoading(true);
-        console.log(`[ARTICLE-CLIENT] ========================================`);
-        console.log(`[ARTICLE-CLIENT] Fetching article: ${articleId}`);
-        console.log(`[ARTICLE-CLIENT] User logged in: ${user ? 'YES' : 'NO'}, Token: ${ledewireToken ? 'present' : 'MISSING'}`);
-        
-        const headers: HeadersInit = {};
-        if (ledewireToken) {
-          headers['Authorization'] = `Bearer ${ledewireToken}`;
-          console.log(`[ARTICLE-CLIENT] Sending Authorization header with request`);
-        }
-        
-        const response = await fetch(`/api/articles/${articleId}`, { headers });
-        if (!response.ok) {
-          throw new Error('Article not found');
-        }
-        const data = await response.json();
-        console.log(`[ARTICLE-CLIENT] Article received: "${data.title?.substring(0, 50)}..."`);
-        console.log(`[ARTICLE-CLIENT] price: ${data.price}, ledewireContentId: ${data.ledewireContentId || 'MISSING'}`);
-        console.log(`[ARTICLE-CLIENT] isPreview flag from server: ${data.isPreview}`);
-        console.log(`[ARTICLE-CLIENT] ========================================`);
-        setArticle(data);
-      } catch (err: any) {
-        console.error(`[ARTICLE-CLIENT] ERROR loading article:`, err.message);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (articleId) {
-      loadArticle();
-    }
-  }, [articleId, user, ledewireToken]);
-
-  useEffect(() => {
     if (article && articleId && viewCountedRef.current !== articleId) {
       viewCountedRef.current = articleId;
-      incrementArticleView(articleId).then(() => {
-        setArticle(prev => prev ? { ...prev, viewCount: prev.viewCount + 1 } : null);
-      }).catch(err => {
+      incrementArticleView(articleId).catch(err => {
         console.error('Failed to increment view count:', err);
       });
     }
@@ -374,12 +331,8 @@ export default function ArticlePage() {
           if (ledewireToken) {
             refetchHeaders['Authorization'] = `Bearer ${ledewireToken}`;
           }
-          const articleResponse = await fetch(`/api/articles/${article.id}`, { headers: refetchHeaders });
-          if (articleResponse.ok) {
-            const fullArticle = await articleResponse.json();
-            console.log(`[ARTICLE-CLIENT] Full article received, isPreview: ${fullArticle.isPreview}`);
-            setArticle(fullArticle);
-          }
+          console.log(`[ARTICLE-CLIENT] Refetching article after purchase`);
+          refetchArticle();
         } catch (refetchErr) {
           console.error('[ARTICLE-CLIENT] Failed to refetch article after purchase:', refetchErr);
         }
@@ -675,14 +628,7 @@ export default function ArticlePage() {
                   if (data.has_purchased) {
                     // Already purchased - just refresh the article to get full content
                     setHasPurchased(true);
-                    const articleResponse = await fetch(`/api/articles/${article.id}`, {
-                      headers: { 'Authorization': `Bearer ${freshToken}` },
-                      credentials: 'include',
-                    });
-                    if (articleResponse.ok) {
-                      const fullArticle = await articleResponse.json();
-                      setArticle(fullArticle);
-                    }
+                    refetchArticle();
                     return; // Don't show purchase modal - already purchased!
                   }
                 }
