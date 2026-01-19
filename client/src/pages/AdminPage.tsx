@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { useSeries } from '../hooks/series/useSeries';
 import { useCreateSeries, useUpdateSeries, useCreateEpisode, useUpdateEpisode, useDeleteEpisode } from '../hooks/series/useSeriesMutations';
+import { useFeaturedEpisodes, useSetFeaturedEpisodes } from '../hooks/featuredEpisodes';
+import { useSiteSettings, useUpdateSiteSettings } from '../hooks/siteSettings';
 import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Star, Check, FileText, ArrowLeft } from 'lucide-react';
 import { ArticleForm } from '../components/admin/ArticleForm';
 import { FeaturedEpisodesManager } from '../components/admin/FeaturedEpisodesManager';
@@ -253,10 +255,11 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const { 
     setAdminToken,
-    siteSettings, updateSiteSettings, featuredEpisodes, setFeaturedEpisodes,
     adminArticles, adminArticlesLoaded, addArticle, updateArticle, deleteArticle, refreshArticles, loadAdminArticles
   } = useVideoStore();
   const { data: series = [] } = useSeries();
+  const { data: featuredEpisodes = [] } = useFeaturedEpisodes();
+  const { data: siteSettings } = useSiteSettings();
   
   // Get admin token for mutations
   const adminToken = sessionStorage.getItem('adminToken');
@@ -265,6 +268,8 @@ export default function AdminPage() {
   const createEpisodeMutation = useCreateEpisode(adminToken);
   const updateEpisodeMutation = useUpdateEpisode(adminToken);
   const deleteEpisodeMutation = useDeleteEpisode(adminToken);
+  const setFeaturedEpisodesMutation = useSetFeaturedEpisodes(adminToken);
+  const updateSiteSettingsMutation = useUpdateSiteSettings(adminToken);
   
   // Helper function to get all episodes from series
   const getAllEpisodes = () => {
@@ -344,7 +349,13 @@ export default function AdminPage() {
           allEpisodes={getAllEpisodes().map(ep => ({ ...ep, seriesId: (ep as any).seriesId || '' }))}
           featuredEpisodeIds={featuredEpisodes.map(ep => ep.id)}
           series={series.map(s => ({ id: s.id, title: s.title }))}
-          onSave={setFeaturedEpisodes}
+          onSave={(episodeIds) => {
+            setFeaturedEpisodesMutation.mutate(episodeIds, {
+              onSuccess: () => {
+                setShowFeaturedManager(false);
+              },
+            });
+          }}
           onClose={() => setShowFeaturedManager(false)}
         />
       )}

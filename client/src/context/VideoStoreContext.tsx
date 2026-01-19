@@ -43,16 +43,6 @@ interface User {
   name: string;
 }
 
-interface SiteSettings {
-  heroHeading: string;
-  heroSubheading: string;
-}
-
-interface FeaturedEpisode extends Episode {
-  displayOrder: number;
-  seriesId: string;
-}
-
 interface Article {
   id: string;
   title: string;
@@ -84,10 +74,6 @@ interface VideoStoreContextType {
   createPaymentSession: (amountCents: number) => Promise<any>;
   adminToken: string | null;
   setAdminToken: (token: string | null) => void;
-  siteSettings: SiteSettings;
-  updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
-  featuredEpisodes: FeaturedEpisode[];
-  setFeaturedEpisodes: (episodeIds: string[]) => Promise<void>;
   articles: Article[];
   adminArticles: Article[];
   adminArticlesLoaded: boolean;
@@ -105,19 +91,12 @@ interface VideoStoreContextType {
 
 const VideoStoreContext = createContext<VideoStoreContextType | undefined>(undefined);
 
-const defaultSiteSettings: SiteSettings = {
-  heroHeading: "Nurturing artists.\nShaping culture.",
-  heroSubheading: "Accessible space, community, and education for artists of all levels, mediums, and backgrounds—transforming society through the power of culture.",
-};
-
 export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [purchasedEpisodes, setPurchasedEpisodes] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [ledewireToken, setLedewireToken] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [adminToken, setAdminToken] = useState<string | null>(null);
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
-  const [featuredEpisodes, setFeaturedEpisodesState] = useState<FeaturedEpisode[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [adminArticles, setAdminArticles] = useState<Article[]>([]);
   const [adminArticlesLoaded, setAdminArticlesLoaded] = useState<boolean>(false);
@@ -125,14 +104,9 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [latestArticles, setLatestArticles] = useState<Article[]>([]);
   const [mostReadArticles, setMostReadArticles] = useState<Article[]>([]);
 
-  // Load site settings and featured episodes on mount
   // Note: Articles are loaded by individual pages to avoid race conditions
   // - Public pages call loadArticles() which fetches preview content
   // - Admin page calls loadAdminArticles() which fetches full content
-  useEffect(() => {
-    loadSiteSettings();
-    loadFeaturedEpisodes();
-  }, []);
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const userRef = useRef<User | null>(null);
@@ -266,33 +240,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [ledewireToken]);
 
-
-  const loadSiteSettings = async () => {
-    try {
-      const response = await fetch('/api/site-settings');
-      if (response.ok) {
-        const data = await response.json();
-        setSiteSettings({
-          heroHeading: data.heroHeading || defaultSiteSettings.heroHeading,
-          heroSubheading: data.heroSubheading || defaultSiteSettings.heroSubheading,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to load site settings:', error);
-    }
-  };
-
-  const loadFeaturedEpisodes = async () => {
-    try {
-      const response = await fetch('/api/featured-episodes');
-      if (response.ok) {
-        const data = await response.json();
-        setFeaturedEpisodesState(data);
-      }
-    } catch (error) {
-      console.error('Failed to load featured episodes:', error);
-    }
-  };
 
   const loadArticles = async () => {
     try {
@@ -686,62 +633,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateSiteSettings = async (settings: Partial<SiteSettings>) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch('/api/admin/site-settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify(settings),
-      });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update site settings');
-      }
-
-      const data = await response.json();
-      setSiteSettings({
-        heroHeading: data.heroHeading,
-        heroSubheading: data.heroSubheading,
-      });
-    } catch (error) {
-      console.error('Failed to update site settings:', error);
-      throw error;
-    }
-  };
-
-  const setFeaturedEpisodes = async (episodeIds: string[]) => {
-    if (!adminToken) {
-      throw new Error('Admin authentication required');
-    }
-    try {
-      const response = await fetch('/api/admin/featured-episodes', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken,
-        },
-        body: JSON.stringify({ episodeIds }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update featured episodes');
-      }
-
-      const data = await response.json();
-      setFeaturedEpisodesState(data);
-    } catch (error) {
-      console.error('Failed to update featured episodes:', error);
-      throw error;
-    }
-  };
 
   // getAllEpisodes removed - use useSeries hook and flatten episodes locally
 
@@ -761,10 +653,6 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       createPaymentSession,
       adminToken,
       setAdminToken,
-      siteSettings,
-      updateSiteSettings,
-      featuredEpisodes,
-      setFeaturedEpisodes,
       articles,
       adminArticles,
       adminArticlesLoaded,

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { useSeries } from '../hooks/series/useSeries';
 import { useArticles, useFeaturedArticles, useLatestArticles, useMostReadArticles, type Article } from '../hooks/articles';
+import { useFeaturedEpisodes } from '../hooks/featuredEpisodes';
 import { Link } from 'react-router-dom';
 import { Clock, Eye, Play, Search, ChevronRight, LogOut } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
@@ -344,12 +345,12 @@ function VideoAnalysisSection({ episodes, series }: { episodes: any[]; series: a
 
 export default function HomePage() {
   const { 
-    featuredEpisodes,
     user,
     walletBalance,
     logout,
   } = useVideoStore();
   const { data: series = [] } = useSeries();
+  const { data: featuredEpisodes = [] } = useFeaturedEpisodes();
   
   // Article queries with loading states
   const { data: articles = [], isLoading: articlesLoading } = useArticles();
