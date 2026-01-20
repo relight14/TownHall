@@ -8,7 +8,7 @@ info:
 
     '
 servers:
-- url: https://api.ledewire.com/v1
+- url:   
 components:
   securitySchemes:
     BearerAuth:
