@@ -46,5 +46,5 @@ integrations = ["github:1.0.0", "javascript_object_storage:2.0.0"]
 [userenv]
 
 [userenv.shared]
-LEDEWIRE_API_URL = "https://api-staging.ledewire.com/v1"
+LEDEWIRE_API_URL = "https://api.ledewire.com/v1"
 ADMIN_EMAIL = "cillizzac@gmail.com"
