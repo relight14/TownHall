@@ -376,10 +376,6 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
 
   // Update all form fields when article prop changes (e.g., when full content loads after admin auth)
   useEffect(() => {
-    console.log('[ARTICLEFORM DEBUG] useEffect triggered - article prop changed');
-    console.log('[ARTICLEFORM DEBUG] Article id:', article?.id);
-    console.log('[ARTICLEFORM DEBUG] Article content length:', article?.content?.length);
-    console.log('[ARTICLEFORM DEBUG] Article isPreview:', (article as any)?.isPreview);
     if (article) {
       setTitle(article.title || '');
       setSubheader(article.subheader || '');
@@ -397,16 +393,9 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
 
   // Update editor content when article content changes
   useEffect(() => {
-    console.log('[ARTICLEFORM DEBUG] Editor content sync useEffect triggered');
-    console.log('[ARTICLEFORM DEBUG] Editor exists:', !!editor);
-    console.log('[ARTICLEFORM DEBUG] Article content length:', article?.content?.length);
     if (editor && article?.content) {
       const currentContent = editor.getHTML();
-      console.log('[ARTICLEFORM DEBUG] Current editor content length:', currentContent?.length);
-      console.log('[ARTICLEFORM DEBUG] Contents differ:', currentContent !== article.content);
-      // Update if contents differ and we have meaningful new content
       if (currentContent !== article.content && article.content.trim().length > 0) {
-        console.log('[ARTICLEFORM DEBUG] Updating editor with new content');
         editor.commands.setContent(article.content);
       }
     }

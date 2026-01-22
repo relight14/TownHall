@@ -162,7 +162,6 @@ export async function registerRoutes(
       
       // Check rate limit
       if (!checkRateLimit(clientIp)) {
-        console.log(`[ADMIN AUTH] Rate limit exceeded for IP: ${clientIp}`);
         return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
       }
       
@@ -172,7 +171,6 @@ export async function registerRoutes(
       const adminPassword = process.env.ADMIN_PASSWORD;
       
       if (!adminEmail) {
-        console.log('[ADMIN AUTH] Admin email not configured');
         return res.status(500).json({ error: 'Admin authentication not configured' });
       }
       
@@ -191,21 +189,15 @@ export async function registerRoutes(
       }
       
       if (authenticated) {
-        // Reset rate limit on successful login
         resetRateLimit(clientIp);
-        
-        // Generate new admin token and store it in shared auth module
         const newToken = generateAdminToken();
         setAdminToken(newToken);
-        
-        console.log('[ADMIN AUTH] Admin login successful');
         res.json({ success: true, authenticated: true, adminToken: newToken });
       } else {
-        console.log('[ADMIN AUTH] Invalid credentials attempt');
         res.status(401).json({ error: 'Invalid credentials' });
       }
     } catch (error: any) {
-      console.error('[ADMIN AUTH] Error:', error);
+      console.error('Admin login error:', error.message);
       res.status(500).json({ error: error.message });
     }
   });
@@ -239,13 +231,10 @@ export async function registerRoutes(
         return res.status(401).json({ error: 'Current password is incorrect' });
       }
       
-      // Update password in database
       await storage.createOrUpdateAdmin(adminEmail, newPassword);
-      
-      console.log('[ADMIN AUTH] Password changed successfully');
       res.json({ success: true, message: 'Password updated successfully' });
     } catch (error: any) {
-      console.error('[ADMIN AUTH] Password change error:', error);
+      console.error('Password change error:', error.message);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1089,37 +1078,27 @@ export async function registerRoutes(
   // Article purchase endpoint - uses isAuthenticated to get fresh token from session
   app.post("/api/articles/:id/purchase", isAuthenticated, async (req: any, res) => {
     const { id: articleId } = req.params;
-    console.log(`[ARTICLE PURCHASE] Starting purchase for article: ${articleId}`);
     
     try {
       const user = req.user;
       const token = user?.ledewireAccessToken;
       
       if (!token) {
-        console.log('[ARTICLE PURCHASE] Error: No Ledewire token in session');
         return res.status(401).json({ error: 'Ledewire authentication required' });
       }
       
-      // Get article details
       const article = await storage.getArticle(articleId);
       if (!article || !article.ledewireContentId) {
-        console.log(`[ARTICLE PURCHASE] Error: Article ${articleId} not found or no Ledewire content ID`);
         return res.status(404).json({ error: 'Article not found or not registered with Ledewire' });
       }
       
-      console.log(`[ARTICLE PURCHASE] Article found: ${article.title}, Ledewire ID: ${article.ledewireContentId}, Price: ${article.price} cents`);
-      
-      // Make purchase with Ledewire
       const purchase = await ledewire.createPurchase(
         token,
         article.ledewireContentId,
         article.price
       );
       
-      console.log(`[ARTICLE PURCHASE] Purchase response received, status: ${purchase.status}`);
-      
       if (purchase.status !== 'completed' && purchase.status !== 'success') {
-        console.log(`[ARTICLE PURCHASE] Purchase not confirmed - status: ${purchase.status}, rejecting unlock`);
         return res.status(400).json({ 
           error: 'Purchase was not completed', 
           status: purchase.status,
@@ -1127,25 +1106,18 @@ export async function registerRoutes(
         });
       }
       
-      // Double-verify the purchase is actually recorded
       const verification = await ledewire.verifyPurchase(token, article.ledewireContentId);
       
       if (!verification.has_purchased) {
-        console.log(`[ARTICLE PURCHASE] Verification failed - Ledewire says not purchased, rejecting unlock`);
         return res.status(400).json({ 
           error: 'Purchase verification failed', 
           unlocked: false 
         });
       }
       
-      console.log(`[ARTICLE PURCHASE] Purchase verified successfully, unlocking content`);
       res.json({ ...purchase, unlocked: true });
     } catch (error: any) {
-      console.error(`[ARTICLE PURCHASE] FAILED for article ${articleId}:`, {
-        error: error.message,
-        stack: error.stack?.split('\n').slice(0, 3).join('\n'),
-        articleId,
-      });
+      console.error('Article purchase failed:', error.message);
       res.status(400).json({ error: error.message, unlocked: false });
     }
   });
@@ -1153,33 +1125,24 @@ export async function registerRoutes(
   // Article purchase verification endpoint - uses isAuthenticated to get fresh token from session
   app.get("/api/articles/:id/purchase/verify", isAuthenticated, async (req: any, res) => {
     const { id: articleId } = req.params;
-    console.log(`[ARTICLE VERIFY] Checking purchase status for article: ${articleId}`);
     
     try {
       const user = req.user;
       const token = user?.ledewireAccessToken;
       
       if (!token) {
-        console.log(`[ARTICLE VERIFY] Error: No token for article ${articleId}`);
         return res.status(401).json({ error: 'Ledewire authentication required' });
       }
       
       const article = await storage.getArticle(articleId);
       if (!article || !article.ledewireContentId) {
-        console.log(`[ARTICLE VERIFY] Error: Article ${articleId} not found or no Ledewire ID`);
         return res.status(404).json({ error: 'Article not found' });
       }
       
-      console.log(`[ARTICLE VERIFY] Verifying purchase: ledewireId=${article.ledewireContentId}`);
       const verification = await ledewire.verifyPurchase(token, article.ledewireContentId);
-      console.log(`[ARTICLE VERIFY] Result for article ${articleId}: has_purchased=${verification.has_purchased}`);
-      
       res.json(verification);
     } catch (error: any) {
-      console.error(`[ARTICLE VERIFY] FAILED for article ${articleId}:`, {
-        error: error.message,
-        stack: error.stack?.split('\n').slice(0, 3).join('\n'),
-      });
+      console.error('Purchase verification failed:', error.message);
       res.status(500).json({ error: error.message });
     }
   });

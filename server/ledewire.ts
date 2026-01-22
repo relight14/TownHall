@@ -8,9 +8,11 @@ const LEDEWIRE_API_SECRET = process.env.LEDEWIRE_API_SECRET;
 const CILLIZZA_SELLER_API_KEY = process.env.CILLIZZA_SELLER_API_KEY;
 const CILLIZZA_SELLER_API_SECRET = process.env.CILLIZZA_SELLER_API_SECRET;
 
-function logLedewire(action: string, details: Record<string, any>) {
-  const timestamp = new Date().toISOString();
-  console.log(`[LEDEWIRE ${timestamp}] ${action}:`, JSON.stringify(details, null, 2));
+// Only log errors in production - reduce noise
+function logLedewire(action: string, details: Record<string, any>, isError: boolean = false) {
+  if (isError || process.env.DEBUG_LEDEWIRE === 'true') {
+    console.log(`[LEDEWIRE] ${action}:`, JSON.stringify(details));
+  }
 }
 
 interface LedewireAuthResponse {
@@ -127,26 +129,21 @@ class LedewireClient {
     });
 
     if (!response.ok) {
-      // If 401, clear token so next attempt will re-authenticate
       if (response.status === 401) {
-        console.log('[LEDEWIRE] Seller config 401, clearing token for next attempt');
         this.clearSellerToken();
       }
       const errorMsg = await getErrorMessage(response);
-      console.error('[LEDEWIRE] Failed to get seller config:', errorMsg);
+      console.error('Failed to get seller config:', errorMsg);
       throw new Error(`Failed to get seller config: ${errorMsg}`);
     }
 
     const data = await safeParseJSON(response);
     const config: LedewireSellerConfig = data || {};
     this.cachedConfig = config;
-    console.log('[LEDEWIRE] Fetched seller config, google_client_id:', config.google_client_id ? 'present' : 'missing');
     return config;
   }
 
   async loginWithGoogle(idToken: string): Promise<LedewireAuthResponse> {
-    logLedewire('GOOGLE_LOGIN_START', { hasIdToken: !!idToken });
-
     const response = await fetch(`${LEDEWIRE_API_URL}/auth/login/google`, {
       method: 'POST',
       headers: {
@@ -157,7 +154,7 @@ class LedewireClient {
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
-      logLedewire('GOOGLE_LOGIN_ERROR', { status: response.status, error: errorMsg });
+      logLedewire('GOOGLE_LOGIN_ERROR', { status: response.status, error: errorMsg }, true);
       throw new Error(`Google login failed: ${errorMsg}`);
     }
 
@@ -166,7 +163,6 @@ class LedewireClient {
       throw new Error('Google login response was empty');
     }
 
-    logLedewire('GOOGLE_LOGIN_SUCCESS', { hasAccessToken: !!data.access_token });
     return data;
   }
 
@@ -176,17 +172,13 @@ class LedewireClient {
       return this.sellerToken;
     }
 
-    // Clear expired token
     if (this.sellerToken) {
-      console.log('[LEDEWIRE] Seller token expired, re-authenticating...');
       this.clearSellerToken();
     }
 
     if (!CILLIZZA_SELLER_API_KEY || !CILLIZZA_SELLER_API_SECRET) {
       throw new Error('Seller API credentials not configured. Please provide CILLIZZA_SELLER_API_KEY and CILLIZZA_SELLER_API_SECRET.');
     }
-
-    console.log('Attempting Ledewire auth to:', `${LEDEWIRE_API_URL}/auth/login/api-key`);
     
     try {
       const response = await fetch(`${LEDEWIRE_API_URL}/auth/login/api-key`, {
@@ -210,15 +202,12 @@ class LedewireClient {
       const data: LedewireAuthResponse = await response.json();
       this.sellerToken = data.access_token;
       
-      // Track expiry from response or default to 30 minutes
       if (data.expires_at) {
         this.sellerTokenExpiresAt = new Date(data.expires_at);
       } else {
-        // Default to 30 minutes if no expiry provided
         this.sellerTokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
       }
       
-      console.log('[LEDEWIRE] Seller token obtained, expires at:', this.sellerTokenExpiresAt.toISOString());
       return this.sellerToken;
     } catch (err: any) {
       if (err.message.includes('Indigo Soul')) {
@@ -252,9 +241,7 @@ class LedewireClient {
       return result.data;
     }
     
-    // If 401, clear token and retry once
     if (result.response.status === 401) {
-      console.log('[LEDEWIRE] Received 401 from seller API, re-authenticating...');
       this.clearSellerToken();
       const newToken = await this.getSellerToken();
       const retryResult = await operation(newToken);
@@ -325,14 +312,6 @@ class LedewireClient {
       metadata?: any;
     }
   ): Promise<LedewireContentResponse> {
-    console.log('[LEDEWIRE-REGISTER] Starting content registration:', {
-      title,
-      priceCents,
-      hasContent: !!options?.content,
-      hasTeaser: !!options?.teaser,
-      metadata: options?.metadata,
-    });
-    
     const contentBody = options?.content || 'Premium content';
     const teaserBody = options?.teaser || '';
     
@@ -348,8 +327,6 @@ class LedewireClient {
     if (teaserBody) {
       requestBody.teaser = Buffer.from(teaserBody).toString('base64');
     }
-
-    console.log('[LEDEWIRE-REGISTER] Sending request to:', `${LEDEWIRE_API_URL}/seller/content`);
 
     return this.withSellerTokenRefresh(async (token) => {
       const response = await fetch(`${LEDEWIRE_API_URL}/seller/content`, {
@@ -367,22 +344,9 @@ class LedewireClient {
       
       if (!response.ok) {
         errorText = await response.text();
-        console.error('[LEDEWIRE-REGISTER] FAILED:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText,
-          title,
-          priceCents,
-        });
+        console.error('Content registration failed:', errorText);
       } else {
         data = await safeParseJSON(response);
-        if (data) {
-          console.log('[LEDEWIRE-REGISTER] SUCCESS:', {
-            contentId: data.id,
-            title: data.title,
-            priceCents: data.price_cents,
-          });
-        }
       }
       
       return { response, data, errorText };
@@ -406,7 +370,6 @@ class LedewireClient {
       requestBody.price_cents = updates.priceCents;
     }
 
-    console.log(`[LEDEWIRE-UPDATE] Updating content ${contentId}:`, requestBody);
 
     return this.withSellerTokenRefresh(async (token) => {
       const response = await fetch(`${LEDEWIRE_API_URL}/seller/content/${contentId}`, {
@@ -424,16 +387,9 @@ class LedewireClient {
       
       if (!response.ok) {
         errorText = await response.text();
-        console.error('[LEDEWIRE-UPDATE] FAILED:', {
-          status: response.status,
-          contentId,
-          error: errorText,
-        });
+        console.error('Content update failed:', errorText);
       } else {
         data = await safeParseJSON(response);
-        if (data) {
-          console.log('[LEDEWIRE-UPDATE-OK]', data.id);
-        }
       }
       
       return { response, data, errorText };
@@ -488,15 +444,14 @@ class LedewireClient {
         contentId,
         priceCents,
         status: response.status,
-        statusText: response.statusText,
         error: errorMsg,
-      });
+      }, true);
       throw new Error(`Purchase failed: ${errorMsg}`);
     }
 
     const data = await safeParseJSON(response);
     if (!data) {
-      logLedewire('PURCHASE_ERROR', { error: 'Empty response', contentId });
+      logLedewire('PURCHASE_ERROR', { error: 'Empty response', contentId }, true);
       throw new Error('Purchase response was empty');
     }
 
@@ -533,13 +488,13 @@ class LedewireClient {
         contentId,
         status: response.status,
         error: errorMsg,
-      });
+      }, true);
       throw new Error(`Failed to verify purchase: ${errorMsg}`);
     }
 
     const data = await safeParseJSON(response);
     if (!data) {
-      logLedewire('PURCHASE_VERIFY_ERROR', { error: 'Empty response', contentId });
+      logLedewire('PURCHASE_VERIFY_ERROR', { error: 'Empty response', contentId }, true);
       throw new Error('Verify purchase response was empty');
     }
 
@@ -640,7 +595,7 @@ class LedewireClient {
       logLedewire('PAYMENT_SESSION_ERROR', {
         status: response.status,
         error: errorMsg,
-      });
+      }, true);
       throw new Error(`Failed to create payment session: ${errorMsg}`);
     }
 
@@ -711,7 +666,7 @@ class LedewireClient {
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
-      logLedewire('GET_PURCHASES_ERROR', { error: errorMsg });
+      logLedewire('GET_PURCHASES_ERROR', { error: errorMsg }, true);
       throw new Error(errorMsg);
     }
 

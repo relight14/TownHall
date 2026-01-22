@@ -602,16 +602,7 @@ export default function AdminPage() {
       {/* Articles Tab Content */}
       {adminTab === 'articles' && (
       <>
-      {(showArticleForm || editingArticleId) && adminArticlesLoaded && (() => {
-        const foundArticle = editingArticleId ? adminArticles.find(a => a.id.toString() === editingArticleId) : undefined;
-        console.log('[ADMINPAGE DEBUG] Rendering ArticleForm');
-        console.log('[ADMINPAGE DEBUG] editingArticleId:', editingArticleId);
-        console.log('[ADMINPAGE DEBUG] adminArticles count:', adminArticles.length);
-        console.log('[ADMINPAGE DEBUG] Found article:', foundArticle?.id, foundArticle?.title);
-        console.log('[ADMINPAGE DEBUG] Found article content length:', foundArticle?.content?.length);
-        console.log('[ADMINPAGE DEBUG] Found article isPreview:', (foundArticle as any)?.isPreview);
-        return true;
-      })() && (
+      {(showArticleForm || editingArticleId) && adminArticlesLoaded && (
         <ArticleForm
           key={editingArticleId ? `edit-${editingArticleId}-${adminArticles.find(a => a.id.toString() === editingArticleId)?.content?.length || 0}` : 'new'}
           article={editingArticleId ? adminArticles.find(a => a.id.toString() === editingArticleId) : undefined}
@@ -678,17 +669,10 @@ export default function AdminPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={async () => {
-                      // Reload articles to ensure we have full content before editing
                       const token = sessionStorage.getItem('adminToken');
-                      console.log('[EDIT DEBUG] Edit clicked for article:', article.id, article.title);
-                      console.log('[EDIT DEBUG] Token present:', !!token);
-                      console.log('[EDIT DEBUG] Article content length BEFORE reload:', article.content?.length);
                       if (token) {
-                        console.log('[EDIT DEBUG] Reloading articles...');
                         await loadAdminArticles(token);
-                        console.log('[EDIT DEBUG] Reload complete');
                       }
-                      console.log('[EDIT DEBUG] Setting editingArticleId to:', article.id.toString());
                       setEditingArticleId(article.id.toString());
                       window.scrollTo(0, 0);
                     }}

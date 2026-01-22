@@ -241,20 +241,13 @@ export default function ArticlePage() {
 
   useEffect(() => {
     const checkPurchaseStatus = async () => {
-      console.log(`[ARTICLE-CLIENT] checkPurchaseStatus called`);
-      console.log(`[ARTICLE-CLIENT] user: ${user?.email || 'NOT LOGGED IN'}`);
-      console.log(`[ARTICLE-CLIENT] ledewireToken: ${ledewireToken ? 'present' : 'MISSING'}`);
-      console.log(`[ARTICLE-CLIENT] article.ledewireContentId: ${article?.ledewireContentId || 'MISSING'}`);
-      
       if (!user || !ledewireToken || !article?.ledewireContentId) {
-        console.log(`[ARTICLE-CLIENT] Cannot check purchase - missing user/token/contentId`);
         setHasPurchased(false);
         return;
       }
 
       try {
         setCheckingPurchase(true);
-        console.log(`[ARTICLE-CLIENT] Calling /api/articles/${article.id}/purchase/verify...`);
         const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
           headers: {
             'Authorization': `Bearer ${ledewireToken}`,
@@ -263,13 +256,10 @@ export default function ArticlePage() {
         
         if (response.ok) {
           const data = await response.json();
-          console.log(`[ARTICLE-CLIENT] Purchase verify result: has_purchased=${data.has_purchased}`);
           setHasPurchased(data.has_purchased || false);
-        } else {
-          console.log(`[ARTICLE-CLIENT] Purchase verify failed: ${response.status} ${response.statusText}`);
         }
       } catch (err: any) {
-        console.error('[ARTICLE-CLIENT] Failed to check purchase status:', err.message);
+        console.error('Failed to check purchase status:', err.message);
       } finally {
         setCheckingPurchase(false);
       }
@@ -279,21 +269,15 @@ export default function ArticlePage() {
   }, [user, ledewireToken, article]);
 
   const handleBuyNow = () => {
-    console.log(`[ARTICLE-CLIENT] handleBuyNow clicked`);
-    console.log(`[ARTICLE-CLIENT] user: ${user?.email || 'NOT LOGGED IN'}, ledewireToken: ${ledewireToken ? 'present' : 'MISSING'}`);
     if (!user || !ledewireToken) {
-      console.log(`[ARTICLE-CLIENT] Opening AuthModal (not logged in)`);
       setShowAuthModal(true);
       return;
     }
-    console.log(`[ARTICLE-CLIENT] Opening PurchaseModal`);
     setShowPurchaseModal(true);
   };
 
   const handleConfirmPurchase = async () => {
-    console.log(`[ARTICLE-CLIENT] handleConfirmPurchase called`);
     if (!article?.ledewireContentId) {
-      console.log(`[ARTICLE-CLIENT] ERROR: Missing ledewireContentId`);
       setPurchaseError('This article is not available for purchase');
       return;
     }
@@ -302,7 +286,6 @@ export default function ArticlePage() {
     setPurchaseError(null);
 
     try {
-      console.log(`[ARTICLE-CLIENT] Calling /api/articles/${article.id}/purchase...`);
       const response = await fetch(`/api/articles/${article.id}/purchase`, {
         method: 'POST',
         headers: {
@@ -312,32 +295,17 @@ export default function ArticlePage() {
       });
 
       const data = await response.json();
-      console.log(`[ARTICLE-CLIENT] Purchase response:`, data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Purchase failed');
       }
 
       if (data.unlocked) {
-        console.log(`[ARTICLE-CLIENT] Purchase SUCCESS - unlocked=true`);
         setHasPurchased(true);
         refreshWalletBalance();
         setShowPurchaseModal(false);
-        
-        // Refetch article to get full content now that purchase is complete
-        try {
-          console.log(`[ARTICLE-CLIENT] Refetching article for full content...`);
-          const refetchHeaders: HeadersInit = {};
-          if (ledewireToken) {
-            refetchHeaders['Authorization'] = `Bearer ${ledewireToken}`;
-          }
-          console.log(`[ARTICLE-CLIENT] Refetching article after purchase`);
-          refetchArticle();
-        } catch (refetchErr) {
-          console.error('[ARTICLE-CLIENT] Failed to refetch article after purchase:', refetchErr);
-        }
+        refetchArticle();
       } else {
-        console.log(`[ARTICLE-CLIENT] Purchase FAILED - unlocked=false`);
         throw new Error('Purchase was not confirmed');
       }
     } catch (err: any) {
@@ -617,23 +585,20 @@ export default function ArticlePage() {
             if (article?.ledewireContentId && freshToken) {
               try {
                 setCheckingPurchase(true);
-                console.log(`[ARTICLE-CLIENT] Post-auth: checking purchase status with fresh token...`);
                 const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
                   headers: { 'Authorization': `Bearer ${freshToken}` },
                   credentials: 'include',
                 });
                 if (response.ok) {
                   const data = await response.json();
-                  console.log(`[ARTICLE-CLIENT] Post-auth purchase check: has_purchased=${data.has_purchased}`);
                   if (data.has_purchased) {
-                    // Already purchased - just refresh the article to get full content
                     setHasPurchased(true);
                     refetchArticle();
-                    return; // Don't show purchase modal - already purchased!
+                    return;
                   }
                 }
               } catch (err) {
-                console.error('[ARTICLE-CLIENT] Post-auth purchase check failed:', err);
+                console.error('Post-auth purchase check failed:', err);
               } finally {
                 setCheckingPurchase(false);
               }
@@ -662,10 +627,7 @@ export default function ArticlePage() {
       {showPurchaseModal && article && (
         <div 
           className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
-          onClick={() => {
-            console.log(`[ARTICLE-CLIENT] PurchaseModal CANCELLED - overlay clicked`);
-            setShowPurchaseModal(false);
-          }}
+          onClick={() => setShowPurchaseModal(false)}
         >
           <div 
             className="bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200"
@@ -674,10 +636,7 @@ export default function ArticlePage() {
             <div className="flex justify-between items-center p-6 border-b border-slate-800">
               <h2 className="text-2xl text-white">Confirm Purchase</h2>
               <button 
-                onClick={() => {
-                  console.log(`[ARTICLE-CLIENT] PurchaseModal CANCELLED - X button clicked`);
-                  setShowPurchaseModal(false);
-                }}
+                onClick={() => setShowPurchaseModal(false)}
                 className="text-slate-400 hover:text-white transition-colors"
                 data-testid="button-close-purchase-modal"
               >
@@ -749,10 +708,7 @@ export default function ArticlePage() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => {
-                    console.log(`[ARTICLE-CLIENT] PurchaseModal CANCELLED - Cancel button clicked`);
-                    setShowPurchaseModal(false);
-                  }}
+                  onClick={() => setShowPurchaseModal(false)}
                   className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors font-medium"
                   disabled={purchasing}
                   data-testid="button-cancel-purchase"

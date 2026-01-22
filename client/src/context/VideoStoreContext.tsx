@@ -313,24 +313,17 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
 
   const loadAdminArticles = async (token: string) => {
     try {
-      console.log('[CONTEXT DEBUG] loadAdminArticles called');
       const response = await fetch('/api/admin/articles', {
         headers: { 'X-Admin-Token': token }
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('[CONTEXT DEBUG] Received', data.length, 'articles from /api/admin/articles');
-        if (data.length > 0) {
-          console.log('[CONTEXT DEBUG] First article content length:', data[0].content?.length);
-          console.log('[CONTEXT DEBUG] First article isPreview:', data[0].isPreview);
-        }
         setAdminArticles(data);
         setAdminArticlesLoaded(true);
-        console.log('[CONTEXT DEBUG] adminArticles state updated');
       }
     } catch (error) {
       console.error('Failed to load admin articles:', error);
-      setAdminArticlesLoaded(true); // Mark as loaded even on error to show empty state
+      setAdminArticlesLoaded(true);
     }
   };
 
