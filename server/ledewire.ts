@@ -324,6 +324,14 @@ class LedewireClient {
       metadata?: any;
     }
   ): Promise<LedewireContentResponse> {
+    console.log('[LEDEWIRE-REGISTER] Starting content registration:', {
+      title,
+      priceCents,
+      hasContent: !!options?.content,
+      hasTeaser: !!options?.teaser,
+      metadata: options?.metadata,
+    });
+    
     const contentBody = options?.content || 'Premium content';
     const teaserBody = options?.teaser || '';
     
@@ -340,6 +348,8 @@ class LedewireClient {
       requestBody.teaser = Buffer.from(teaserBody).toString('base64');
     }
 
+    console.log('[LEDEWIRE-REGISTER] Sending request to:', `${LEDEWIRE_API_URL}/seller/content`);
+
     return this.withSellerTokenRefresh(async (token) => {
       const response = await fetch(`${LEDEWIRE_API_URL}/seller/content`, {
         method: 'POST',
@@ -350,9 +360,24 @@ class LedewireClient {
         body: JSON.stringify(requestBody),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[LEDEWIRE-REGISTER] FAILED:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          title,
+          priceCents,
+        });
+      }
+
       const data = response.ok ? await safeParseJSON(response) : null;
       if (response.ok && data) {
-        console.log('[LEDEWIRE-REG-OK]', data.id);
+        console.log('[LEDEWIRE-REGISTER] SUCCESS:', {
+          contentId: data.id,
+          title: data.title,
+          priceCents: data.price_cents,
+        });
       }
       return { response, data };
     }, 'Register content');

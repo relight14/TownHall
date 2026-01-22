@@ -505,9 +505,13 @@ export async function registerRoutes(
   });
   
   app.post("/api/wallet/payment-session", async (req, res) => {
+    console.log('[PAYMENT-SESSION] Starting payment session creation...');
+    console.log('[PAYMENT-SESSION] Request:', { amount_cents: req.body.amount_cents });
+    
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader) {
+        console.log('[PAYMENT-SESSION] Error: No authorization header');
         return res.status(401).json({ error: 'Authorization required' });
       }
       
@@ -516,6 +520,7 @@ export async function registerRoutes(
       
       // Validate amount
       if (!amount_cents || typeof amount_cents !== 'number' || amount_cents < 100) {
+        console.log('[PAYMENT-SESSION] Error: Invalid amount:', amount_cents);
         return res.status(400).json({ error: 'Invalid amount. Minimum is $1.00 (100 cents).' });
       }
       
@@ -537,14 +542,25 @@ export async function registerRoutes(
         baseUrl = 'http://localhost:5000';
       }
       
+      console.log(`[PAYMENT-SESSION] Creating session: amount=${amount_cents} cents, baseUrl=${baseUrl}`);
+      
       const session = await ledewire.createPaymentSession(token, amount_cents, {
         success_url: `${baseUrl}/wallet?payment=success`,
         cancel_url: `${baseUrl}/wallet?payment=cancelled`,
       });
       
+      console.log('[PAYMENT-SESSION] Session created successfully:', {
+        hasCheckoutUrl: !!session.checkout_url,
+        hasClientSecret: !!session.client_secret,
+      });
+      
       res.json(session);
     } catch (error: any) {
-      console.error('Create payment session error:', error);
+      console.error('[PAYMENT-SESSION] FAILED:', {
+        error: error.message,
+        stack: error.stack,
+        amount_cents: req.body.amount_cents,
+      });
       res.status(500).json({ error: error.message });
     }
   });
@@ -889,6 +905,15 @@ export async function registerRoutes(
   });
 
   app.post("/api/articles", requireAdminAuth, async (req, res) => {
+    console.log('[ARTICLE-CREATE] Starting article creation...');
+    console.log('[ARTICLE-CREATE] Request body:', JSON.stringify({
+      title: req.body.title,
+      category: req.body.category,
+      price: req.body.price,
+      hasContent: !!req.body.content,
+      hasThumbnail: !!req.body.thumbnail,
+    }));
+    
     try {
       // Sanitize thumbnail URL and convert publishedAt string to Date
       const body = {
@@ -897,12 +922,15 @@ export async function registerRoutes(
         publishedAt: req.body.publishedAt ? new Date(req.body.publishedAt) : new Date(),
       };
       const validated = insertArticleSchema.parse(body);
+      console.log('[ARTICLE-CREATE] Validation passed, creating article in database...');
       
       // Create article first
       const article = await storage.createArticle(validated);
+      console.log(`[ARTICLE-CREATE] Article created in database: id=${article.id}, title="${article.title}"`);
       
       // Register with Ledewire for micropayments
       const priceCents = validated.price || 99;
+      console.log(`[ARTICLE-CREATE] Registering with Ledewire: price=${priceCents} cents`);
       
       try {
         // Construct the article source URL
@@ -910,6 +938,7 @@ export async function registerRoutes(
           ? `https://${process.env.REPLIT_DEV_DOMAIN}`
           : process.env.REPLIT_DEPLOYMENT_URL || 'https://example.com';
         const sourceUrl = `${baseUrl}/article/${article.id}`;
+        console.log(`[ARTICLE-CREATE] Source URL for Ledewire: ${sourceUrl}`);
         
         const content = await ledewire.registerContent(
           article.title,
@@ -929,19 +958,32 @@ export async function registerRoutes(
           }
         );
         
+        console.log(`[ARTICLE-CREATE] Ledewire registration successful: contentId=${content.id}`);
+        
         // Update article with Ledewire content ID
         await storage.updateArticleLedewireId(article.id, content.id);
+        console.log(`[ARTICLE-CREATE] Article updated with Ledewire content ID`);
         
         // Return updated article
         const updatedArticle = await storage.getArticle(article.id);
+        console.log(`[ARTICLE-CREATE] Article creation complete: id=${article.id}`);
         res.json(updatedArticle);
       } catch (ledewireError: any) {
-        console.error('[ARTICLE-LEDEWIRE-ERROR]', ledewireError.message);
+        console.error('[ARTICLE-CREATE] Ledewire registration FAILED:', {
+          error: ledewireError.message,
+          stack: ledewireError.stack,
+          articleId: article.id,
+          articleTitle: article.title,
+        });
         // Still return the article even if Ledewire registration failed
         res.json(article);
       }
     } catch (error: any) {
-      console.error('Create article error:', error);
+      console.error('[ARTICLE-CREATE] Article creation FAILED:', {
+        error: error.message,
+        stack: error.stack,
+        requestBody: { title: req.body.title, category: req.body.category },
+      });
       res.status(400).json({ error: error.message });
     }
   });
@@ -1099,7 +1141,11 @@ export async function registerRoutes(
       console.log(`[ARTICLE PURCHASE] Purchase verified successfully, unlocking content`);
       res.json({ ...purchase, unlocked: true });
     } catch (error: any) {
-      console.error(`[ARTICLE PURCHASE] Error for article ${articleId}:`, error.message);
+      console.error(`[ARTICLE PURCHASE] FAILED for article ${articleId}:`, {
+        error: error.message,
+        stack: error.stack?.split('\n').slice(0, 3).join('\n'),
+        articleId,
+      });
       res.status(400).json({ error: error.message, unlocked: false });
     }
   });
@@ -1114,20 +1160,26 @@ export async function registerRoutes(
       const token = user?.ledewireAccessToken;
       
       if (!token) {
+        console.log(`[ARTICLE VERIFY] Error: No token for article ${articleId}`);
         return res.status(401).json({ error: 'Ledewire authentication required' });
       }
       
       const article = await storage.getArticle(articleId);
       if (!article || !article.ledewireContentId) {
+        console.log(`[ARTICLE VERIFY] Error: Article ${articleId} not found or no Ledewire ID`);
         return res.status(404).json({ error: 'Article not found' });
       }
       
+      console.log(`[ARTICLE VERIFY] Verifying purchase: ledewireId=${article.ledewireContentId}`);
       const verification = await ledewire.verifyPurchase(token, article.ledewireContentId);
       console.log(`[ARTICLE VERIFY] Result for article ${articleId}: has_purchased=${verification.has_purchased}`);
       
       res.json(verification);
     } catch (error: any) {
-      console.error(`[ARTICLE VERIFY] Error for article ${articleId}:`, error.message);
+      console.error(`[ARTICLE VERIFY] FAILED for article ${articleId}:`, {
+        error: error.message,
+        stack: error.stack?.split('\n').slice(0, 3).join('\n'),
+      });
       res.status(500).json({ error: error.message });
     }
   });
@@ -1187,7 +1239,11 @@ export async function registerRoutes(
       console.log(`[PURCHASE FLOW] Purchase verified successfully, unlocking content`);
       res.json({ ...purchase, unlocked: true });
     } catch (error: any) {
-      console.error(`[PURCHASE FLOW] Error for episode ${episodeId}:`, error.message);
+      console.error(`[PURCHASE FLOW] FAILED for episode ${episodeId}:`, {
+        error: error.message,
+        stack: error.stack?.split('\n').slice(0, 3).join('\n'),
+        episodeId,
+      });
       res.status(400).json({ error: error.message, unlocked: false });
     }
   });
