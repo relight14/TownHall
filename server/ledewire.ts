@@ -237,8 +237,9 @@ class LedewireClient {
   }
 
   // Wrapper to handle 401 errors and retry with fresh token
+  // Note: operation must return errorText if response is not ok (body can only be read once)
   private async withSellerTokenRefresh<T>(
-    operation: (token: string) => Promise<{ response: Response; data: T | null }>,
+    operation: (token: string) => Promise<{ response: Response; data: T | null; errorText?: string }>,
     errorContext: string = 'Seller API call'
   ): Promise<T> {
     const token = await this.getSellerToken();
@@ -259,7 +260,7 @@ class LedewireClient {
       const retryResult = await operation(newToken);
       
       if (!retryResult.response.ok) {
-        const errorMsg = await getErrorMessage(retryResult.response);
+        const errorMsg = retryResult.errorText || `HTTP ${retryResult.response.status}`;
         throw this.createHttpError(retryResult.response.status, `${errorContext} failed: ${errorMsg}`);
       }
       if (retryResult.data === null) {
@@ -268,8 +269,8 @@ class LedewireClient {
       return retryResult.data;
     }
     
-    // Other error - throw immediately
-    const errorMsg = await getErrorMessage(result.response);
+    // Other error - throw immediately using pre-read error text
+    const errorMsg = result.errorText || `HTTP ${result.response.status}: ${result.response.statusText}`;
     throw this.createHttpError(result.response.status, `${errorContext} failed: ${errorMsg}`);
   }
 
@@ -360,8 +361,12 @@ class LedewireClient {
         body: JSON.stringify(requestBody),
       });
 
+      // Read body once - either as error text or success data
+      let data = null;
+      let errorText: string | undefined;
+      
       if (!response.ok) {
-        const errorText = await response.text();
+        errorText = await response.text();
         console.error('[LEDEWIRE-REGISTER] FAILED:', {
           status: response.status,
           statusText: response.statusText,
@@ -369,17 +374,18 @@ class LedewireClient {
           title,
           priceCents,
         });
+      } else {
+        data = await safeParseJSON(response);
+        if (data) {
+          console.log('[LEDEWIRE-REGISTER] SUCCESS:', {
+            contentId: data.id,
+            title: data.title,
+            priceCents: data.price_cents,
+          });
+        }
       }
-
-      const data = response.ok ? await safeParseJSON(response) : null;
-      if (response.ok && data) {
-        console.log('[LEDEWIRE-REGISTER] SUCCESS:', {
-          contentId: data.id,
-          title: data.title,
-          priceCents: data.price_cents,
-        });
-      }
-      return { response, data };
+      
+      return { response, data, errorText };
     }, 'Register content');
   }
 
@@ -412,11 +418,25 @@ class LedewireClient {
         body: JSON.stringify(requestBody),
       });
 
-      const data = response.ok ? await safeParseJSON(response) : null;
-      if (response.ok && data) {
-        console.log('[LEDEWIRE-UPDATE-OK]', data.id);
+      // Read body once - either as error text or success data
+      let data = null;
+      let errorText: string | undefined;
+      
+      if (!response.ok) {
+        errorText = await response.text();
+        console.error('[LEDEWIRE-UPDATE] FAILED:', {
+          status: response.status,
+          contentId,
+          error: errorText,
+        });
+      } else {
+        data = await safeParseJSON(response);
+        if (data) {
+          console.log('[LEDEWIRE-UPDATE-OK]', data.id);
+        }
       }
-      return { response, data };
+      
+      return { response, data, errorText };
     }, `Update content ${contentId}`);
   }
 
@@ -709,14 +729,23 @@ class LedewireClient {
         },
       });
 
+      // Read body once - either as error text or success data
+      let data = null;
+      let errorText: string | undefined;
+      
       if (!response.ok) {
-        const errorMsg = await getErrorMessage(response);
-        throw new Error(errorMsg);
+        errorText = await response.text();
+        console.error('[LEDEWIRE-GETCONTENT] FAILED:', {
+          status: response.status,
+          contentId,
+          error: errorText,
+        });
+      } else {
+        data = await safeParseJSON(response);
       }
-
-      const data = await safeParseJSON(response);
-      return data;
-    });
+      
+      return { response, data, errorText };
+    }, `Get content ${contentId}`);
   }
 }
 
