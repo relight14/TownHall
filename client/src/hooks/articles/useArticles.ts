@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { articleKeys } from './queryKeys';
+import { captureError } from '../../lib/errorTracking';
 
 export interface Article {
   id: string;
@@ -25,6 +26,16 @@ export interface Article {
 export function useArticles() {
   return useQuery<Article[]>({
     queryKey: articleKeys.api.all,
+    queryFn: async () => {
+      const res = await fetch('/api/articles');
+      if (!res.ok) {
+        const error = new Error('Failed to fetch articles');
+        captureError(error, { component: 'useArticles', action: 'fetch_all' });
+        throw error;
+      }
+
+      return res.json();
+    },
   });
 }
 
