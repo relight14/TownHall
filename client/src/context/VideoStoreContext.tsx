@@ -66,7 +66,7 @@ interface VideoStoreContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<string>;
   signup: (email: string, password: string, name: string) => Promise<string>;
-  loginWithGoogle: (accessToken: string) => Promise<string>;
+  loginWithGoogle: (credential: string) => Promise<string>;
   logout: () => void;
   ledewireToken: string | null;
   walletBalance: number;

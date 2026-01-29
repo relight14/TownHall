@@ -86,6 +86,7 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
       }
     } catch (err: any) {
       setError(err.message || 'Google authentication failed');
+    } finally {
       setLoading(false);
     }
   };
