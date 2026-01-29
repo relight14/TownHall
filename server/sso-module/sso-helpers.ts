@@ -50,7 +50,7 @@ export function isTokenExpired(token: string): boolean {
       return true;
     }
     const nowSeconds = Math.floor(Date.now() / 1000);
-    const bufferSeconds = 30;
+    const bufferSeconds = 60; // Match client-side buffer for consistency
     return payload.exp < (nowSeconds + bufferSeconds);
   } catch {
     return true;

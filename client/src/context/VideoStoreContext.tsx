@@ -164,25 +164,28 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         const ssoResponse = await fetch('/api/auth/session', { credentials: 'include' });
         if (ssoResponse.ok) {
           const ssoData = await ssoResponse.json();
-          if (ssoData.authenticated) {
-            console.log('[SSO] Cross-site session restored');
-            if (ssoData.user) {
-              setUser({
-                id: ssoData.user.id,
-                email: ssoData.user.email || '',
-                name: ssoData.user.name || ssoData.user.email || 'User',
-              });
-            } else if (ssoData.ledewireUserId) {
-              setUser({
-                id: ssoData.ledewireUserId,
-                email: '',
-                name: 'User',
-              });
-            }
-            if (ssoData.ledewireToken) {
+          if (ssoData.authenticated && ssoData.ledewireToken) {
+            // Validate token is not expired before using it
+            if (!isTokenExpired(ssoData.ledewireToken)) {
+              console.log('[SSO] Cross-site session restored with valid token');
+              if (ssoData.user) {
+                setUser({
+                  id: ssoData.user.id,
+                  email: ssoData.user.email || '',
+                  name: ssoData.user.name || ssoData.user.email || 'User',
+                });
+              } else if (ssoData.ledewireUserId) {
+                setUser({
+                  id: ssoData.ledewireUserId,
+                  email: '',
+                  name: 'User',
+                });
+              }
               setLedewireToken(ssoData.ledewireToken);
+              return;
+            } else {
+              console.log('[SSO] Cross-site session token is expired, trying fallback');
             }
-            return;
           }
         }
       } catch (error) {
@@ -194,17 +197,25 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
         const response = await fetch('/api/auth/user', { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
-          setUser({
-            id: data.id,
-            email: data.email || '',
-            name: data.name || data.email || 'User',
-          });
-          if (data.ledewireToken) {
+          
+          // Only set user if we have a valid ledewireToken
+          // This prevents showing user as logged in with $0 balance
+          if (data.ledewireToken && !isTokenExpired(data.ledewireToken)) {
+            setUser({
+              id: data.id,
+              email: data.email || '',
+              name: data.name || data.email || 'User',
+            });
             setLedewireToken(data.ledewireToken);
+          } else {
+            console.log('[AUTH] Token missing or expired in /api/auth/user response, not setting user');
           }
+        } else {
+          console.log('[AUTH] /api/auth/user returned non-OK status:', response.status);
         }
       } catch (error) {
         // Not logged in via any method
+        console.log('[AUTH] Error checking /api/auth/user:', error);
       }
     };
     checkSSOSession();
@@ -517,7 +528,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (accessToken: string) => {
+  const loginWithGoogle = async (credential: string) => {
     try {
       const response = await fetch('/api/auth/google/verify', {
         method: 'POST',
@@ -525,7 +536,7 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ accessToken }),
+        body: JSON.stringify({ credential }),
       });
 
       if (!response.ok) {
