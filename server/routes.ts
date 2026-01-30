@@ -129,6 +129,13 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
+      // Ensure we always return a valid token when user is authenticated
+      // The isAuthenticated middleware should have refreshed it if needed
+      if (!user.ledewireAccessToken) {
+        console.log('[AUTH] /api/auth/user: User has no access token after middleware');
+        return res.status(401).json({ message: "No access token available" });
+      }
+      
       res.json({
         id: user.id,
         email: user.email,
