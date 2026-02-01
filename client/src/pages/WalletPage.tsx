@@ -121,7 +121,7 @@ function PaymentForm({ clientSecret, onSuccess, onCancel, amount }: PaymentFormP
       </div>
 
       <p className="text-xs text-slate-500 text-center">
-        Secure payment powered by <span className="text-blue-400">Ledewire</span> & Stripe
+        Secure payment powered by <a href="https://www.ledewire.com/explore" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors" data-testid="link-ledewire-payment">Ledewire</a> & Stripe
       </p>
     </form>
   );
@@ -311,7 +311,7 @@ export default function WalletPage() {
           </h3>
           <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
             <div className="text-slate-300 mb-2">
-              Your wallet is powered by <span className="text-blue-400 font-semibold">Ledewire</span>
+              Your wallet is powered by <a href="https://www.ledewire.com/explore" target="_blank" rel="noopener noreferrer" className="text-blue-400 font-semibold hover:text-blue-300 transition-colors" data-testid="link-ledewire-wallet">Ledewire</a>
             </div>
             <div className="text-sm text-slate-400">
               Secure micropayment system for content purchases. Add funds using your credit or debit card.
@@ -432,7 +432,7 @@ export default function WalletPage() {
               </div>
 
               <p className="text-xs text-slate-500 text-center">
-                Secure payment powered by <span className="text-blue-400">Ledewire</span> & Stripe
+                Secure payment powered by <a href="https://www.ledewire.com/explore" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors" data-testid="link-ledewire-modal">Ledewire</a> & Stripe
               </p>
             </form>
           </div>

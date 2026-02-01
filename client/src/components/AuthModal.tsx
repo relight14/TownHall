@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { useGoogleOAuthStatus } from '../App';
-import { X, Mail, Lock, User } from 'lucide-react';
+import { X, Mail, Lock, User, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface AuthModalProps {
   onClose: () => void;
@@ -49,6 +50,7 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,6 +215,33 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
               </div>
             </div>
 
+            {!isLogin && (
+              <div className="flex items-start gap-3 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setAgreedToTerms(!agreedToTerms)}
+                  className={`flex-shrink-0 w-5 h-5 rounded border transition-colors ${
+                    agreedToTerms 
+                      ? 'bg-blue-500 border-blue-500' 
+                      : 'border-slate-600 hover:border-slate-500'
+                  }`}
+                  data-testid="checkbox-terms"
+                >
+                  {agreedToTerms && <Check className="w-5 h-5 text-white" />}
+                </button>
+                <span className="text-slate-400 text-sm leading-tight">
+                  I agree to the{' '}
+                  <Link to="/terms" className="text-blue-400 hover:underline" target="_blank" onClick={(e) => e.stopPropagation()} data-testid="link-signup-terms">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy" className="text-blue-400 hover:underline" target="_blank" onClick={(e) => e.stopPropagation()} data-testid="link-signup-privacy">
+                    Privacy Policy
+                  </Link>
+                </span>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <button
                 type="button"
@@ -224,8 +253,8 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                disabled={loading || (!isLogin && !agreedToTerms)}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="button-submit"
               >
                 {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
@@ -246,7 +275,16 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
 
         <div className="px-6 pb-4 pt-2 border-t border-slate-800">
           <p className="text-slate-500 text-xs text-center">
-            powered by <span className="text-blue-400">ledewire</span>
+            powered by{' '}
+            <a 
+              href="https://www.ledewire.com/explore" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 transition-colors"
+              data-testid="link-ledewire-auth"
+            >
+              ledewire
+            </a>
           </p>
         </div>
       </div>

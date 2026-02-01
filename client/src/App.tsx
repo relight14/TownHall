@@ -8,7 +8,10 @@ import CategoryPage from './pages/CategoryPage';
 import VideosPage from './pages/VideosPage';
 import AdminPage from './pages/AdminPage';
 import WalletPage from './pages/WalletPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 import AuthModal from './components/AuthModal';
+import CookieConsent from './components/CookieConsent';
 import PasswordResetModal from './components/PasswordResetModal';
 import { Wallet, LogIn, LogOut, User } from 'lucide-react';
 import { useState, useEffect, createContext, useContext } from 'react';
@@ -43,7 +46,11 @@ function AppContent() {
         <Route path="/videos" element={<VideosPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/wallet" element={<WalletPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
       </Routes>
+
+      <CookieConsent />
 
       {showAuthModal && (
         <AuthModal 
