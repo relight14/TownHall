@@ -110,7 +110,7 @@ function parseContentWithEmbeds(html: string): ContentSegment[] {
           if (tweetId) {
             segments.push({ type: 'tweet', tweetId, url: socialUrl });
           }
-        } else if (/instagram\.com/.test(socialUrl)) {
+        } else if (/(www\.)?instagram\.com/.test(socialUrl)) {
           segments.push({ type: 'instagram', url: socialUrl });
         } else {
           let platform: 'substack' | 'bluesky' | 'threads' | 'generic' = 'generic';

@@ -10,7 +10,7 @@ function detectPlatform(url: string): Platform {
   if (/substack\.com/.test(url)) return 'substack';
   if (/threads\.net/.test(url)) return 'threads';
   if (/bsky\.app/.test(url)) return 'bluesky';
-  if (/instagram\.com/.test(url)) return 'instagram';
+  if (/(www\.)?instagram\.com/.test(url)) return 'instagram';
   return 'generic';
 }
 
@@ -114,7 +114,7 @@ const SocialEmbedComponent = ({ node }: NodeViewProps) => {
   );
 };
 
-const SOCIAL_URL_REGEX = /^https:\/\/(twitter\.com|x\.com|substack\.com|threads\.net|bsky\.app|instagram\.com)\/[^\s]+$/g;
+const SOCIAL_URL_REGEX = /^https:\/\/(twitter\.com|x\.com|substack\.com|threads\.net|bsky\.app|(www\.)?instagram\.com)\/[^\s]+$/g;
 
 export const TwitterEmbed = Node.create({
   name: 'socialEmbed',
