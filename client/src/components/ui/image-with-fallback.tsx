@@ -30,6 +30,8 @@ export function ImageWithFallback({ src, alt, fallbackSrc, className, onAspectRa
     <img
       src={src}
       alt={alt}
+      loading="lazy"
+      decoding="async"
       onError={() => setError(true)}
       onLoad={handleLoad}
       className={className}

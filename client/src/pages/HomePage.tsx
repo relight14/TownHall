@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { useSeries } from '../hooks/series/useSeries';
 import { useArticles, useFeaturedArticles, useLatestArticles, useMostReadArticles, type Article } from '../hooks/articles';
@@ -7,10 +7,12 @@ import { Link } from 'react-router-dom';
 import { Clock, Eye, Play, Search, ChevronRight, LogOut } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { DynamicImage } from '../components/ui/dynamic-image';
+import { stripHtmlMemoized } from '../lib/utils';
 import profilePic from '@assets/Chris_C_Profile_1765399638128.webp';
-import AuthModal from '../components/AuthModal';
-import PasswordResetModal from '../components/PasswordResetModal';
-import PurchaseModal from '../components/PurchaseModal';
+
+// Lazy load modals - only loaded when needed
+const AuthModal = lazy(() => import('../components/AuthModal'));
+const PasswordResetModal = lazy(() => import('../components/PasswordResetModal'));
 
 const categories = [
   { id: 'all', label: 'All' },
@@ -48,11 +50,6 @@ function formatViewCount(count: number): string {
     return (count / 1000).toFixed(1) + 'K';
   }
   return count.toString();
-}
-
-function stripHtml(html: string): string {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || '';
 }
 
 function ArticlesSkeleton() {
@@ -190,7 +187,7 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
           {article.title}
         </h2>
         <p className="text-gray-800 mt-3 line-clamp-3 leading-relaxed">
-          {stripHtml(article.summary)}
+          {stripHtmlMemoized(article.summary)}
         </p>
         <div className="flex items-center gap-3 mt-4 text-sm text-gray-700">
           <span>{formatDate(article.publishedAt)}</span>
@@ -239,7 +236,7 @@ function CategoryArticleCard({ article }: { article: Article }) {
           {article.title}
         </h3>
         <p className="text-gray-800 mt-2 text-sm line-clamp-3">
-          {stripHtml(article.summary)}
+          {stripHtmlMemoized(article.summary)}
         </p>
         <div className="flex items-center gap-2 mt-3 text-xs text-gray-700">
           <span>{formatShortDate(article.publishedAt)}</span>
@@ -364,39 +361,76 @@ export default function HomePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
 
-  const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
-
-  const getFilteredArticles = (category: string) => {
-    if (category === 'all') return allArticles;
-    return allArticles.filter(a => a.category === category);
-  };
-
-  const categoryArticles = getFilteredArticles(activeCategory);
-
-  const latestForCategory = [...categoryArticles].sort((a, b) => 
-    new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  // Memoize combined articles to prevent recalculation on every render
+  const allArticles = useMemo(() =>
+    [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))],
+    [articles, featuredArticles]
   );
 
-  const mostReadForCategory = [...categoryArticles].sort((a, b) => b.viewCount - a.viewCount);
+  // Memoize filtered articles by active category
+  const categoryArticles = useMemo(() => {
+    if (activeCategory === 'all') return allArticles;
+    return allArticles.filter(a => a.category === activeCategory);
+  }, [allArticles, activeCategory]);
 
-  const featuredForCategory = categoryArticles.filter(a => a.featured > 0)
-    .sort((a, b) => a.featured - b.featured);
+  // Memoize sorted arrays
+  const latestForCategory = useMemo(() =>
+    [...categoryArticles].sort((a, b) =>
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    ),
+    [categoryArticles]
+  );
+
+  const mostReadForCategory = useMemo(() =>
+    [...categoryArticles].sort((a, b) => b.viewCount - a.viewCount),
+    [categoryArticles]
+  );
+
+  const featuredForCategory = useMemo(() =>
+    categoryArticles.filter(a => a.featured > 0).sort((a, b) => a.featured - b.featured),
+    [categoryArticles]
+  );
 
   const featuredArticle = featuredForCategory[0] || latestForCategory[0];
-  
-  const displayedLatest = latestForCategory.filter(a => a.id !== featuredArticle?.id).slice(0, 4);
-  const displayedMostRead = mostReadForCategory.slice(0, 4);
 
-  const getArticlesByCategory = (category: string): Article[] => {
-    return allArticles
-      .filter(a => a.category === category)
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-  };
+  const displayedLatest = useMemo(() =>
+    latestForCategory.filter(a => a.id !== featuredArticle?.id).slice(0, 4),
+    [latestForCategory, featuredArticle]
+  );
 
-  const electionsArticles = getArticlesByCategory('elections');
-  const policyArticles = getArticlesByCategory('policy');
-  const candidateRankingsArticles = getArticlesByCategory('candidate-rankings');
-  const speechAnalysisArticles = getArticlesByCategory('speech-analysis');
+  const displayedMostRead = useMemo(() =>
+    mostReadForCategory.slice(0, 4),
+    [mostReadForCategory]
+  );
+
+  // Memoize articles by category for category sections
+  const electionsArticles = useMemo(() =>
+    allArticles
+      .filter(a => a.category === 'elections')
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
+    [allArticles]
+  );
+
+  const policyArticles = useMemo(() =>
+    allArticles
+      .filter(a => a.category === 'policy')
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
+    [allArticles]
+  );
+
+  const candidateRankingsArticles = useMemo(() =>
+    allArticles
+      .filter(a => a.category === 'candidate-rankings')
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
+    [allArticles]
+  );
+
+  const speechAnalysisArticles = useMemo(() =>
+    allArticles
+      .filter(a => a.category === 'speech-analysis')
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
+    [allArticles]
+  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -405,9 +439,11 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center gap-2 sm:gap-3">
-              <img 
-                src={profilePic} 
-                alt="Profile" 
+              <img
+                src={profilePic}
+                alt="Profile"
+                loading="eager"
+                decoding="async"
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                 data-testid="img-profile"
               />
@@ -583,25 +619,30 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* Auth Modal */}
+      {/* Auth Modal - Lazy loaded */}
       {showAuthModal && (
-        <AuthModal 
-          onClose={() => setShowAuthModal(false)}
-          onForgotPassword={() => {
-            setShowAuthModal(false);
-            setShowPasswordReset(true);
-          }}
-        />
+        <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full" /></div>}>
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+            onForgotPassword={() => {
+              setShowAuthModal(false);
+              setShowPasswordReset(true);
+            }}
+          />
+        </Suspense>
       )}
-      
+
+      {/* Password Reset Modal - Lazy loaded */}
       {showPasswordReset && (
-        <PasswordResetModal 
-          onClose={() => setShowPasswordReset(false)}
-          onBackToLogin={() => {
-            setShowPasswordReset(false);
-            setShowAuthModal(true);
-          }}
-        />
+        <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full" /></div>}>
+          <PasswordResetModal
+            onClose={() => setShowPasswordReset(false)}
+            onBackToLogin={() => {
+              setShowPasswordReset(false);
+              setShowAuthModal(true);
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );
