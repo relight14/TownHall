@@ -23,9 +23,10 @@ interface PaymentFormProps {
   onSuccess: () => void;
   onCancel: () => void;
   amount: string;
+  inline?: boolean;
 }
 
-function PaymentForm({ clientSecret, onSuccess, onCancel, amount }: PaymentFormProps) {
+export function PaymentForm({ clientSecret, onSuccess, onCancel, amount, inline = false }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -47,15 +48,30 @@ function PaymentForm({ clientSecret, onSuccess, onCancel, amount }: PaymentFormP
         throw new Error(submitError.message);
       }
 
-      const { error: paymentError } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/wallet?payment=success`,
-        },
-      });
+      if (inline) {
+        const { error: paymentError, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          redirect: 'if_required',
+        });
 
-      if (paymentError) {
-        throw new Error(paymentError.message);
+        if (paymentError) {
+          throw new Error(paymentError.message);
+        }
+
+        if (paymentIntent && paymentIntent.status === 'succeeded') {
+          onSuccess();
+        }
+      } else {
+        const { error: paymentError } = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: `${window.location.origin}/wallet?payment=success`,
+          },
+        });
+
+        if (paymentError) {
+          throw new Error(paymentError.message);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Payment failed');
