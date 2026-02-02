@@ -11,9 +11,9 @@ import PasswordResetModal from '../components/PasswordResetModal';
 import AddFundsModal from '../components/AddFundsModal';
 
 function stripHtml(html: string): string {
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  return tmp.textContent || tmp.innerText || '';
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  return doc.body.textContent || doc.body.innerText || '';
 }
 
 function extractPreviewParagraphs(html: string, count: number = 3): string {
