@@ -110,10 +110,11 @@ function parseContentWithEmbeds(html: string): ContentSegment[] {
             segments.push({ type: 'tweet', tweetId, url: socialUrl });
           }
         } else {
-          let platform: 'substack' | 'bluesky' | 'threads' | 'generic' = 'generic';
+          let platform: 'substack' | 'bluesky' | 'threads' | 'instagram' | 'generic' = 'generic';
           if (/substack\.com/.test(socialUrl)) platform = 'substack';
           else if (/bsky\.app/.test(socialUrl)) platform = 'bluesky';
           else if (/threads\.net/.test(socialUrl)) platform = 'threads';
+          else if (/instagram\.com/.test(socialUrl)) platform = 'instagram';
           segments.push({ type: 'social-card', url: socialUrl, platform });
         }
       } else {
