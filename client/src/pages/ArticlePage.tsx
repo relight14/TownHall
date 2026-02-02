@@ -54,6 +54,7 @@ function extractTweetId(url: string): string | null {
 type ContentSegment = 
   | { type: 'html'; content: string }
   | { type: 'tweet'; tweetId: string; url: string }
+  | { type: 'instagram'; url: string }
   | { type: 'social-card'; url: string; platform: 'substack' | 'bluesky' | 'threads' | 'generic' };
 
 function parseContentWithEmbeds(html: string): ContentSegment[] {
@@ -109,6 +110,8 @@ function parseContentWithEmbeds(html: string): ContentSegment[] {
           if (tweetId) {
             segments.push({ type: 'tweet', tweetId, url: socialUrl });
           }
+        } else if (/instagram\.com/.test(socialUrl)) {
+          segments.push({ type: 'instagram', url: socialUrl });
         } else {
           let platform: 'substack' | 'bluesky' | 'threads' | 'generic' = 'generic';
           if (/substack\.com/.test(socialUrl)) platform = 'substack';
@@ -205,6 +208,140 @@ function SocialCard({ url, platform }: { url: string; platform: 'substack' | 'bl
   );
 }
 
+function InstagramEmbed({ url }: { url: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [renderFailed, setRenderFailed] = useState(false);
+  const maxRetries = 5;
+  const retryDelays = [200, 500, 1000, 1500, 2000];
+
+  useEffect(() => {
+    let retryCount = 0;
+    let timeoutId: NodeJS.Timeout;
+
+    const checkIfRendered = (): boolean => {
+      if (!containerRef.current) return false;
+      const iframe = containerRef.current.querySelector('iframe');
+      const rendered = containerRef.current.querySelector('.instagram-media-rendered');
+      return !!(iframe || rendered);
+    };
+
+    const processEmbed = () => {
+      if (checkIfRendered()) {
+        return;
+      }
+
+      if ((window as any).instgrm?.Embeds) {
+        (window as any).instgrm.Embeds.process();
+        
+        timeoutId = setTimeout(() => {
+          if (!checkIfRendered() && retryCount < maxRetries) {
+            retryCount++;
+            timeoutId = setTimeout(processEmbed, retryDelays[retryCount - 1] || 2000);
+          } else if (!checkIfRendered()) {
+            setRenderFailed(true);
+          }
+        }, 300);
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+        timeoutId = setTimeout(processEmbed, retryDelays[retryCount - 1] || 2000);
+      } else {
+        setRenderFailed(true);
+      }
+    };
+
+    const loadScript = () => {
+      if (!(window as any).instgrm) {
+        const script = document.createElement('script');
+        script.src = '//www.instagram.com/embed.js';
+        script.async = true;
+        script.onload = () => {
+          setTimeout(processEmbed, 100);
+        };
+        script.onerror = () => {
+          setRenderFailed(true);
+        };
+        document.body.appendChild(script);
+      } else {
+        processEmbed();
+      }
+    };
+
+    const initTimeout = setTimeout(loadScript, 50);
+
+    return () => {
+      clearTimeout(initTimeout);
+      clearTimeout(timeoutId);
+    };
+  }, [url]);
+
+  if (renderFailed) {
+    return (
+      <div className="p-4 bg-pink-50 border-2 border-pink-300 rounded-xl max-w-md mx-auto shadow-sm my-4">
+        <div className="flex items-center gap-2 mb-3">
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <defs>
+              <linearGradient id="ig-fallback-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#FFDC80" />
+                <stop offset="50%" stopColor="#F56040" />
+                <stop offset="100%" stopColor="#833AB4" />
+              </linearGradient>
+            </defs>
+            <path fill="url(#ig-fallback-gradient)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          </svg>
+          <span className="text-sm font-semibold text-pink-600">Instagram</span>
+        </div>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-pink-600 hover:underline break-all text-sm mb-3"
+        >
+          {url}
+        </a>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-pink-100 border border-pink-300 text-pink-600 hover:opacity-80 transition-opacity"
+        >
+          View on Instagram →
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="my-4 flex justify-center">
+      <blockquote
+        className="instagram-media"
+        data-instgrm-captioned
+        data-instgrm-permalink={url}
+        data-instgrm-version="14"
+        style={{
+          background: '#FFF',
+          border: 0,
+          borderRadius: '3px',
+          boxShadow: '0 0 1px 0 rgba(0,0,0,0.5), 0 1px 10px 0 rgba(0,0,0,0.15)',
+          margin: '1px',
+          maxWidth: '540px',
+          minWidth: '326px',
+          padding: 0,
+          width: '99.375%',
+        }}
+      >
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          View this post on Instagram
+        </a>
+      </blockquote>
+    </div>
+  );
+}
+
 function ArticleContent({ html, className, "data-testid": testId }: { html: string; className?: string; "data-testid"?: string }) {
   const segments = useMemo(() => parseContentWithEmbeds(html), [html]);
 
@@ -223,6 +360,13 @@ function ArticleContent({ html, className, "data-testid": testId }: { html: stri
           return (
             <div key={index} className="my-4 flex justify-center not-prose">
               <Tweet id={segment.tweetId} />
+            </div>
+          );
+        }
+        if (segment.type === 'instagram') {
+          return (
+            <div key={index} className="not-prose">
+              <InstagramEmbed url={segment.url} />
             </div>
           );
         }
@@ -338,24 +482,6 @@ export default function ArticlePage() {
     }
   }, [article, articleId, incrementArticleView]);
 
-  useEffect(() => {
-    if (article?.content) {
-      const loadInstagramEmbeds = () => {
-        if (article.content.includes('instagram-media') || article.content.includes('instagram.com')) {
-          if (!(window as any).instgrm) {
-            const script = document.createElement('script');
-            script.src = '//www.instagram.com/embed.js';
-            script.async = true;
-            document.body.appendChild(script);
-          } else {
-            (window as any).instgrm.Embeds?.process();
-          }
-        }
-      };
-      const timer = setTimeout(loadInstagramEmbeds, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [article?.content, hasPurchased]);
 
   useEffect(() => {
     const checkPurchaseStatus = async () => {
