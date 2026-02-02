@@ -752,7 +752,6 @@ export default function ArticlePage() {
           onClose={() => setShowAddFundsModal(false)}
           onSuccess={() => {
             setShowAddFundsModal(false);
-            refreshWalletBalance();
           }}
           suggestedAmount={Math.ceil((article.price - walletBalance * 100) / 100) + 5}
         />
