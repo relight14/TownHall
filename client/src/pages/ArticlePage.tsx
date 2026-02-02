@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X, Clock, Eye } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
@@ -9,6 +9,7 @@ import { useArticle, articleKeys, type Article } from '../hooks/articles';
 import AuthModal from '../components/AuthModal';
 import PasswordResetModal from '../components/PasswordResetModal';
 import AddFundsModal from '../components/AddFundsModal';
+import { Tweet } from 'react-tweet';
 
 function stripHtml(html: string): string {
   const parser = new DOMParser();
@@ -45,7 +46,17 @@ function formatViewCount(count: number): string {
   return count.toString();
 }
 
-function normalizeListHTML(html: string): string {
+function extractTweetId(url: string): string | null {
+  const match = url.match(/\/status\/(\d+)/);
+  return match ? match[1] : null;
+}
+
+type ContentSegment = 
+  | { type: 'html'; content: string }
+  | { type: 'tweet'; tweetId: string; url: string }
+  | { type: 'social-card'; url: string; platform: 'substack' | 'bluesky' | 'threads' | 'generic' };
+
+function parseContentWithEmbeds(html: string): ContentSegment[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   
@@ -79,72 +90,188 @@ function normalizeListHTML(html: string): string {
     }
   }
   
-  doc.querySelectorAll('div[data-twitter-url], div[data-social-url]').forEach((wrapper) => {
-    const url = wrapper.getAttribute('data-twitter-url') || wrapper.getAttribute('data-social-url');
-    
-    if (url && /twitter\.com|x\.com/.test(url)) {
-      const blockquote = document.createElement('blockquote');
-      blockquote.className = 'twitter-tweet';
-      const link = document.createElement('a');
-      link.href = url;
-      link.textContent = 'Loading tweet...';
-      blockquote.appendChild(link);
-      wrapper.innerHTML = '';
-      wrapper.appendChild(blockquote);
-    } else if (url) {
-      const isSubstack = /substack\.com/.test(url);
-      const isBluesky = /bsky\.app/.test(url);
-      const isThreads = /threads\.net/.test(url);
+  const segments: ContentSegment[] = [];
+  let currentHtml = '';
+  
+  const processNode = (node: ChildNode) => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+      const socialUrl = element.getAttribute('data-social-url') || element.getAttribute('data-twitter-url');
       
-      const card = document.createElement('div');
-      card.className = isSubstack 
-        ? 'p-4 bg-orange-50 border-2 border-orange-300 rounded-xl max-w-md mx-auto shadow-sm'
-        : isBluesky 
-        ? 'p-4 bg-sky-50 border-2 border-sky-300 rounded-xl max-w-md mx-auto shadow-sm'
-        : isThreads
-        ? 'p-4 bg-gray-50 border-2 border-gray-300 rounded-xl max-w-md mx-auto shadow-sm'
-        : 'p-4 bg-gray-50 border border-gray-200 rounded-lg';
-      
-      const header = document.createElement('div');
-      header.className = 'flex items-center gap-2 mb-3';
-      
-      if (isSubstack) {
-        header.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="#FF6719"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg><span class="text-sm font-semibold text-orange-600">Substack</span>`;
-      } else if (isBluesky) {
-        header.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="#0085FF"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></svg><span class="text-sm font-semibold text-sky-600">Bluesky</span>`;
-      } else if (isThreads) {
-        header.innerHTML = `<span class="text-sm font-semibold text-gray-800">Threads</span>`;
+      if (socialUrl && (element.classList.contains('social-embed') || element.hasAttribute('data-twitter-url') || element.hasAttribute('data-social-url'))) {
+        if (currentHtml.trim()) {
+          segments.push({ type: 'html', content: currentHtml });
+          currentHtml = '';
+        }
+        
+        if (/twitter\.com|x\.com/.test(socialUrl)) {
+          const tweetId = extractTweetId(socialUrl);
+          if (tweetId) {
+            segments.push({ type: 'tweet', tweetId, url: socialUrl });
+          }
+        } else {
+          let platform: 'substack' | 'bluesky' | 'threads' | 'generic' = 'generic';
+          if (/substack\.com/.test(socialUrl)) platform = 'substack';
+          else if (/bsky\.app/.test(socialUrl)) platform = 'bluesky';
+          else if (/threads\.net/.test(socialUrl)) platform = 'threads';
+          segments.push({ type: 'social-card', url: socialUrl, platform });
+        }
+      } else {
+        currentHtml += element.outerHTML;
       }
-      
-      card.appendChild(header);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.className = isSubstack ? 'block text-orange-600 hover:underline break-all text-sm mb-3' 
-        : isBluesky ? 'block text-sky-600 hover:underline break-all text-sm mb-3'
-        : 'block text-gray-600 hover:underline break-all text-sm mb-3';
-      link.textContent = url;
-      card.appendChild(link);
-      
-      const button = document.createElement('a');
-      button.href = url;
-      button.target = '_blank';
-      button.rel = 'noopener noreferrer';
-      const platform = isSubstack ? 'Substack' : isBluesky ? 'Bluesky' : isThreads ? 'Threads' : 'Link';
-      button.className = isSubstack 
-        ? 'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-100 border border-orange-300 text-orange-600 hover:opacity-80'
-        : isBluesky
-        ? 'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-sky-100 border border-sky-300 text-sky-600 hover:opacity-80'
-        : 'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 border border-gray-300 text-gray-600 hover:opacity-80';
-      button.textContent = `View on ${platform} →`;
-      card.appendChild(button);
-      
-      wrapper.innerHTML = '';
-      wrapper.appendChild(card);
+    } else if (node.nodeType === Node.TEXT_NODE) {
+      currentHtml += node.textContent || '';
     }
-  });
+  };
+  
+  doc.body.childNodes.forEach(processNode);
+  
+  if (currentHtml.trim()) {
+    segments.push({ type: 'html', content: currentHtml });
+  }
+  
+  return segments;
+}
+
+function SocialCard({ url, platform }: { url: string; platform: 'substack' | 'bluesky' | 'threads' | 'generic' }) {
+  const config = {
+    substack: {
+      bg: 'bg-orange-50',
+      border: 'border-orange-300',
+      text: 'text-orange-600',
+      buttonBg: 'bg-orange-100',
+      label: 'Substack',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF6719">
+          <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/>
+        </svg>
+      ),
+    },
+    bluesky: {
+      bg: 'bg-sky-50',
+      border: 'border-sky-300',
+      text: 'text-sky-600',
+      buttonBg: 'bg-sky-100',
+      label: 'Bluesky',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#0085FF">
+          <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/>
+        </svg>
+      ),
+    },
+    threads: {
+      bg: 'bg-gray-50',
+      border: 'border-gray-300',
+      text: 'text-gray-800',
+      buttonBg: 'bg-gray-100',
+      label: 'Threads',
+      icon: null,
+    },
+    generic: {
+      bg: 'bg-gray-50',
+      border: 'border-gray-200',
+      text: 'text-gray-600',
+      buttonBg: 'bg-gray-100',
+      label: 'Link',
+      icon: null,
+    },
+  };
+
+  const c = config[platform];
+
+  return (
+    <div className={`p-4 ${c.bg} border-2 ${c.border} rounded-xl max-w-md mx-auto shadow-sm my-4`}>
+      <div className="flex items-center gap-2 mb-3">
+        {c.icon}
+        <span className={`text-sm font-semibold ${c.text}`}>{c.label}</span>
+      </div>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`block ${c.text} hover:underline break-all text-sm mb-3`}
+      >
+        {url}
+      </a>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${c.buttonBg} border ${c.border} ${c.text} hover:opacity-80 transition-opacity`}
+      >
+        View on {c.label} →
+      </a>
+    </div>
+  );
+}
+
+function ArticleContent({ html, className, "data-testid": testId }: { html: string; className?: string; "data-testid"?: string }) {
+  const segments = useMemo(() => parseContentWithEmbeds(html), [html]);
+
+  return (
+    <div className={className} data-testid={testId}>
+      {segments.map((segment, index) => {
+        if (segment.type === 'html') {
+          return (
+            <div
+              key={index}
+              dangerouslySetInnerHTML={{ __html: segment.content }}
+            />
+          );
+        }
+        if (segment.type === 'tweet') {
+          return (
+            <div key={index} className="my-4 flex justify-center not-prose">
+              <Tweet id={segment.tweetId} />
+            </div>
+          );
+        }
+        if (segment.type === 'social-card') {
+          return (
+            <div key={index} className="not-prose">
+              <SocialCard url={segment.url} platform={segment.platform} />
+            </div>
+          );
+        }
+        return null;
+      })}
+    </div>
+  );
+}
+
+function normalizeListHTML(html: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  let orderedCounter = 1;
+  let bulletCounter = 1;
+  
+  const children = Array.from(doc.body.children);
+  
+  for (const child of children) {
+    const tagName = child.tagName.toLowerCase();
+    
+    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
+      orderedCounter = 1;
+      bulletCounter = 1;
+      continue;
+    }
+    
+    if (tagName === 'ol') {
+      const orderedItem = child.querySelector('li[data-list="ordered"]');
+      if (orderedItem) {
+        child.setAttribute('start', String(orderedCounter));
+        orderedCounter++;
+      }
+    }
+    
+    if (tagName === 'ul') {
+      const bulletItem = child.querySelector('li[data-list="bullet"]');
+      if (bulletItem) {
+        bulletCounter++;
+      }
+    }
+  }
   
   return doc.body.innerHTML;
 }
@@ -213,18 +340,7 @@ export default function ArticlePage() {
 
   useEffect(() => {
     if (article?.content) {
-      const loadSocialEmbeds = () => {
-        if (article.content.includes('twitter-tweet') || article.content.includes('twitter.com')) {
-          if (!(window as any).twttr) {
-            const script = document.createElement('script');
-            script.src = 'https://platform.twitter.com/widgets.js';
-            script.async = true;
-            script.charset = 'utf-8';
-            document.body.appendChild(script);
-          } else {
-            (window as any).twttr.widgets?.load();
-          }
-        }
+      const loadInstagramEmbeds = () => {
         if (article.content.includes('instagram-media') || article.content.includes('instagram.com')) {
           if (!(window as any).instgrm) {
             const script = document.createElement('script');
@@ -236,7 +352,7 @@ export default function ArticlePage() {
           }
         }
       };
-      const timer = setTimeout(loadSocialEmbeds, 100);
+      const timer = setTimeout(loadInstagramEmbeds, 100);
       return () => clearTimeout(timer);
     }
   }, [article?.content, hasPurchased]);
@@ -511,7 +627,8 @@ export default function ArticlePage() {
             </div>
 
             {canViewContent ? (
-              <div 
+              <ArticleContent 
+                html={article.content}
                 className="prose prose-lg max-w-none
                   prose-headings:text-gray-900 prose-headings:font-bold
                   prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
@@ -524,7 +641,6 @@ export default function ArticlePage() {
                   prose-pre:bg-gray-100 prose-pre:border prose-pre:border-gray-200
                   prose-img:rounded-xl"
                 data-testid="text-article-content"
-                dangerouslySetInnerHTML={{ __html: normalizeListHTML(article.content) }}
               />
             ) : (
               <div>
