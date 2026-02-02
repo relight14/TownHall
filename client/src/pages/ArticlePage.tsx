@@ -8,6 +8,7 @@ import { useVideoStore } from '../context/VideoStoreContext';
 import { useArticle, articleKeys, type Article } from '../hooks/articles';
 import AuthModal from '../components/AuthModal';
 import PasswordResetModal from '../components/PasswordResetModal';
+import AddFundsModal from '../components/AddFundsModal';
 
 function stripHtml(html: string): string {
   const tmp = document.createElement('div');
@@ -196,6 +197,7 @@ export default function ArticlePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const viewCountedRef = useRef<string | null>(null);
@@ -690,13 +692,13 @@ export default function ArticlePage() {
                   <p className="text-amber-300 text-sm mb-3">
                     Insufficient balance. You need {formatPrice(article.price - walletBalance * 100)} more to purchase this article.
                   </p>
-                  <Link 
-                    to="/wallet"
-                    className="inline-block w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg transition-colors text-center font-medium"
-                    data-testid="link-add-funds-modal"
+                  <button 
+                    onClick={() => setShowAddFundsModal(true)}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg transition-colors text-center font-medium"
+                    data-testid="button-add-funds-inline"
                   >
                     Add Funds to Wallet
-                  </Link>
+                  </button>
                 </div>
               ) : (
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
@@ -737,12 +739,23 @@ export default function ArticlePage() {
 
               <div className="mt-4 pt-4 border-t border-slate-800">
                 <p className="text-slate-500 text-xs text-center">
-                  powered by <span className="text-blue-400">ledewire</span>
+                  powered by <a href="https://www.ledewire.com/explore" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors" data-testid="link-ledewire-article">ledewire</a>
                 </p>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {showAddFundsModal && article && (
+        <AddFundsModal
+          onClose={() => setShowAddFundsModal(false)}
+          onSuccess={() => {
+            setShowAddFundsModal(false);
+            refreshWalletBalance();
+          }}
+          suggestedAmount={Math.ceil((article.price - walletBalance * 100) / 100) + 5}
+        />
       )}
     </div>
   );
