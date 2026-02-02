@@ -73,7 +73,9 @@ function cleanPastedHtml(html: string): string {
       const p = document.createElement('p');
       const style = div.getAttribute('style');
       if (style) p.setAttribute('style', style);
-      p.innerHTML = div.innerHTML;
+      while (div.firstChild) {
+        p.appendChild(div.firstChild);
+      }
       div.parentNode?.replaceChild(p, div);
     }
   });
