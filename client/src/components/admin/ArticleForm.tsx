@@ -425,9 +425,9 @@ export function ArticleForm({ article, onClose, onSubmit }: ArticleFormProps) {
   };
 
   const generateSummary = (htmlText: string): string => {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlText;
-    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+    const plainText = doc.body.textContent || doc.body.innerText || '';
     const cleaned = plainText.replace(/\s+/g, ' ').trim();
     const sentences = cleaned.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const summary = sentences.slice(0, 3).join('. ').trim();
