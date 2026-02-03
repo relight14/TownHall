@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { trackEvent, identifyUser, resetUser } from '../lib/analytics';
 
 function isTokenExpired(token: string): boolean {
   try {
@@ -495,9 +496,12 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       setLedewireToken(data.ledewireToken);
+      identifyUser(data.user);
+      trackEvent('user_signed_up', { method: 'email' });
       return data.ledewireToken;
     } catch (error) {
       console.error('Signup failed:', error);
+      trackEvent('signup_failed', { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   };
@@ -521,9 +525,12 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       setLedewireToken(data.ledewireToken);
+      identifyUser(data.user);
+      trackEvent('user_logged_in', { method: 'email' });
       return data.ledewireToken;
     } catch (error) {
       console.error('Login failed:', error);
+      trackEvent('login_failed', { method: 'email', error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   };
@@ -547,14 +554,19 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       setLedewireToken(data.ledewireToken);
+      identifyUser(data.user);
+      trackEvent('user_logged_in', { method: 'google' });
       return data.ledewireToken;
     } catch (error) {
       console.error('Google login failed:', error);
+      trackEvent('login_failed', { method: 'google', error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   };
 
   const logout = () => {
+    trackEvent('user_logged_out');
+    resetUser();
     setUser(null);
     setLedewireToken(null);
     setPurchasedEpisodes([]);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { trackEvent } from '../lib/analytics';
 import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X, Clock, Eye } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { DynamicImage } from '../components/ui/dynamic-image';
@@ -472,6 +473,7 @@ export default function ArticlePage() {
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const viewCountedRef = useRef<string | null>(null);
+  const viewTrackedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (article && articleId && viewCountedRef.current !== articleId) {
@@ -482,6 +484,16 @@ export default function ArticlePage() {
     }
   }, [article, articleId, incrementArticleView]);
 
+  useEffect(() => {
+    if (article && articleId && !checkingPurchase && viewTrackedRef.current !== articleId) {
+      viewTrackedRef.current = articleId;
+      trackEvent('article_viewed', {
+        articleName: article.title,
+        loggedIn: !!user,
+        purchasedArticle: hasPurchased,
+      });
+    }
+  }, [article, articleId, checkingPurchase, user, hasPurchased]);
 
   useEffect(() => {
     const checkPurchaseStatus = async () => {
