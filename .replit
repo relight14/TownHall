@@ -48,3 +48,6 @@ integrations = ["github:1.0.0", "javascript_object_storage:2.0.0"]
 [userenv.shared]
 LEDEWIRE_API_URL = "https://api.ledewire.com/v1"
 ADMIN_EMAIL = "cillizzac@gmail.com"
+VITE_PUBLIC_POSTHOG_KEY = "phc_CXgwtaIzLWQ1RrfUDpGX924okBP0ylr5oz0YQuLwLwz"
+VITE_PUBLIC_POSTHOG_HOST = "https://us.i.posthog.com"
+VITE_PUBLIC_PROJECT_NAME = "ChrisCillizza"
