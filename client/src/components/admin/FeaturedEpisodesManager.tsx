@@ -17,7 +17,7 @@ interface FeaturedEpisodesManagerProps {
   allEpisodes: Episode[];
   featuredEpisodeIds: string[];
   series: Series[];
-  onSave: (episodeIds: string[]) => Promise<void>;
+  onSave: (episodeIds: string[]) => void;
   onClose: () => void;
 }
 

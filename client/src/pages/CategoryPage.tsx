@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useVideoStore } from '../context/VideoStoreContext';
+import { useArticles, useFeaturedArticles } from '../hooks/articles';
 import { ArrowLeft, Clock, Eye, TrendingUp, User } from 'lucide-react';
 
 const categoryLabels: Record<string, string> = {
@@ -20,14 +20,14 @@ const categoryDescriptions: Record<string, string> = {
 export default function CategoryPage() {
   const params = useParams();
   const category = params.category as string;
-  const { articles, featuredArticles, refreshArticles } = useVideoStore();
 
-  useEffect(() => {
-    refreshArticles();
-  }, []);
-  
-  const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
-  const categoryArticles = allArticles.filter(a => a.category === category);
+  const { data: articles = [] } = useArticles();
+  const { data: featuredArticles = [] } = useFeaturedArticles();
+
+  const categoryArticles = useMemo(() => {
+    const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
+    return allArticles.filter(a => a.category === category);
+  }, [articles, featuredArticles, category]);
   
   const featuredInCategory = categoryArticles.filter(a => a.featured > 0).sort((a, b) => a.featured - b.featured);
   const latestInCategory = [...categoryArticles].sort((a, b) => 

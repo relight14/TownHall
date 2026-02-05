@@ -240,6 +240,7 @@ async function seedFeaturedEpisodes(episodes: any[]) {
 async function seedArticles() {
   console.log("📝 Seeding articles...");
 
+  // Article 1 - PAID
   const [article1] = await db
     .insert(articlesTable)
     .values({
@@ -254,6 +255,7 @@ async function seedArticles() {
       `,
       category: "elections",
       price: 99, // $0.99
+      ledewireContentId: "led_article_battleground_2024",
       thumbnail: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800",
       readTimeMinutes: 8,
       featured: 1,
@@ -261,6 +263,7 @@ async function seedArticles() {
     })
     .returning();
 
+  // Article 2 - PAID
   const [article2] = await db
     .insert(articlesTable)
     .values({
@@ -275,6 +278,7 @@ async function seedArticles() {
       `,
       category: "policy",
       price: 199, // $1.99
+      ledewireContentId: "led_article_healthcare_2024",
       thumbnail: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800",
       readTimeMinutes: 12,
       featured: 2,
@@ -282,10 +286,11 @@ async function seedArticles() {
     })
     .returning();
 
+  // Article 3 - FREE (explicit free article)
   const [article3] = await db
     .insert(articlesTable)
     .values({
-      title: "Ranking the 2024 Presidential Candidates",
+      title: "(FREE ARTICLE) Ranking the 2024 Presidential Candidates",
       subheader: "Who's up, who's down, and why it matters",
       summary: "Chris Cillizza's latest rankings of presidential candidates based on campaign strength, polling, fundraising, and momentum.",
       content: `
@@ -295,7 +300,7 @@ async function seedArticles() {
         <p>Rankings will be updated regularly as the race evolves and new information becomes available.</p>
       `,
       category: "candidate-rankings",
-      price: 0, // Free article
+      price: 0, // Free article - no ledewireContentId needed
       thumbnail: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800",
       readTimeMinutes: 6,
       featured: 0,
@@ -303,6 +308,7 @@ async function seedArticles() {
     })
     .returning();
 
+  // Article 4 - PAID
   const [article4] = await db
     .insert(articlesTable)
     .values({
@@ -317,6 +323,7 @@ async function seedArticles() {
       `,
       category: "speech-analysis",
       price: 149, // $1.49
+      ledewireContentId: "led_article_sotu_2024",
       thumbnail: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800",
       readTimeMinutes: 10,
       featured: 0,
@@ -324,6 +331,7 @@ async function seedArticles() {
     })
     .returning();
 
+  // Article 5 - PAID
   const [article5] = await db
     .insert(articlesTable)
     .values({
@@ -337,7 +345,8 @@ async function seedArticles() {
         <p>Understanding the primary process is essential to understanding how nominees are chosen and what factors drive campaign decisions.</p>
       `,
       category: "elections",
-      price: 0, // Free article
+      price: 199, // $1.99
+      ledewireContentId: "led_article_primary_2024",
       thumbnail: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800",
       readTimeMinutes: 7,
       featured: 3,
@@ -345,6 +354,7 @@ async function seedArticles() {
     })
     .returning();
 
+  // Article 6 - PAID
   const [article6] = await db
     .insert(articlesTable)
     .values({
@@ -359,6 +369,7 @@ async function seedArticles() {
       `,
       category: "policy",
       price: 249, // $2.49
+      ledewireContentId: "led_article_climate_2024",
       thumbnail: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800",
       readTimeMinutes: 14,
       featured: 0,
@@ -371,8 +382,8 @@ async function seedArticles() {
   console.log(`     - Policy: 2 articles`);
   console.log(`     - Candidate Rankings: 1 article`);
   console.log(`     - Speech Analysis: 1 article`);
-  console.log(`     - Free articles: 2`);
-  console.log(`     - Paid articles: 4\n`);
+  console.log(`     - Free articles: 1 (17%)`);
+  console.log(`     - Paid articles: 5 (83%) with ledewireContentId\n`);
 }
 
 async function seed() {
