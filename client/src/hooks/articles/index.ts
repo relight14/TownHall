@@ -5,6 +5,7 @@ export {
   useLatestArticles,
   useMostReadArticles,
   useArticlesByCategory,
+  useArticlePurchaseVerification,
   type Article,
 } from './useArticles';
 export {

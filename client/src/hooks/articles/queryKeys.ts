@@ -18,5 +18,6 @@ export const articleKeys = {
     mostRead: ['/api/articles/most-read'] as const,
     detail: (id: string) => ['/api/articles', id] as const,
     admin: ['/api/admin/articles'] as const,
+    purchaseVerify: (id: string) => ['/api/articles', id, 'purchase', 'verify'] as const,
   },
 } as const;

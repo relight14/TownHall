@@ -75,19 +75,14 @@ interface VideoStoreContextType {
   createPaymentSession: (amountCents: number) => Promise<any>;
   adminToken: string | null;
   setAdminToken: (token: string | null) => void;
-  articles: Article[];
+  // Admin article management (to be migrated to TanStack Query mutations)
   adminArticles: Article[];
   adminArticlesLoaded: boolean;
-  featuredArticles: Article[];
-  latestArticles: Article[];
-  mostReadArticles: Article[];
-  getArticlesByCategory: (category: string) => Article[];
   addArticle: (article: Omit<Article, 'id' | 'publishedAt'>) => Promise<void>;
   updateArticle: (articleId: string, updates: Partial<Omit<Article, 'id'>>) => Promise<void>;
   deleteArticle: (articleId: string) => Promise<void>;
-  refreshArticles: () => Promise<void>;
-  incrementArticleView: (articleId: string) => Promise<void>;
   loadAdminArticles: (token: string) => Promise<void>;
+  incrementArticleView: (articleId: string) => Promise<void>;
 }
 
 const VideoStoreContext = createContext<VideoStoreContextType | undefined>(undefined);
@@ -98,16 +93,8 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
   const [ledewireToken, setLedewireToken] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [adminToken, setAdminToken] = useState<string | null>(null);
-  const [articles, setArticles] = useState<Article[]>([]);
   const [adminArticles, setAdminArticles] = useState<Article[]>([]);
   const [adminArticlesLoaded, setAdminArticlesLoaded] = useState<boolean>(false);
-  const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
-  const [latestArticles, setLatestArticles] = useState<Article[]>([]);
-  const [mostReadArticles, setMostReadArticles] = useState<Article[]>([]);
-
-  // Note: Articles are loaded by individual pages to avoid race conditions
-  // - Public pages call loadArticles() which fetches preview content
-  // - Admin page calls loadAdminArticles() which fetches full content
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const userRef = useRef<User | null>(null);
@@ -252,75 +239,12 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [ledewireToken]);
 
-
-  const loadArticles = async () => {
-    try {
-      const response = await fetch('/api/articles');
-      if (response.ok) {
-        const data = await response.json();
-        setArticles(data);
-      }
-    } catch (error) {
-      console.error('Failed to load articles:', error);
-    }
-  };
-
-  const loadFeaturedArticles = async () => {
-    try {
-      const response = await fetch('/api/articles/featured');
-      if (response.ok) {
-        const data = await response.json();
-        setFeaturedArticles(data);
-      }
-    } catch (error) {
-      console.error('Failed to load featured articles:', error);
-    }
-  };
-
-  const loadLatestArticles = async () => {
-    try {
-      const response = await fetch('/api/articles/latest?limit=5');
-      if (response.ok) {
-        const data = await response.json();
-        setLatestArticles(data);
-      }
-    } catch (error) {
-      console.error('Failed to load latest articles:', error);
-    }
-  };
-
-  const loadMostReadArticles = async () => {
-    try {
-      const response = await fetch('/api/articles/most-read?limit=5');
-      if (response.ok) {
-        const data = await response.json();
-        setMostReadArticles(data);
-      }
-    } catch (error) {
-      console.error('Failed to load most read articles:', error);
-    }
-  };
-
-  const getArticlesByCategory = (category: string): Article[] => {
-    const allArticles = [...articles, ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))];
-    return allArticles.filter(a => a.category === category).sort((a, b) => 
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
-  };
-
   const incrementArticleView = async (articleId: string) => {
     try {
       await fetch(`/api/articles/${articleId}/view`, { method: 'POST' });
     } catch (error) {
       console.error('Failed to increment view count:', error);
     }
-  };
-
-  const refreshArticles = async () => {
-    await loadArticles();
-    await loadFeaturedArticles();
-    await loadLatestArticles();
-    await loadMostReadArticles();
   };
 
   const loadAdminArticles = async (token: string) => {
@@ -669,19 +593,13 @@ export function VideoStoreProvider({ children }: { children: ReactNode }) {
       createPaymentSession,
       adminToken,
       setAdminToken,
-      articles,
       adminArticles,
       adminArticlesLoaded,
-      featuredArticles,
-      latestArticles,
-      mostReadArticles,
-      getArticlesByCategory,
       addArticle,
       updateArticle,
       deleteArticle,
-      refreshArticles,
-      incrementArticleView,
       loadAdminArticles,
+      incrementArticleView,
     }}>
       {children}
     </VideoStoreContext.Provider>

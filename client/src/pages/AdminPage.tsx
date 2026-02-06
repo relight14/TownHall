@@ -255,7 +255,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const { 
     setAdminToken,
-    adminArticles, adminArticlesLoaded, addArticle, updateArticle, deleteArticle, refreshArticles, loadAdminArticles
+    adminArticles, adminArticlesLoaded, addArticle, updateArticle, deleteArticle, loadAdminArticles
   } = useVideoStore();
   const { data: series = [] } = useSeries();
   const { data: featuredEpisodes = [] } = useFeaturedEpisodes();

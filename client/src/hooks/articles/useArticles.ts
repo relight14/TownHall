@@ -102,14 +102,49 @@ export function useMostReadArticles(limit = 5) {
 export function useArticlesByCategory(category: string) {
   const { data: articles = [] } = useArticles();
   const { data: featuredArticles = [] } = useFeaturedArticles();
-  
+
   // Combine and deduplicate
   const allArticles = [
     ...articles,
     ...featuredArticles.filter(fa => !articles.find(a => a.id === fa.id))
   ];
-  
+
   return allArticles
     .filter(a => a.category === category)
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+}
+
+interface PurchaseVerificationResponse {
+  has_purchased: boolean;
+}
+
+/**
+ * Query hook to verify if a user has purchased an article
+ */
+export function useArticlePurchaseVerification(
+  articleId: string | undefined,
+  ledewireContentId: string | null | undefined,
+  ledewireToken: string | null | undefined
+) {
+  return useQuery<PurchaseVerificationResponse>({
+    queryKey: articleKeys.api.purchaseVerify(articleId || ''),
+    queryFn: async () => {
+      const res = await fetch(`/api/articles/${articleId}/purchase/verify`, {
+        headers: {
+          'Authorization': `Bearer ${ledewireToken}`,
+        },
+      });
+      if (!res.ok) {
+        const error = new Error('Failed to verify purchase status');
+        captureError(error, {
+          component: 'useArticlePurchaseVerification',
+          action: 'verify_purchase',
+          metadata: { articleId },
+        });
+        throw error;
+      }
+      return res.json();
+    },
+    enabled: !!articleId && !!ledewireContentId && !!ledewireToken,
+  });
 }

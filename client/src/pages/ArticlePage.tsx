@@ -6,7 +6,7 @@ import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { DynamicImage } from '../components/ui/dynamic-image';
 import { useQueryClient } from '@tanstack/react-query';
 import { useVideoStore } from '../context/VideoStoreContext';
-import { useArticle, articleKeys, type Article } from '../hooks/articles';
+import { useArticle, useArticlePurchaseVerification, articleKeys, type Article } from '../hooks/articles';
 import AuthModal from '../components/AuthModal';
 import PasswordResetModal from '../components/PasswordResetModal';
 import AddFundsModal from '../components/AddFundsModal';
@@ -451,21 +451,34 @@ export default function ArticlePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = useVideoStore();
-  
+
   // Use TanStack Query for article fetching
   const { data: article, isLoading: loading, error: queryError } = useArticle(articleId, ledewireToken);
   const error = queryError?.message || null;
-  
+
+  // Use TanStack Query for purchase verification
+  const { data: purchaseData, isLoading: checkingPurchase } = useArticlePurchaseVerification(
+    article?.id,
+    article?.ledewireContentId,
+    ledewireToken
+  );
+  const hasPurchased = purchaseData?.has_purchased ?? false;
+
   // Helper to refetch article data
   const refetchArticle = () => {
     if (articleId) {
       queryClient.invalidateQueries({ queryKey: articleKeys.api.detail(articleId) });
     }
   };
-  
+
+  // Helper to refetch purchase verification
+  const refetchPurchaseStatus = () => {
+    if (article?.id) {
+      queryClient.invalidateQueries({ queryKey: articleKeys.api.purchaseVerify(article.id) });
+    }
+  };
+
   const [copied, setCopied] = useState(false);
-  const [hasPurchased, setHasPurchased] = useState(false);
-  const [checkingPurchase, setCheckingPurchase] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -494,35 +507,6 @@ export default function ArticlePage() {
       });
     }
   }, [article, articleId, checkingPurchase, user, hasPurchased]);
-
-  useEffect(() => {
-    const checkPurchaseStatus = async () => {
-      if (!user || !ledewireToken || !article?.ledewireContentId) {
-        setHasPurchased(false);
-        return;
-      }
-
-      try {
-        setCheckingPurchase(true);
-        const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
-          headers: {
-            'Authorization': `Bearer ${ledewireToken}`,
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setHasPurchased(data.has_purchased || false);
-        }
-      } catch (err: any) {
-        console.error('Failed to check purchase status:', err.message);
-      } finally {
-        setCheckingPurchase(false);
-      }
-    };
-
-    checkPurchaseStatus();
-  }, [user, ledewireToken, article]);
 
   const handleBuyNow = () => {
     if (!user || !ledewireToken) {
@@ -557,7 +541,7 @@ export default function ArticlePage() {
       }
 
       if (data.unlocked) {
-        setHasPurchased(true);
+        refetchPurchaseStatus();
         refreshWalletBalance();
         setShowPurchaseModal(false);
         refetchArticle();
@@ -645,8 +629,10 @@ export default function ArticlePage() {
     );
   }
 
-  const isPaid = article.price > 0 && article.ledewireContentId;
-  const canViewContent = !isPaid || hasPurchased;
+  const isFreeArticle = article.price === 0;
+  const isMonetized = !!article.ledewireContentId;
+  const requiresPayment = !isFreeArticle && isMonetized;
+  const canViewContent = !requiresPayment || hasPurchased;
 
   return (
     <div className="min-h-screen bg-white pb-12 sm:pb-20 text-gray-900">
@@ -793,7 +779,7 @@ export default function ArticlePage() {
                   data-testid="text-article-preview"
                   dangerouslySetInnerHTML={{ __html: normalizeListHTML(article.isPreview ? article.content : extractPreviewParagraphs(article.content, 3)) }}
                 />
-                
+
                 <div className="my-10 p-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl text-center">
                   <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Lock className="w-8 h-8 text-white" />
@@ -831,36 +817,14 @@ export default function ArticlePage() {
       </div>
 
       {showAuthModal && (
-        <AuthModal 
+        <AuthModal
           onClose={() => setShowAuthModal(false)}
-          onSuccess={async (freshToken: string) => {
+          onSuccess={() => {
             setShowAuthModal(false);
-            
-            // After authentication, check if user has already purchased this article
-            // before showing the purchase modal
-            if (article?.ledewireContentId && freshToken) {
-              try {
-                setCheckingPurchase(true);
-                const response = await fetch(`/api/articles/${article.id}/purchase/verify`, {
-                  headers: { 'Authorization': `Bearer ${freshToken}` },
-                  credentials: 'include',
-                });
-                if (response.ok) {
-                  const data = await response.json();
-                  if (data.has_purchased) {
-                    setHasPurchased(true);
-                    refetchArticle();
-                    return;
-                  }
-                }
-              } catch (err) {
-                console.error('Post-auth purchase check failed:', err);
-              } finally {
-                setCheckingPurchase(false);
-              }
-            }
-            
-            // Not purchased yet - show purchase modal
+            // Invalidate purchase query to refetch with new auth token
+            refetchPurchaseStatus();
+            refetchArticle();
+            // Show purchase modal - will close automatically if already purchased
             setShowPurchaseModal(true);
           }}
           onForgotPassword={() => {
