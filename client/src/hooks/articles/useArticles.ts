@@ -45,7 +45,7 @@ export function useArticles() {
  */
 export function useArticle(articleId: string | undefined, ledewireToken?: string | null) {
   return useQuery<Article>({
-    queryKey: articleKeys.api.detail(articleId || ''),
+    queryKey: [articleKeys.api.detail(articleId || ''), ledewireToken],
     queryFn: async () => {
       const headers: HeadersInit = {};
       if (ledewireToken) {
