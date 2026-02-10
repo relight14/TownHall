@@ -127,7 +127,7 @@ export function useArticlePurchaseVerification(
   ledewireToken: string | null | undefined
 ) {
   return useQuery<PurchaseVerificationResponse>({
-    queryKey: articleKeys.api.purchaseVerify(articleId || ''),
+    queryKey: [...articleKeys.api.purchaseVerify(articleId || ''), ledewireToken],
     queryFn: async () => {
       const res = await fetch(`/api/articles/${articleId}/purchase/verify`, {
         headers: {
@@ -143,7 +143,8 @@ export function useArticlePurchaseVerification(
         });
         throw error;
       }
-      return res.json();
+      const jsonResponse = await res.json();
+      return jsonResponse;
     },
     enabled: !!articleId && !!ledewireContentId && !!ledewireToken,
   });

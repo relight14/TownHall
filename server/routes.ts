@@ -341,7 +341,6 @@ export async function registerRoutes(
         setSSoCookie(res, ledewireAuth.refresh_token);
         console.log('[SSO] Set SSO cookie on signup');
       }
-      
       res.json({
         user: {
           id: user.id,
@@ -390,13 +389,11 @@ export async function registerRoutes(
           ledewireUserId
         );
       }
-      
       // Set SSO cookie for cross-subdomain authentication
       if (ledewireAuth.refresh_token) {
         setSSoCookie(res, ledewireAuth.refresh_token);
         console.log('[SSO] Set SSO cookie on login');
       }
-      
       res.json({
         user: {
           id: user.id,
@@ -1147,7 +1144,7 @@ export async function registerRoutes(
       }
       
       const verification = await ledewire.verifyPurchase(token, article.ledewireContentId);
-      res.json(verification);
+      return res.status(200).json(verification);
     } catch (error: any) {
       console.error('Purchase verification failed:', error.message);
       res.status(500).json({ error: error.message });

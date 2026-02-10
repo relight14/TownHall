@@ -457,7 +457,7 @@ export default function ArticlePage() {
   const error = queryError?.message || null;
 
   // Use TanStack Query for purchase verification
-  const { data: purchaseData, isLoading: checkingPurchase } = useArticlePurchaseVerification(
+  const { data: purchaseData, isLoading: checkingPurchase, refetch: refetchPurchaseStatus } = useArticlePurchaseVerification(
     article?.id,
     article?.ledewireContentId,
     ledewireToken
@@ -468,13 +468,6 @@ export default function ArticlePage() {
   const refetchArticle = () => {
     if (articleId) {
       queryClient.invalidateQueries({ queryKey: articleKeys.api.detail(articleId) });
-    }
-  };
-
-  // Helper to refetch purchase verification
-  const refetchPurchaseStatus = () => {
-    if (article?.id) {
-      queryClient.invalidateQueries({ queryKey: articleKeys.api.purchaseVerify(article.id) });
     }
   };
 
@@ -821,10 +814,6 @@ export default function ArticlePage() {
           onClose={() => setShowAuthModal(false)}
           onSuccess={() => {
             setShowAuthModal(false);
-            // Invalidate purchase query to refetch with new auth token
-            refetchPurchaseStatus();
-            refetchArticle();
-            // Show purchase modal - will close automatically if already purchased
             setShowPurchaseModal(true);
           }}
           onForgotPassword={() => {
@@ -844,7 +833,7 @@ export default function ArticlePage() {
         />
       )}
 
-      {showPurchaseModal && article && (
+      {showPurchaseModal && article && !hasPurchased && (
         <div 
           className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
           onClick={() => setShowPurchaseModal(false)}
