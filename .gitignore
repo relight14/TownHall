@@ -6,3 +6,10 @@ vite.config.ts.*
 *.tar.gz
 
 .env
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# PR summaries (generated, not committed)
+docs/pr-summaries/

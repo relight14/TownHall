@@ -11,6 +11,7 @@ import AuthModal from '../components/AuthModal';
 import PasswordResetModal from '../components/PasswordResetModal';
 import AddFundsModal from '../components/AddFundsModal';
 import { Tweet } from 'react-tweet';
+import { formatFullDate, formatViewCount } from '../lib/formatters';
 
 function stripHtml(html: string): string {
   const parser = new DOMParser();
@@ -35,16 +36,6 @@ function calculateReadTime(content: string): number {
   const wordsPerMinute = 200;
   const minutes = Math.ceil(words / wordsPerMinute);
   return Math.max(1, minutes);
-}
-
-function formatViewCount(count: number): string {
-  if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`;
-  }
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
-  }
-  return count.toString();
 }
 
 function extractTweetId(url: string): string | null {
@@ -548,15 +539,6 @@ export default function ArticlePage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   const getArticleUrl = () => {
     if (typeof window === 'undefined') return '';
     return window.location.href;
@@ -659,7 +641,7 @@ export default function ArticlePage() {
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span data-testid="text-article-date">{formatDate(article.publishedAt)}</span>
+                <span data-testid="text-article-date">{formatFullDate(article.publishedAt)}</span>
               </div>
               <span className="text-gray-300">•</span>
               <div className="flex items-center gap-1">

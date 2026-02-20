@@ -8,6 +8,7 @@ import { Clock, Eye, Play, Search, ChevronRight, LogOut } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { DynamicImage } from '../components/ui/dynamic-image';
 import { stripHtmlMemoized } from '../lib/utils';
+import { formatDate, formatShortDate, formatViewCount } from '../lib/formatters';
 import profilePic from '@assets/Chris_C_Profile_1765399638128.webp';
 
 // Lazy load modals - only loaded when needed
@@ -28,29 +29,6 @@ const categoryLabels: Record<string, string> = {
   'candidate-rankings': 'Candidate Rankings',
   'speech-analysis': 'Speech Analysis',
 };
-
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-}
-
-function formatShortDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
-function formatViewCount(count: number): string {
-  if (count >= 1000) {
-    return (count / 1000).toFixed(1) + 'K';
-  }
-  return count.toString();
-}
 
 function ArticlesSkeleton() {
   return (
