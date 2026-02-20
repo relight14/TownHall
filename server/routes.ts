@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { ledewire } from "./ledewire";
 import { setupGoogleAuth, isAuthenticated, optionalAuth, getSession } from "./googleAuth";
 import { insertUserSchema, insertSeriesSchema, insertEpisodeSchema, insertArticleSchema } from "@shared/schema";
+import { extractServerPreview } from "@shared/preview";
 import { createSSORoutes, setSSoCookie } from "./sso-module/sso-routes";
 import type { SSOConfig } from "./sso-module/sso-types";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -762,14 +763,6 @@ export async function registerRoutes(
   });
   
   // ===== Article Routes =====
-  
-  // Helper function to extract preview paragraphs on the server side
-  function extractServerPreview(html: string, paragraphCount: number = 3): string {
-    // Simple regex-based extraction of first N <p> tags
-    const paragraphRegex = /<p[^>]*>[\s\S]*?<\/p>/gi;
-    const paragraphs = html.match(paragraphRegex) || [];
-    return paragraphs.slice(0, paragraphCount).join('');
-  }
   
   // Helper function to sanitize article content for public listing endpoints
   // Paid articles only get preview content in list views (full content requires individual fetch with auth)
