@@ -444,7 +444,7 @@ export default function ArticlePage() {
   const { user, ledewireToken, walletBalance, refreshWalletBalance, incrementArticleView } = useVideoStore();
 
   // Use TanStack Query for article fetching
-  const { data: article, isLoading: loading, error: queryError } = useArticle(articleId, ledewireToken);
+  const { data: article, isLoading: loading, error: queryError, refetch: refetchArticleData } = useArticle(articleId, ledewireToken);
   const error = queryError?.message || null;
 
   // Use TanStack Query for purchase verification
@@ -459,6 +459,7 @@ export default function ArticlePage() {
   const refetchArticle = () => {
     if (articleId) {
       queryClient.invalidateQueries({ queryKey: articleKeys.api.detail(articleId) });
+      refetchArticleData();
     }
   };
 
