@@ -1,9 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
+import crypto from "crypto";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { createOgMiddleware } from "./og-middleware";
+import { captureServerError, shutdownErrorTracking } from "./errorTracking";
 
 const app = express();
 
@@ -13,6 +15,8 @@ const httpServer = createServer(app);
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
+    requestId: string;
+    startTime: number;
   }
 }
 
@@ -26,6 +30,19 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+// Request ID middleware — assigns a unique ID and start time to every request
+app.use((req, _res, next) => {
+  req.requestId = crypto.randomUUID();
+  req.startTime = Date.now();
+  next();
+});
+
+// Set X-Request-Id header on all responses
+app.use((_req, res, next) => {
+  res.setHeader('X-Request-Id', _req.requestId);
+  next();
+});
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -79,8 +96,15 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    captureServerError(err, {
+      endpoint: _req.path,
+      method: _req.method,
+      statusCode: status,
+      requestId: _req.requestId,
+      duration: _req.startTime ? Date.now() - _req.startTime : undefined,
+    });
+
+    res.status(status).json({ message, requestId: _req.requestId });
   });
 
   // importantly only setup vite in development and after
@@ -118,4 +142,10 @@ app.use((req, res, next) => {
       log(`serving on ${host}:${port}`);
     },
   );
+
+  // Graceful shutdown — flush PostHog events
+  process.on('SIGTERM', async () => {
+    await shutdownErrorTracking();
+    process.exit(0);
+  });
 })();
