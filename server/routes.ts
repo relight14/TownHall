@@ -9,9 +9,31 @@ import { createSSORoutes, setSSoCookie } from "./sso-module/sso-routes";
 import type { SSOConfig } from "./sso-module/sso-types";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { requireAdminAuth, setAdminToken, clearAdminToken, isAdminTokenValid } from "./adminAuth";
+import { captureServerError } from "./errorTracking";
 import crypto from "crypto";
 
 const generateAdminToken = () => crypto.randomBytes(32).toString('hex');
+
+/**
+ * Captures a route-level error with context extracted from the request.
+ * Extracts entity IDs from params/body and user ID from session.
+ */
+function captureRouteError(error: unknown, req: Request, statusCode: number) {
+  const reqAny = req as any;
+  captureServerError(error, {
+    endpoint: req.path,
+    method: req.method,
+    statusCode,
+    requestId: req.requestId,
+    userId: reqAny.user?.id || reqAny.session?.userId,
+    entityIds: {
+      articleId: req.params?.id && req.path.includes('article') ? req.params.id : req.body?.articleId,
+      episodeId: req.params?.id && req.path.includes('episode') ? req.params.id : req.body?.episodeId || req.params?.episodeId,
+      seriesId: req.params?.id && req.path.includes('series') ? req.params.id : req.body?.seriesId,
+    },
+    duration: req.startTime ? Date.now() - req.startTime : undefined,
+  });
+}
 
 function sanitizeThumbnailUrl(thumbnail: string | null | undefined): string | null {
   if (!thumbnail) return null;
@@ -147,8 +169,8 @@ export async function registerRoutes(
         ledewireToken: user.ledewireAccessToken,
       });
     } catch (error) {
-      console.error("Error fetching Google OAuth user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ message: "Failed to fetch user", requestId: req.requestId });
     }
   });
   
@@ -205,11 +227,11 @@ export async function registerRoutes(
         res.status(401).json({ error: 'Invalid credentials' });
       }
     } catch (error: any) {
-      console.error('Admin login error:', error.message);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
-  
+
   app.post("/api/admin/change-password", requireAdminAuth, async (req, res) => {
     try {
       const { currentPassword, newPassword } = req.body;
@@ -242,11 +264,11 @@ export async function registerRoutes(
       await storage.createOrUpdateAdmin(adminEmail, newPassword);
       res.json({ success: true, message: 'Password updated successfully' });
     } catch (error: any) {
-      console.error('Password change error:', error.message);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
-  
+
   // ===== Site Settings Routes =====
   
   app.get("/api/site-settings", async (req, res) => {
@@ -254,8 +276,8 @@ export async function registerRoutes(
       const settings = await storage.getSiteSettings();
       res.json(settings);
     } catch (error: any) {
-      console.error('Error fetching site settings:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -265,8 +287,8 @@ export async function registerRoutes(
       const settings = await storage.updateSiteSettings({ heroHeading, heroSubheading });
       res.json(settings);
     } catch (error: any) {
-      console.error('Error updating site settings:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -281,8 +303,8 @@ export async function registerRoutes(
         displayOrder: f.displayOrder,
       })));
     } catch (error: any) {
-      console.error('Error fetching featured episodes:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -300,8 +322,8 @@ export async function registerRoutes(
         displayOrder: f.displayOrder,
       })));
     } catch (error: any) {
-      console.error('Error updating featured episodes:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -310,8 +332,8 @@ export async function registerRoutes(
       const articles = await storage.getAllArticles();
       res.json(articles);
     } catch (error: any) {
-      console.error('Error fetching admin articles:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -351,8 +373,8 @@ export async function registerRoutes(
         ledewireToken: ledewireAuth.access_token,
       });
     } catch (error: any) {
-      console.error('Signup error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -404,8 +426,8 @@ export async function registerRoutes(
         ledewireToken: ledewireAuth.access_token,
       });
     } catch (error: any) {
-      console.error('Login error:', error);
-      res.status(401).json({ error: error.message });
+      captureRouteError(error, req, 401);
+      res.status(401).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -421,7 +443,7 @@ export async function registerRoutes(
       const result = await ledewire.requestPasswordReset(email);
       res.json(result);
     } catch (error: any) {
-      console.error('Password reset request error:', error);
+      captureRouteError(error, req, 200);
       // Always return success to prevent email enumeration
       res.json({ message: 'If an account with this email exists, a reset code has been sent.' });
     }
@@ -443,8 +465,8 @@ export async function registerRoutes(
       const result = await ledewire.resetPassword(email, reset_code, password);
       res.json(result);
     } catch (error: any) {
-      console.error('Password reset error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -462,8 +484,8 @@ export async function registerRoutes(
       
       res.json(balance);
     } catch (error: any) {
-      console.error('Get balance error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -493,8 +515,8 @@ export async function registerRoutes(
       
       res.json(enrichedPurchases);
     } catch (error: any) {
-      console.error('Get purchases error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -550,12 +572,8 @@ export async function registerRoutes(
       
       res.json(session);
     } catch (error: any) {
-      console.error('[PAYMENT-SESSION] FAILED:', {
-        error: error.message,
-        stack: error.stack,
-        amount_cents: req.body.amount_cents,
-      });
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -587,11 +605,11 @@ export async function registerRoutes(
       
       res.json(seriesWithEpisodes);
     } catch (error: any) {
-      console.error('Get series error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
-  
+
   app.get("/api/series/:id", async (req, res) => {
     try {
       const series = await storage.getSeries(req.params.id);
@@ -615,11 +633,11 @@ export async function registerRoutes(
         })),
       });
     } catch (error: any) {
-      console.error('Get series error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
-  
+
   app.post("/api/series", requireAdminAuth, async (req, res) => {
     try {
       const validated = insertSeriesSchema.parse(req.body);
@@ -627,8 +645,8 @@ export async function registerRoutes(
       
       res.json(series);
     } catch (error: any) {
-      console.error('Create series error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -644,8 +662,8 @@ export async function registerRoutes(
       
       res.json(series);
     } catch (error: any) {
-      console.error('Update series error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -690,8 +708,8 @@ export async function registerRoutes(
         price: episode.price / 100,
       });
     } catch (error: any) {
-      console.error('Create episode error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -735,8 +753,14 @@ export async function registerRoutes(
             await ledewire.updateContent(existingEpisode.ledewireContentId, ledewireUpdates);
             console.log(`[EPISODE-UPDATE] Synced changes to Ledewire for episode ${id}`);
           } catch (ledewireError: any) {
-            console.error(`[EPISODE-UPDATE] Failed to sync with Ledewire:`, ledewireError.message);
-            // Don't fail the request, just log the error
+            captureServerError(ledewireError, {
+              endpoint: req.path,
+              method: req.method,
+              statusCode: 200,
+              requestId: req.requestId,
+              entityIds: { episodeId: id },
+              metadata: { ledewireSync: true },
+            });
           }
         }
       }
@@ -746,8 +770,8 @@ export async function registerRoutes(
         price: episode.price / 100,
       });
     } catch (error: any) {
-      console.error('Update episode error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -757,8 +781,8 @@ export async function registerRoutes(
       await storage.deleteEpisode(id);
       res.json({ success: true });
     } catch (error: any) {
-      console.error('Delete episode error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -786,8 +810,8 @@ export async function registerRoutes(
       const articles = await storage.getAllArticles();
       res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
-      console.error('Get articles error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -796,8 +820,8 @@ export async function registerRoutes(
       const articles = await storage.getFeaturedArticles();
       res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
-      console.error('Get featured articles error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -807,8 +831,8 @@ export async function registerRoutes(
       const articles = await storage.getLatestArticles(limit);
       res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
-      console.error('Get latest articles error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -818,8 +842,8 @@ export async function registerRoutes(
       const articles = await storage.getMostReadArticles(limit);
       res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
-      console.error('Get most read articles error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -829,8 +853,8 @@ export async function registerRoutes(
       const articles = await storage.getArticlesByCategory(category);
       res.json(sanitizeArticlesForPublicListing(articles));
     } catch (error: any) {
-      console.error('Get articles by category error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -840,8 +864,8 @@ export async function registerRoutes(
       await storage.incrementArticleViewCount(id);
       res.json({ success: true });
     } catch (error: any) {
-      console.error('Increment view count error:', error);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -885,8 +909,8 @@ export async function registerRoutes(
         isPreview: true,
       });
     } catch (error: any) {
-      console.error('[ARTICLE-VIEW] ERROR:', error.message);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -955,22 +979,20 @@ export async function registerRoutes(
         console.log(`[ARTICLE-CREATE] Article creation complete: id=${article.id}`);
         res.json(updatedArticle);
       } catch (ledewireError: any) {
-        console.error('[ARTICLE-CREATE] Ledewire registration FAILED:', {
-          error: ledewireError.message,
-          stack: ledewireError.stack,
-          articleId: article.id,
-          articleTitle: article.title,
+        captureServerError(ledewireError, {
+          endpoint: req.path,
+          method: req.method,
+          statusCode: 200,
+          requestId: req.requestId,
+          entityIds: { articleId: article.id },
+          metadata: { ledewireSync: true, articleTitle: article.title },
         });
         // Still return the article even if Ledewire registration failed
         res.json(article);
       }
     } catch (error: any) {
-      console.error('[ARTICLE-CREATE] Article creation FAILED:', {
-        error: error.message,
-        stack: error.stack,
-        requestBody: { title: req.body.title, category: req.body.category },
-      });
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -1007,15 +1029,19 @@ export async function registerRoutes(
             title: currentTitle,
             priceCents: currentPrice,
           });
-          console.log(`[ARTICLE-UPDATE] Synced to Ledewire: article ${id}, price=${currentPrice} cents, title=${currentTitle}`);
         } catch (ledewireError: any) {
-          console.error(`[ARTICLE-UPDATE] Failed to sync with Ledewire:`, ledewireError.message);
+          captureServerError(ledewireError, {
+            endpoint: req.path,
+            method: req.method,
+            statusCode: 200,
+            requestId: req.requestId,
+            entityIds: { articleId: id },
+            metadata: { ledewireSync: true },
+          });
         }
       } else if (currentPrice > 0) {
         // Article has a price but no Ledewire ID - register it now
         try {
-          console.log(`[ARTICLE-UPDATE] Registering article ${id} with Ledewire (price=${currentPrice} cents)`);
-          
           // Construct the article source URL
           const baseUrl = process.env.REPLIT_DEV_DOMAIN 
             ? `https://${process.env.REPLIT_DEV_DOMAIN}`
@@ -1042,20 +1068,26 @@ export async function registerRoutes(
           
           // Update article with Ledewire content ID
           await storage.updateArticleLedewireId(article.id, content.id);
-          console.log(`[ARTICLE-UPDATE] Registered with Ledewire: article ${id}, contentId=${content.id}`);
-          
+
           // Return the updated article with the new ledewireContentId
           const updatedArticle = await storage.getArticle(article.id);
           return res.json(updatedArticle);
         } catch (ledewireError: any) {
-          console.error(`[ARTICLE-UPDATE] Failed to register with Ledewire:`, ledewireError.message);
+          captureServerError(ledewireError, {
+            endpoint: req.path,
+            method: req.method,
+            statusCode: 200,
+            requestId: req.requestId,
+            entityIds: { articleId: id },
+            metadata: { ledewireSync: true },
+          });
         }
       }
       
       res.json(article);
     } catch (error: any) {
-      console.error('Update article error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
 
@@ -1065,8 +1097,8 @@ export async function registerRoutes(
       await storage.deleteArticle(id);
       res.json({ success: true });
     } catch (error: any) {
-      console.error('Delete article error:', error);
-      res.status(400).json({ error: error.message });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -1114,8 +1146,8 @@ export async function registerRoutes(
       
       res.json({ ...purchase, unlocked: true });
     } catch (error: any) {
-      console.error('Article purchase failed:', error.message);
-      res.status(400).json({ error: error.message, unlocked: false });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, unlocked: false, requestId: req.requestId });
     }
   });
 
@@ -1139,8 +1171,8 @@ export async function registerRoutes(
       const verification = await ledewire.verifyPurchase(token, article.ledewireContentId);
       return res.status(200).json(verification);
     } catch (error: any) {
-      console.error('Purchase verification failed:', error.message);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
   
@@ -1199,12 +1231,8 @@ export async function registerRoutes(
       console.log(`[PURCHASE FLOW] Purchase verified successfully, unlocking content`);
       res.json({ ...purchase, unlocked: true });
     } catch (error: any) {
-      console.error(`[PURCHASE FLOW] FAILED for episode ${episodeId}:`, {
-        error: error.message,
-        stack: error.stack?.split('\n').slice(0, 3).join('\n'),
-        episodeId,
-      });
-      res.status(400).json({ error: error.message, unlocked: false });
+      captureRouteError(error, req, 400);
+      res.status(400).json({ error: error.message, unlocked: false, requestId: req.requestId });
     }
   });
   
@@ -1237,8 +1265,8 @@ export async function registerRoutes(
       
       res.json(verification);
     } catch (error: any) {
-      console.error(`[PURCHASE VERIFY] Error for episode ${episodeId}:`, error.message);
-      res.status(500).json({ error: error.message });
+      captureRouteError(error, req, 500);
+      res.status(500).json({ error: error.message, requestId: req.requestId });
     }
   });
 
