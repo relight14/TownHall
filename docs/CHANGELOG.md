@@ -2,6 +2,7 @@
 
 | Date | Feature | Type | Summary |
 | --- | --- | --- | --- |
+| 2026-03-02 | [Server Error Tracking](features/posthog/server-error-tracking.md), [Error Tracking](features/posthog/error-tracking.md) | ✅ Feature | Full backend + frontend error traceability with PostHog |
 | 2026-02-19 | [Event Tracking](features/posthog/event-tracking.md) | ✅ Feature | User behavior analytics (auth, content engagement) |
 | 2026-02-19 | [Error Tracking](features/posthog/error-tracking.md) | ✅ Feature | Error capture with project tagging and global handlers |
 | 2026-02-19 | [Series Refactoring](features/tanstack-query/series-refactoring.md) | 🔄 Refactor | Series domain migrated from context to TanStack Query |
