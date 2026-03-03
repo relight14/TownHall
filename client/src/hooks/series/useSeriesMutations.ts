@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Series, Episode } from './useSeries';
 import { seriesKeys } from './queryKeys';
+import { captureError } from '../../lib/errorTracking';
+import { useErrorContext } from '../useErrorContext';
 
 /**
  * Mutation hook to create a new series
@@ -8,6 +10,7 @@ import { seriesKeys } from './queryKeys';
  */
 export function useCreateSeries(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
 
   return useMutation({
     mutationFn: async (series: Omit<Series, 'id' | 'episodes'>) => {
@@ -36,6 +39,9 @@ export function useCreateSeries(adminToken?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     },
+    onError: (error: Error) => {
+      captureError(error, { component: 'useCreateSeries', action: 'create_series', ...errorCtx });
+    },
   });
 }
 
@@ -45,6 +51,7 @@ export function useCreateSeries(adminToken?: string | null) {
  */
 export function useUpdateSeries(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Omit<Partial<Series>, 'id' | 'episodes'>) => {
@@ -73,6 +80,9 @@ export function useUpdateSeries(adminToken?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     },
+    onError: (error: Error, variables) => {
+      captureError(error, { component: 'useUpdateSeries', action: 'update_series', entityIds: { seriesId: variables.id }, ...errorCtx });
+    },
   });
 }
 
@@ -82,6 +92,7 @@ export function useUpdateSeries(adminToken?: string | null) {
  */
 export function useCreateEpisode(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
 
   return useMutation({
     mutationFn: async ({ seriesId, ...episode }: { seriesId: string } & Omit<Episode, 'id'>) => {
@@ -110,6 +121,9 @@ export function useCreateEpisode(adminToken?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     },
+    onError: (error: Error, variables) => {
+      captureError(error, { component: 'useCreateEpisode', action: 'create_episode', entityIds: { seriesId: variables.seriesId }, ...errorCtx });
+    },
   });
 }
 
@@ -119,6 +133,7 @@ export function useCreateEpisode(adminToken?: string | null) {
  */
 export function useUpdateEpisode(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Omit<Partial<Episode>, 'id'>) => {
@@ -147,6 +162,9 @@ export function useUpdateEpisode(adminToken?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
     },
+    onError: (error: Error, variables) => {
+      captureError(error, { component: 'useUpdateEpisode', action: 'update_episode', entityIds: { episodeId: variables.id }, ...errorCtx });
+    },
   });
 }
 
@@ -156,6 +174,7 @@ export function useUpdateEpisode(adminToken?: string | null) {
  */
 export function useDeleteEpisode(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
 
   return useMutation({
     mutationFn: async (episodeId: string) => {
@@ -178,6 +197,9 @@ export function useDeleteEpisode(adminToken?: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: seriesKeys.api.all });
+    },
+    onError: (error: Error, episodeId) => {
+      captureError(error, { component: 'useDeleteEpisode', action: 'delete_episode', entityIds: { episodeId }, ...errorCtx });
     },
   });
 }

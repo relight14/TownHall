@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { siteSettingsKeys } from './queryKeys';
 import type { SiteSettings } from './useSiteSettings';
+import { captureError } from '../../lib/errorTracking';
+import { useErrorContext } from '../useErrorContext';
 
 // Helper to make API requests with admin token
 async function apiAdminRequest(method: string, url: string, data: any, adminToken?: string | null) {
@@ -29,6 +31,7 @@ async function apiAdminRequest(method: string, url: string, data: any, adminToke
  */
 export function useUpdateSiteSettings(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
   return useMutation({
     mutationFn: (settings: Partial<SiteSettings>) =>
       apiAdminRequest('PUT', '/api/admin/site-settings', settings, adminToken),
@@ -38,6 +41,9 @@ export function useUpdateSiteSettings(adminToken?: string | null) {
         heroHeading: data.heroHeading,
         heroSubheading: data.heroSubheading,
       });
+    },
+    onError: (error: Error) => {
+      captureError(error, { component: 'useUpdateSiteSettings', action: 'update_settings', ...errorCtx });
     },
   });
 }

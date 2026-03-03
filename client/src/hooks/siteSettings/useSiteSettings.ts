@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { siteSettingsKeys } from './queryKeys';
+import { captureError, getRequestId } from '../../lib/errorTracking';
+import { useErrorContext } from '../useErrorContext';
 
 export interface SiteSettings {
   heroHeading: string;
@@ -15,12 +17,15 @@ const defaultSiteSettings: SiteSettings = {
  * Query hook to fetch site settings
  */
 export function useSiteSettings() {
+  const errorCtx = useErrorContext();
   return useQuery<SiteSettings>({
     queryKey: siteSettingsKeys.api.all,
     queryFn: async () => {
       const res = await fetch('/api/site-settings');
       if (!res.ok) {
-        // Return defaults if fetch fails
+        // Capture the error but return defaults (non-critical)
+        const error = new Error('Failed to fetch site settings');
+        captureError(error, { component: 'useSiteSettings', action: 'fetch_settings', requestId: getRequestId(res), ...errorCtx });
         return defaultSiteSettings;
       }
       const data = await res.json();
