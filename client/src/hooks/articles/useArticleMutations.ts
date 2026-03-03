@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Article } from './useArticles';
 import { articleKeys } from './queryKeys';
+import { captureError } from '../../lib/errorTracking';
+import { useErrorContext } from '../useErrorContext';
 
 // Helper to make API requests with admin token
 async function apiAdminRequest(method: string, url: string, data?: any, adminToken?: string | null) {
@@ -39,10 +41,14 @@ function invalidateArticleQueries(queryClient: ReturnType<typeof useQueryClient>
  */
 export function useCreateArticle(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
   return useMutation({
     mutationFn: (article: Omit<Article, 'id' | 'publishedAt'>) =>
       apiAdminRequest('POST', '/api/articles', article, adminToken),
     onSuccess: () => invalidateArticleQueries(queryClient),
+    onError: (error: Error) => {
+      captureError(error, { component: 'useCreateArticle', action: 'create_article', ...errorCtx });
+    },
   });
 }
 
@@ -51,10 +57,14 @@ export function useCreateArticle(adminToken?: string | null) {
  */
 export function useUpdateArticle(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
   return useMutation({
     mutationFn: ({ id, ...updates }: { id: string } & Partial<Omit<Article, 'id'>>) =>
       apiAdminRequest('PUT', `/api/articles/${id}`, updates, adminToken),
     onSuccess: () => invalidateArticleQueries(queryClient),
+    onError: (error: Error, variables) => {
+      captureError(error, { component: 'useUpdateArticle', action: 'update_article', entityIds: { articleId: variables.id }, ...errorCtx });
+    },
   });
 }
 
@@ -63,10 +73,14 @@ export function useUpdateArticle(adminToken?: string | null) {
  */
 export function useDeleteArticle(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
   return useMutation({
     mutationFn: (articleId: string) =>
       apiAdminRequest('DELETE', `/api/articles/${articleId}`, undefined, adminToken),
     onSuccess: () => invalidateArticleQueries(queryClient),
+    onError: (error: Error, articleId) => {
+      captureError(error, { component: 'useDeleteArticle', action: 'delete_article', entityIds: { articleId }, ...errorCtx });
+    },
   });
 }
 
@@ -74,8 +88,12 @@ export function useDeleteArticle(adminToken?: string | null) {
  * Mutation hook to increment article view count
  */
 export function useIncrementArticleView() {
+  const errorCtx = useErrorContext();
   return useMutation({
     mutationFn: (articleId: string) =>
       fetch(`/api/articles/${articleId}/view`, { method: 'POST' }),
+    onError: (error: Error, articleId) => {
+      captureError(error, { component: 'useIncrementArticleView', action: 'increment_view', entityIds: { articleId }, ...errorCtx });
+    },
   });
 }

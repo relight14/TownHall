@@ -19,6 +19,12 @@ vi.mock('@/lib/analytics', () => ({
 vi.mock('@/lib/errorTracking', () => ({
   captureError: vi.fn((error: Error) => error),
   createErrorCapturer: vi.fn(() => vi.fn()),
+  getRequestId: vi.fn(() => undefined),
+}));
+
+// Mock useErrorContext hook
+vi.mock('@/hooks/useErrorContext', () => ({
+  useErrorContext: vi.fn(() => ({ user: { id: '', email: '', loggedIn: false } })),
 }));
 
 // Mock config

@@ -4,6 +4,9 @@ import { PROJECT_NAME } from './config';
 interface ErrorContext {
   component: string;
   action?: string;
+  user?: { id: string; email: string; loggedIn: boolean } | null;
+  entityIds?: { articleId?: string; episodeId?: string; seriesId?: string };
+  requestId?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -34,6 +37,14 @@ function getPageFile(pathname: string): string | null {
 }
 
 /**
+ * Extracts the X-Request-Id header from a failed fetch Response.
+ * Returns undefined if the header is not present.
+ */
+export function getRequestId(response: Response): string | undefined {
+  return response.headers.get('X-Request-Id') ?? undefined;
+}
+
+/**
  * Captures an exception to PostHog with rich context
  *
  * Error title format: [project] Component @ /path (PageFile.tsx): Original error message
@@ -59,6 +70,16 @@ export function captureError(error: Error, context: ErrorContext) {
     action: context.action,
     original_message: error.message,
     url: window.location.href,
+    // User context
+    user_id: context.user?.id,
+    user_email: context.user?.email,
+    user_logged_in: context.user?.loggedIn,
+    // Entity context
+    article_id: context.entityIds?.articleId,
+    episode_id: context.entityIds?.episodeId,
+    series_id: context.entityIds?.seriesId,
+    // Backend correlation
+    request_id: context.requestId,
     ...context.metadata,
   });
 
@@ -76,10 +97,19 @@ export function captureError(error: Error, context: ErrorContext) {
  * captureComponentError(error, { action: 'fetch_user' });
  */
 export function createErrorCapturer(component: string) {
-  return (error: Error, options?: { action?: string; metadata?: Record<string, unknown> }) => {
+  return (error: Error, options?: {
+    action?: string;
+    user?: ErrorContext['user'];
+    entityIds?: ErrorContext['entityIds'];
+    requestId?: string;
+    metadata?: Record<string, unknown>;
+  }) => {
     return captureError(error, {
       component,
       action: options?.action,
+      user: options?.user,
+      entityIds: options?.entityIds,
+      requestId: options?.requestId,
       metadata: options?.metadata,
     });
   };

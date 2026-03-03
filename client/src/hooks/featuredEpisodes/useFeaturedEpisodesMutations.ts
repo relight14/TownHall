@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { featuredEpisodesKeys } from './queryKeys';
+import { captureError } from '../../lib/errorTracking';
+import { useErrorContext } from '../useErrorContext';
 
 // Helper to make API requests with admin token
 async function apiAdminRequest(method: string, url: string, data: any, adminToken?: string | null) {
@@ -28,11 +30,15 @@ async function apiAdminRequest(method: string, url: string, data: any, adminToke
  */
 export function useSetFeaturedEpisodes(adminToken?: string | null) {
   const queryClient = useQueryClient();
+  const errorCtx = useErrorContext();
   return useMutation({
     mutationFn: (episodeIds: string[]) =>
       apiAdminRequest('PUT', '/api/admin/featured-episodes', { episodeIds }, adminToken),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: featuredEpisodesKeys.api.all });
+    },
+    onError: (error: Error) => {
+      captureError(error, { component: 'useSetFeaturedEpisodes', action: 'set_featured', ...errorCtx });
     },
   });
 }

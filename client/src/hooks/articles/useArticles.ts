@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { articleKeys } from './queryKeys';
-import { captureError } from '../../lib/errorTracking';
+import { captureError, getRequestId } from '../../lib/errorTracking';
+import { useErrorContext } from '../useErrorContext';
 
 export interface Article {
   id: string;
@@ -24,13 +25,14 @@ export interface Article {
  * Query hook to fetch all articles
  */
 export function useArticles() {
+  const errorCtx = useErrorContext();
   return useQuery<Article[]>({
     queryKey: articleKeys.api.all,
     queryFn: async () => {
       const res = await fetch('/api/articles');
       if (!res.ok) {
         const error = new Error('Failed to fetch articles');
-        captureError(error, { component: 'useArticles', action: 'fetch_all' });
+        captureError(error, { component: 'useArticles', action: 'fetch_all', requestId: getRequestId(res), ...errorCtx });
         throw error;
       }
 
@@ -44,6 +46,7 @@ export function useArticles() {
  * Passes auth token to get full content if user owns the article
  */
 export function useArticle(articleId: string | undefined, ledewireToken?: string | null) {
+  const errorCtx = useErrorContext();
   return useQuery<Article>({
     queryKey: [articleKeys.api.detail(articleId || ''), ledewireToken],
     queryFn: async () => {
@@ -52,7 +55,11 @@ export function useArticle(articleId: string | undefined, ledewireToken?: string
         headers['Authorization'] = `Bearer ${ledewireToken}`;
       }
       const res = await fetch(`/api/articles/${articleId}`, { headers });
-      if (!res.ok) throw new Error('Article not found');
+      if (!res.ok) {
+        const error = new Error('Article not found');
+        captureError(error, { component: 'useArticle', action: 'fetch_detail', entityIds: { articleId }, requestId: getRequestId(res), ...errorCtx });
+        throw error;
+      }
       return res.json();
     },
     enabled: !!articleId,
@@ -63,8 +70,18 @@ export function useArticle(articleId: string | undefined, ledewireToken?: string
  * Query hook to fetch featured articles
  */
 export function useFeaturedArticles() {
+  const errorCtx = useErrorContext();
   return useQuery<Article[]>({
     queryKey: articleKeys.api.featured,
+    queryFn: async () => {
+      const res = await fetch('/api/articles/featured');
+      if (!res.ok) {
+        const error = new Error('Failed to fetch featured articles');
+        captureError(error, { component: 'useFeaturedArticles', action: 'fetch_featured', requestId: getRequestId(res), ...errorCtx });
+        throw error;
+      }
+      return res.json();
+    },
   });
 }
 
@@ -72,11 +89,16 @@ export function useFeaturedArticles() {
  * Query hook to fetch latest articles
  */
 export function useLatestArticles(limit = 5) {
+  const errorCtx = useErrorContext();
   return useQuery<Article[]>({
     queryKey: [...articleKeys.api.latest, { limit }],
     queryFn: async () => {
       const res = await fetch(`/api/articles/latest?limit=${limit}`);
-      if (!res.ok) throw new Error('Failed to fetch latest articles');
+      if (!res.ok) {
+        const error = new Error('Failed to fetch latest articles');
+        captureError(error, { component: 'useLatestArticles', action: 'fetch_latest', requestId: getRequestId(res), ...errorCtx });
+        throw error;
+      }
       return res.json();
     },
   });
@@ -86,11 +108,16 @@ export function useLatestArticles(limit = 5) {
  * Query hook to fetch most read articles
  */
 export function useMostReadArticles(limit = 5) {
+  const errorCtx = useErrorContext();
   return useQuery<Article[]>({
     queryKey: [...articleKeys.api.mostRead, { limit }],
     queryFn: async () => {
       const res = await fetch(`/api/articles/most-read?limit=${limit}`);
-      if (!res.ok) throw new Error('Failed to fetch most read articles');
+      if (!res.ok) {
+        const error = new Error('Failed to fetch most read articles');
+        captureError(error, { component: 'useMostReadArticles', action: 'fetch_most_read', requestId: getRequestId(res), ...errorCtx });
+        throw error;
+      }
       return res.json();
     },
   });
@@ -126,6 +153,7 @@ export function useArticlePurchaseVerification(
   ledewireContentId: string | null | undefined,
   ledewireToken: string | null | undefined
 ) {
+  const errorCtx = useErrorContext();
   return useQuery<PurchaseVerificationResponse>({
     queryKey: [...articleKeys.api.purchaseVerify(articleId || ''), ledewireToken],
     queryFn: async () => {
@@ -139,7 +167,9 @@ export function useArticlePurchaseVerification(
         captureError(error, {
           component: 'useArticlePurchaseVerification',
           action: 'verify_purchase',
-          metadata: { articleId },
+          entityIds: { articleId },
+          requestId: getRequestId(res),
+          ...errorCtx,
         });
         throw error;
       }
