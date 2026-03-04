@@ -3,8 +3,8 @@ import { storage } from "./storage";
 import fs from "fs";
 import path from "path";
 
-const SITE_NAME = "So What";
-const DEFAULT_DESCRIPTION = "Premium political analysis and commentary. Independent journalism that cuts through the noise.";
+const SITE_NAME = "The Commons";
+const DEFAULT_DESCRIPTION = "Reader-funded local news and political coverage from on-the-ground reporters across all 50 states.";
 
 function escapeHtml(text: string): string {
   return text

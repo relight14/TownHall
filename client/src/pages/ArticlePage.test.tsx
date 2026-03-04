@@ -221,7 +221,7 @@ describe('ArticlePage', () => {
       renderArticlePage('free-1');
 
       await waitFor(() => {
-        expect(screen.getByText('By Chris Cillizza')).toBeInTheDocument();
+        expect(screen.getByText('The Commons')).toBeInTheDocument();
       });
     });
   });

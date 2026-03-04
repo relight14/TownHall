@@ -674,7 +674,7 @@ export default function ArticlePage() {
             </p>
 
             <div className="flex items-center gap-2 mb-6 pb-6 border-b border-gray-200">
-              <span className="text-gray-700 font-medium">By Chris Cillizza</span>
+              <span className="text-gray-700 font-medium">The Commons</span>
             </div>
 
             <p className="text-base text-gray-700 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">

@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { VideoStoreProvider, useVideoStore } from './context/VideoStoreContext';
 import HomePage from './pages/HomePage';
+import StatePage from './pages/StatePage';
+import ContributorPage from './pages/ContributorPage';
 import SeriesPage from './pages/SeriesPage';
 import ArticlePage from './pages/ArticlePage';
 import CategoryPage from './pages/CategoryPage';
@@ -15,7 +17,6 @@ import CookieConsent from './components/CookieConsent';
 import PasswordResetModal from './components/PasswordResetModal';
 import { Wallet, LogIn, LogOut, User } from 'lucide-react';
 import { useState, useEffect, createContext, useContext } from 'react';
-import indigoSoulLogo from '@assets/indigosoul_1764613870278.avif';
 
 interface GoogleOAuthContextType {
   isAvailable: boolean;
@@ -40,6 +41,8 @@ function AppContent() {
     <div className="min-h-screen bg-white font-sans">
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/state/:stateCode" element={<StatePage />} />
+        <Route path="/contributor/:contributorId" element={<ContributorPage />} />
         <Route path="/series/:seriesId" element={<SeriesPage />} />
         <Route path="/article/:articleId" element={<ArticlePage />} />
         <Route path="/category/:category" element={<CategoryPage />} />

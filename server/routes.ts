@@ -959,7 +959,7 @@ export async function registerRoutes(
             metadata: {
               type: 'article',
               articleId: article.id,
-              author: 'Chris Cillizza',
+              author: 'The Commons',
               category: article.category,
               publication_date: article.publishedAt?.toISOString(),
               reading_time: `${article.readTimeMinutes || 5} min`,
@@ -1057,7 +1057,7 @@ export async function registerRoutes(
               metadata: {
                 type: 'article',
                 articleId: article.id,
-                author: 'Chris Cillizza',
+                author: 'The Commons',
                 category: article.category,
                 publication_date: article.publishedAt?.toISOString(),
                 reading_time: `${article.readTimeMinutes || 5} min`,

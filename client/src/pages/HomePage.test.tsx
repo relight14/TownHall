@@ -139,7 +139,7 @@ describe('HomePage', () => {
     setupHandlers();
     renderWithProviders(<HomePage />);
 
-    expect(screen.getByTestId('logo')).toHaveTextContent('So What');
+    expect(screen.getByTestId('logo')).toHaveTextContent('The Commons');
   });
 
   it('clicking category tab filters content', async () => {

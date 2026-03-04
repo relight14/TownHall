@@ -660,7 +660,7 @@ export default function AdminPage() {
                         <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full border border-amber-500/30">Featured</span>
                       )}
                     </div>
-                    <p className="text-slate-400 text-sm mb-2">By Chris Cillizza{article.subheader ? ` — ${article.subheader}` : ''}</p>
+                    <p className="text-slate-400 text-sm mb-2">The Commons{article.subheader ? ` — ${article.subheader}` : ''}</p>
                     <p className="text-slate-500 text-xs">
                       {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Not published'}
                     </p>

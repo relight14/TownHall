@@ -71,9 +71,34 @@ export const featuredEpisodes = pgTable("featured_episodes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Article categories enum
+// US States
+export const US_STATES = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC',
+] as const;
+export type USState = typeof US_STATES[number];
+
+// Topics (expandable — starting with politics)
+export const topics = ['politics'] as const;
+export type Topic = typeof topics[number];
+
+// Legacy article categories (kept for backwards compat during migration)
 export const articleCategories = ['elections', 'policy', 'candidate-rankings', 'speech-analysis'] as const;
 export type ArticleCategory = typeof articleCategories[number];
+
+// Contributors table — writers/reporters
+export const contributors = pgTable("contributors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  bio: text("bio"),
+  state: text("state").notNull(), // primary state, 2-letter code
+  profileImage: text("profile_image"),
+  userId: varchar("user_id").references(() => users.id), // optional link to user account
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const articles = pgTable("articles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -82,7 +107,10 @@ export const articles = pgTable("articles", {
   content: text("content").notNull(), // HTML content
   subheader: text("subheader").notNull(), // Article subtitle/subheader
   thumbnail: text("thumbnail"),
-  category: text("category").notNull().default('elections'), // elections, policy, candidate-rankings, speech-analysis
+  category: text("category").notNull().default('elections'), // legacy categories
+  topic: text("topic").notNull().default('politics'), // new topic system
+  state: text("state"), // 2-letter state code (e.g. "GA", "TX")
+  contributorId: varchar("contributor_id").references(() => contributors.id),
   price: integer("price_cents").notNull().default(99), // price in cents
   ledewireContentId: text("ledewire_content_id"), // ID from Ledewire for this article
   viewCount: integer("view_count").default(0).notNull(),
@@ -137,6 +165,11 @@ export const insertArticleSchema = createInsertSchema(articles).omit({
   ledewireContentId: true,
 });
 
+export const insertContributorSchema = createInsertSchema(contributors).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -151,3 +184,5 @@ export type FeaturedEpisode = typeof featuredEpisodes.$inferSelect;
 export type InsertFeaturedEpisode = z.infer<typeof insertFeaturedEpisodeSchema>;
 export type Article = typeof articles.$inferSelect;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
+export type Contributor = typeof contributors.$inferSelect;
+export type InsertContributor = z.infer<typeof insertContributorSchema>;

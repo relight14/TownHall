@@ -7,7 +7,7 @@ test.describe('Homepage', () => {
 
   test('page loads with logo and category navigation', async ({ page }) => {
     // Logo
-    await expect(page.getByTestId('logo')).toHaveText('So What');
+    await expect(page.getByTestId('logo')).toHaveText('The Commons');
 
     // Category tabs
     await expect(page.getByTestId('category-tab-all')).toBeVisible();

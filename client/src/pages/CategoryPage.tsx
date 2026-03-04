@@ -65,7 +65,7 @@ export default function CategoryPage() {
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
-              <span className="text-2xl font-bold text-red-600">So What</span>
+              <span className="text-2xl font-bold text-slate-900 font-serif">The Commons</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               {Object.entries(categoryLabels).map(([key, lbl]) => (

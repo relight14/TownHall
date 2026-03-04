@@ -4,31 +4,17 @@ import { useSeries } from '../hooks/series/useSeries';
 import { useArticles, useFeaturedArticles, useLatestArticles, useMostReadArticles, type Article } from '../hooks/articles';
 import { useFeaturedEpisodes } from '../hooks/featuredEpisodes';
 import { Link } from 'react-router-dom';
-import { Clock, Eye, Play, Search, ChevronRight, LogOut } from 'lucide-react';
+import { Clock, Eye, Play, ChevronRight, MapPin } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { DynamicImage } from '../components/ui/dynamic-image';
 import { stripHtmlMemoized } from '../lib/utils';
 import { formatDate, formatShortDate, formatViewCount } from '../lib/formatters';
-import profilePic from '@assets/Chris_C_Profile_1765399638128.webp';
+import Header from '../components/Header';
+import { STATE_NAMES, REGIONS, getHomeState } from '../lib/states';
 
 // Lazy load modals - only loaded when needed
 const AuthModal = lazy(() => import('../components/AuthModal'));
 const PasswordResetModal = lazy(() => import('../components/PasswordResetModal'));
-
-const categories = [
-  { id: 'all', label: 'All' },
-  { id: 'elections', label: 'Elections' },
-  { id: 'policy', label: 'Policy' },
-  { id: 'candidate-rankings', label: 'Candidate Rankings' },
-  { id: 'speech-analysis', label: 'Speech Analysis' },
-];
-
-const categoryLabels: Record<string, string> = {
-  'elections': 'Elections',
-  'policy': 'Policy',
-  'candidate-rankings': 'Candidate Rankings',
-  'speech-analysis': 'Speech Analysis',
-};
 
 function ArticlesSkeleton() {
   return (
@@ -66,10 +52,11 @@ function ArticlesSkeleton() {
   );
 }
 
-function CategoryBadge({ category }: { category: string }) {
+function StateBadge({ state }: { state?: string | null }) {
+  const label = state ? STATE_NAMES[state.toUpperCase()] || state : 'National';
   return (
-    <span className="inline-block bg-slate-800 text-white text-xs font-medium px-2.5 py-1 rounded">
-      {categoryLabels[category] || category}
+    <span className="inline-block bg-navy text-white text-xs font-medium px-2.5 py-1 rounded font-sans">
+      {label}
     </span>
   );
 }
@@ -79,7 +66,7 @@ function LatestArticleItem({ article }: { article: Article }) {
     <Link to={`/article/${article.id}`}>
       <div className="group py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`latest-article-${article.id}`}>
         <div className="flex items-start justify-between">
-          <CategoryBadge category={article.category} />
+          <StateBadge state={(article as any).state} />
           {article.price > 0 && (
             <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded" data-testid={`price-badge-${article.id}`}>
               ${(article.price / 100).toFixed(2)}
@@ -107,7 +94,7 @@ function MostReadArticleItem({ article, rank }: { article: Article; rank: number
     <Link to={`/article/${article.id}`}>
       <div className="group py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`most-read-article-${article.id}`}>
         <div className="flex items-start justify-between">
-          <CategoryBadge category={article.category} />
+          <StateBadge state={(article as any).state} />
           {article.price > 0 && (
             <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded" data-testid={`price-badge-${article.id}`}>
               ${(article.price / 100).toFixed(2)}
@@ -135,7 +122,7 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
     <Link to={`/article/${article.id}`}>
       <div className="group cursor-pointer" data-testid={`featured-article-${article.id}`}>
         <div className="flex items-start justify-between">
-          <CategoryBadge category={article.category} />
+          <StateBadge state={(article as any).state} />
           {article.price > 0 && (
             <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-3 py-1.5 rounded" data-testid={`price-badge-${article.id}`}>
               ${(article.price / 100).toFixed(2)}
@@ -157,7 +144,7 @@ function FeaturedHeroArticle({ article }: { article: Article }) {
             />
           ) : (
             <div className="w-full aspect-[16/9] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-xl shadow-lg shadow-black/10">
-              <span className="text-gray-400 text-4xl font-serif">So What</span>
+              <span className="text-gray-400 text-4xl font-serif">The Commons</span>
             </div>
           )}
         </div>
@@ -198,7 +185,7 @@ function CategoryArticleCard({ article }: { article: Article }) {
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-              <span className="text-gray-400 text-xl font-serif">So What</span>
+              <span className="text-gray-400 text-xl font-serif">The Commons</span>
             </div>
           )}
           {article.price > 0 && (
@@ -209,7 +196,7 @@ function CategoryArticleCard({ article }: { article: Article }) {
             </div>
           )}
         </div>
-        <CategoryBadge category={article.category} />
+        <StateBadge state={(article as any).state} />
         <h3 className="text-lg font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors line-clamp-2">
           {article.title}
         </h3>
@@ -269,28 +256,6 @@ function VideoCard({ episode, seriesTitle }: { episode: any; seriesTitle: string
   );
 }
 
-function CategorySection({ category, articles }: { category: string; articles: Article[] }) {
-  if (articles.length === 0) return null;
-
-  return (
-    <section className="py-12 border-t border-gray-200">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">{categoryLabels[category] || category}</h2>
-        <Link to={`/category/${category}`}>
-          <span className="text-sm text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors" data-testid={`view-all-${category}`}>
-            View all <ChevronRight className="w-4 h-4" />
-          </span>
-        </Link>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {articles.slice(0, 3).map(article => (
-          <CategoryArticleCard key={article.id} article={article} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function VideoAnalysisSection({ episodes, series }: { episodes: any[]; series: any[] }) {
   if (episodes.length === 0) return null;
 
@@ -334,10 +299,10 @@ export default function HomePage() {
   
   const isLoading = articlesLoading || featuredLoading || latestLoading || mostReadLoading;
   
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [searchOpen, setSearchOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+
+  const homeState = getHomeState();
 
   // Memoize combined articles to prevent recalculation on every render
   const allArticles = useMemo(() =>
@@ -345,153 +310,49 @@ export default function HomePage() {
     [articles, featuredArticles]
   );
 
-  // Memoize filtered articles by active category
-  const categoryArticles = useMemo(() => {
-    if (activeCategory === 'all') return allArticles;
-    return allArticles.filter(a => a.category === activeCategory);
-  }, [allArticles, activeCategory]);
-
-  // Memoize sorted arrays
-  const latestForCategory = useMemo(() =>
-    [...categoryArticles].sort((a, b) =>
+  // Memoize sorted arrays (national feed — no category filtering anymore)
+  const latestSorted = useMemo(() =>
+    [...allArticles].sort((a, b) =>
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     ),
-    [categoryArticles]
+    [allArticles]
   );
 
-  const mostReadForCategory = useMemo(() =>
-    [...categoryArticles].sort((a, b) => b.viewCount - a.viewCount),
-    [categoryArticles]
+  const mostReadSorted = useMemo(() =>
+    [...allArticles].sort((a, b) => b.viewCount - a.viewCount),
+    [allArticles]
   );
 
-  const featuredForCategory = useMemo(() =>
-    categoryArticles.filter(a => a.featured > 0).sort((a, b) => a.featured - b.featured),
-    [categoryArticles]
+  const featuredSorted = useMemo(() =>
+    allArticles.filter(a => a.featured > 0).sort((a, b) => a.featured - b.featured),
+    [allArticles]
   );
 
-  const featuredArticle = featuredForCategory[0] || latestForCategory[0];
+  const featuredArticle = featuredSorted[0] || latestSorted[0];
 
   const displayedLatest = useMemo(() =>
-    latestForCategory.filter(a => a.id !== featuredArticle?.id).slice(0, 4),
-    [latestForCategory, featuredArticle]
+    latestSorted.filter(a => a.id !== featuredArticle?.id).slice(0, 4),
+    [latestSorted, featuredArticle]
   );
 
   const displayedMostRead = useMemo(() =>
-    mostReadForCategory.slice(0, 4),
-    [mostReadForCategory]
-  );
-
-  // Memoize articles by category for category sections
-  const electionsArticles = useMemo(() =>
-    allArticles
-      .filter(a => a.category === 'elections')
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
-    [allArticles]
-  );
-
-  const policyArticles = useMemo(() =>
-    allArticles
-      .filter(a => a.category === 'policy')
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
-    [allArticles]
-  );
-
-  const candidateRankingsArticles = useMemo(() =>
-    allArticles
-      .filter(a => a.category === 'candidate-rankings')
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
-    [allArticles]
-  );
-
-  const speechAnalysisArticles = useMemo(() =>
-    allArticles
-      .filter(a => a.category === 'speech-analysis')
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()),
-    [allArticles]
+    mostReadSorted.slice(0, 4),
+    [mostReadSorted]
   );
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <img
-                src={profilePic}
-                alt="Profile"
-                loading="eager"
-                decoding="async"
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
-                data-testid="img-profile"
-              />
-            </div>
-            
-            <Link to="/">
-              <span className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight" data-testid="logo">So What</span>
-            </Link>
+      <Header onLoginClick={() => setShowAuthModal(true)} />
 
-            <div className="flex items-center gap-2 sm:gap-4">
-              <button 
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
-                data-testid="button-search"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-              {user ? (
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Link to="/wallet">
-                    <button className="bg-gray-900 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base" data-testid="button-wallet">
-                      <span className="text-green-400 font-semibold">${walletBalance.toFixed(2)}</span>
-                      <span className="text-gray-300 hidden sm:inline">|</span>
-                      <span className="hidden sm:inline">{user.email?.split('@')[0] || 'Account'}</span>
-                    </button>
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-900 transition-colors"
-                    title="Log out"
-                    data-testid="button-logout"
-                  >
-                    <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => setShowAuthModal(true)}
-                  className="bg-gray-900 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors text-sm sm:text-base" 
-                  data-testid="button-login"
-                >
-                  Log in
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Category Subheader */}
-      <div className="border-b border-gray-100 bg-gray-50/50">
+      {/* Topic Subheader */}
+      <div className="border-b border-gray-100 bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-8 h-12 overflow-x-auto">
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`text-sm font-medium whitespace-nowrap transition-colors relative py-3 ${
-                  activeCategory === cat.id 
-                    ? 'text-gray-900' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                data-testid={`category-tab-${cat.id}`}
-              >
-                {cat.label}
-                {activeCategory === cat.id && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
-                )}
-              </button>
-            ))}
+            <span className="text-sm font-medium text-navy relative py-3">
+              Politics
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy" />
+            </span>
+            {/* Future topics (Sports, Business, etc.) will appear here */}
             <Link
               to="/videos"
               className="text-sm font-medium whitespace-nowrap transition-colors relative py-3 text-gray-500 hover:text-gray-700"
@@ -531,7 +392,7 @@ export default function HomePage() {
 
             {/* Right Column - Most Read */}
             <div className="lg:col-span-3 order-3">
-              <h2 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-200">Most Read</h2>
+              <h2 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-200">Trending</h2>
               <div className="divide-y divide-gray-100">
                 {displayedMostRead.map((article, index) => (
                   <MostReadArticleItem key={article.id} article={article} rank={index + 1} />
@@ -547,27 +408,52 @@ export default function HomePage() {
         {/* Empty State */}
         {!isLoading && !featuredArticle && (
           <div className="text-center py-20">
-            <p className="text-gray-500 text-xl">No articles available yet.</p>
-            <p className="text-gray-400 mt-2">Use the Admin panel to add your first article.</p>
+            <div className="text-5xl mb-4">🏛️</div>
+            <p className="text-navy text-xl font-bold font-serif">Welcome to The Commons</p>
+            <p className="text-gray-500 mt-2">Reader-funded local news from every state. Select your state above to get started.</p>
           </div>
         )}
 
-        {/* Category Sections */}
-        <CategorySection category="elections" articles={electionsArticles} />
-        <CategorySection category="policy" articles={policyArticles} />
-        <CategorySection category="candidate-rankings" articles={candidateRankingsArticles} />
-        <CategorySection category="speech-analysis" articles={speechAnalysisArticles} />
+        {/* Browse by State Section */}
+        <section className="py-12 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-gray-900">Browse by State</h2>
+          </div>
+          <div className="space-y-8">
+            {Object.entries(REGIONS).map(([regionKey, region]) => (
+              <div key={regionKey}>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{region.label}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {region.states.map(code => (
+                    <Link
+                      key={code}
+                      to={`/state/${code.toLowerCase()}`}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                        homeState?.toUpperCase() === code
+                          ? 'bg-navy text-white border-navy'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-cream hover:border-gray-300'
+                      }`}
+                      data-testid={`state-link-${code}`}
+                    >
+                      {STATE_NAMES[code]}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Video Analysis Section */}
         <VideoAnalysisSection episodes={featuredEpisodes} series={series} />
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-gray-50 py-12">
+      <footer className="border-t border-gray-200 bg-cream py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex flex-col md:flex-row items-center gap-4">
-              <span className="text-xl font-bold text-gray-900">So What</span>
+              <span className="text-xl font-bold text-navy font-serif">The Commons</span>
               <div className="flex items-center gap-4 text-sm">
                 <Link to="/terms" className="text-gray-500 hover:text-gray-700 transition-colors" data-testid="link-terms">
                   Terms of Service
@@ -578,20 +464,8 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-            <div className="flex flex-col md:flex-row items-center gap-2 text-sm text-gray-500">
-              <span>Powered by{' '}
-                <a 
-                  href="https://www.ledewire.com/explore" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                  data-testid="link-ledewire"
-                >
-                  Ledewire
-                </a>
-              </span>
-              <span className="hidden md:inline text-gray-300">|</span>
-              <span>&copy; {new Date().getFullYear()} So What. All rights reserved.</span>
+            <div className="text-sm text-gray-500">
+              <span>&copy; {new Date().getFullYear()} The Commons. All rights reserved.</span>
             </div>
           </div>
         </div>

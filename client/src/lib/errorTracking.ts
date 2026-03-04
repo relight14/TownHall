@@ -48,7 +48,7 @@ export function getRequestId(response: Response): string | undefined {
  * Captures an exception to PostHog with rich context
  *
  * Error title format: [project] Component @ /path (PageFile.tsx): Original error message
- * Example: [ChrisCillizza] ErrorTestButton @ / (HomePage.tsx): Cannot read properties of undefined
+ * Example: [the-commons] ErrorTestButton @ / (HomePage.tsx): Cannot read properties of undefined
  */
 export function captureError(error: Error, context: ErrorContext) {
   const page = window.location.pathname;
