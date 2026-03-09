@@ -49,7 +49,7 @@ function StateSelector({ selectedState }: { selectedState?: string | null }) {
       >
         <MapPin className="w-4 h-4" />
         <span className="hidden sm:inline">
-          {homeState ? getStateName(homeState) : 'Select State'}
+          {homeState ? getStateName(homeState) : 'Select Your State'}
         </span>
         <span className="sm:hidden">
           {homeState || 'State'}
@@ -58,7 +58,7 @@ function StateSelector({ selectedState }: { selectedState?: string | null }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+        <div className="absolute left-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
           {/* Search input */}
           <div className="p-3 border-b border-gray-100">
             <div className="relative">
@@ -137,7 +137,7 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
   return (
     <header className="bg-navy sticky top-0 z-50">
       {/* Expanded masthead — visible only at top */}
-      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isCompact ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'}`}>
+      <div className={`transition-all duration-300 ease-in-out ${isCompact ? 'max-h-0 overflow-hidden opacity-0 pointer-events-none' : 'max-h-24 opacity-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-10 text-sm">
             <div className="flex items-center gap-2 sm:gap-3">
