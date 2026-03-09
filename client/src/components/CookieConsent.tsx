@@ -29,29 +29,29 @@ export default function CookieConsent() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom duration-300">
-      <div className="max-w-4xl mx-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto bg-white border border-navy/10 rounded-xl shadow-xl shadow-navy/10 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex items-start gap-3 flex-1">
-            <Cookie className="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" />
+            <Cookie className="w-6 h-6 text-gold flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-white font-medium mb-1">We use cookies</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-navy font-sans font-medium mb-1">We use cookies</h3>
+              <p className="text-slate text-sm font-body">
                 We use cookies to keep you signed in and improve your experience. By continuing to use this site, you agree to our{' '}
-                <Link to="/privacy" className="text-blue-400 hover:underline" data-testid="link-cookie-privacy">Privacy Policy</Link>.
+                <Link to="/privacy" className="text-gold hover:underline" data-testid="link-cookie-privacy">Privacy Policy</Link>.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={handleDecline}
-              className="flex-1 sm:flex-initial px-4 py-2 text-slate-400 hover:text-white text-sm font-medium transition-colors"
+              className="flex-1 sm:flex-initial px-4 py-2 text-slate hover:text-navy text-sm font-sans font-medium transition-colors"
               data-testid="button-decline-cookies"
             >
               Decline
             </button>
             <button
               onClick={handleAccept}
-              className="flex-1 sm:flex-initial px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+              className="flex-1 sm:flex-initial px-6 py-2 bg-gold hover:bg-gold-light text-white text-sm font-sans font-medium rounded-lg transition-colors"
               data-testid="button-accept-cookies"
             >
               Accept

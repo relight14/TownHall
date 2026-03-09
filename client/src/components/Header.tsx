@@ -44,7 +44,7 @@ function StateSelector({ selectedState }: { selectedState?: string | null }) {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-parchment/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
         data-testid="state-selector-trigger"
       >
         <MapPin className="w-4 h-4" />
@@ -68,7 +68,7 @@ function StateSelector({ selectedState }: { selectedState?: string | null }) {
                 placeholder="Search states..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy focus:border-transparent"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
                 autoFocus
                 data-testid="state-search-input"
               />
@@ -124,11 +124,20 @@ function StateSelector({ selectedState }: { selectedState?: string | null }) {
 export default function Header({ onLoginClick, selectedState }: HeaderProps) {
   const { user, walletBalance, logout } = useVideoStore();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsCompact(window.scrollY > 40);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
+    <header className={`bg-navy sticky top-0 z-50 transition-all duration-300 ${isCompact ? 'shadow-lg shadow-navy-dark/30' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 sm:h-16">
+        <div className={`flex items-center justify-between transition-all duration-300 ${isCompact ? 'h-12' : 'h-14 sm:h-16'}`}>
           {/* Left: State selector */}
           <div className="flex items-center gap-2 sm:gap-3">
             <StateSelector selectedState={selectedState} />
@@ -136,7 +145,7 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
 
           {/* Center: Logo */}
           <Link to="/" className="absolute left-1/2 -translate-x-1/2">
-            <span className="text-xl sm:text-2xl font-serif font-bold text-navy tracking-tight" data-testid="logo">
+            <span className={`font-serif font-bold text-white transition-all duration-300 ${isCompact ? 'text-lg sm:text-xl tracking-tight' : 'text-xl sm:text-2xl tracking-wide'}`} data-testid="logo">
               The Commons
             </span>
           </Link>
@@ -145,7 +154,7 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
           <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-gray-600 hover:text-navy transition-colors"
+              className="p-2 text-parchment/60 hover:text-gold transition-colors"
               data-testid="button-search"
             >
               <Search className="w-5 h-5" />
@@ -153,15 +162,15 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
             {user ? (
               <div className="flex items-center gap-1 sm:gap-2">
                 <Link to="/wallet">
-                  <button className="bg-navy text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium hover:bg-navy-light transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base" data-testid="button-wallet">
-                    <span className="text-warm-light font-semibold">${walletBalance.toFixed(2)}</span>
-                    <span className="text-gray-300 hidden sm:inline">|</span>
-                    <span className="hidden sm:inline">{user.email?.split('@')[0] || 'Account'}</span>
+                  <button className="bg-white/5 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-sans font-medium hover:bg-white/10 transition-colors flex items-center gap-1 sm:gap-2 text-sm border border-white/10" data-testid="button-wallet">
+                    <span className="text-gold font-semibold">${walletBalance.toFixed(2)}</span>
+                    <span className="text-white/20 hidden sm:inline">|</span>
+                    <span className="hidden sm:inline text-parchment/70 text-xs">{user.email?.split('@')[0] || 'Account'}</span>
                   </button>
                 </Link>
                 <button
                   onClick={logout}
-                  className="p-1.5 sm:p-2 text-gray-500 hover:text-navy transition-colors"
+                  className="p-1.5 sm:p-2 text-parchment/40 hover:text-parchment transition-colors"
                   title="Log out"
                   data-testid="button-logout"
                 >
@@ -171,7 +180,7 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
             ) : (
               <button 
                 onClick={onLoginClick}
-                className="bg-navy text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium hover:bg-navy-light transition-colors text-sm sm:text-base" 
+                className="bg-gold text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded font-sans font-semibold hover:bg-gold-light transition-colors text-sm tracking-wide" 
                 data-testid="button-login"
               >
                 Log in
@@ -180,6 +189,8 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
           </div>
         </div>
       </div>
+      {/* Subtle gold accent line — publication feel */}
+      <div className="h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
     </header>
   );
 }

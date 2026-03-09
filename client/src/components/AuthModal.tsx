@@ -100,36 +100,36 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
 
   return createPortal(
     <div 
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+      className="fixed inset-0 bg-navy/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-slate-900 rounded-2xl max-w-md w-full border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-xl max-w-md w-full border border-navy/10 shadow-2xl shadow-navy/20 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-slate-800">
-          <h2 className="text-2xl text-white font-bold">
+        <div className="flex justify-between items-center p-6 border-b border-navy/5">
+          <h2 className="text-xl font-serif font-bold text-navy">
             {isLogin ? 'Sign In' : 'Sign Up'}
           </h2>
           <button 
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-slate/40 hover:text-navy transition-colors"
             data-testid="button-close-auth"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6">
-          <p className="text-slate-400 mb-6">
+          <p className="text-slate text-sm mb-6 font-sans">
             {isLogin 
-              ? 'Sign in to purchase and access premium content'
+              ? 'Sign in to unlock and access premium content'
               : 'Create an account to get started'
             }
           </p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm" data-testid="text-error">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm font-sans" data-testid="text-error">
               {error}
             </div>
           )}
@@ -143,10 +143,10 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
 
               <div className="relative mb-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-700"></div>
+                  <div className="w-full border-t border-navy/10"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-slate-900 text-slate-500">or continue with email</span>
+                  <span className="px-4 bg-white text-slate/50 font-sans">or continue with email</span>
                 </div>
               </div>
             </>
@@ -156,14 +156,14 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
             <div className="space-y-4 mb-6">
               {!isLogin && (
                 <div>
-                  <label className="block text-slate-300 mb-2 text-sm font-medium">Name</label>
+                  <label className="block text-navy text-sm font-sans font-medium mb-1.5">Name</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate/40" />
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      className="w-full bg-parchment border border-navy/10 rounded px-10 py-2.5 text-navy font-sans focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                       placeholder="Your name"
                       required
                       data-testid="input-name"
@@ -173,14 +173,14 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
               )}
 
               <div>
-                <label className="block text-slate-300 mb-2 text-sm font-medium">Email</label>
+                <label className="block text-navy text-sm font-sans font-medium mb-1.5">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate/40" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full bg-parchment border border-navy/10 rounded px-10 py-2.5 text-navy font-sans focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                     placeholder="your@email.com"
                     required
                     data-testid="input-email"
@@ -189,14 +189,14 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-2 text-sm font-medium">Password</label>
+                <label className="block text-navy text-sm font-sans font-medium mb-1.5">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate/40" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full bg-parchment border border-navy/10 rounded px-10 py-2.5 text-navy font-sans focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                     placeholder="••••••••"
                     required
                     data-testid="input-password"
@@ -206,7 +206,7 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
                   <button
                     type="button"
                     onClick={onForgotPassword}
-                    className="text-blue-400 hover:text-blue-300 text-sm mt-2 transition-colors"
+                    className="text-gold hover:text-gold-dark text-sm mt-2 transition-colors font-sans"
                     data-testid="button-forgot-password"
                   >
                     Forgot password?
@@ -216,26 +216,26 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
             </div>
 
             {!isLogin && (
-              <div className="flex items-start gap-3 mb-2">
+              <div className="flex items-start gap-3 mb-4">
                 <button
                   type="button"
                   onClick={() => setAgreedToTerms(!agreedToTerms)}
                   className={`flex-shrink-0 w-5 h-5 rounded border transition-colors ${
                     agreedToTerms 
-                      ? 'bg-blue-500 border-blue-500' 
-                      : 'border-slate-600 hover:border-slate-500'
+                      ? 'bg-gold border-gold' 
+                      : 'border-navy/20 hover:border-navy/40'
                   }`}
                   data-testid="checkbox-terms"
                 >
                   {agreedToTerms && <Check className="w-5 h-5 text-white" />}
                 </button>
-                <span className="text-slate-400 text-sm leading-tight">
+                <span className="text-slate text-sm leading-tight font-sans">
                   I agree to the{' '}
-                  <Link to="/terms" className="text-blue-400 hover:underline" target="_blank" onClick={(e) => e.stopPropagation()} data-testid="link-signup-terms">
+                  <Link to="/terms" className="text-gold hover:underline" target="_blank" onClick={(e) => e.stopPropagation()} data-testid="link-signup-terms">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link to="/privacy" className="text-blue-400 hover:underline" target="_blank" onClick={(e) => e.stopPropagation()} data-testid="link-signup-privacy">
+                  <Link to="/privacy" className="text-gold hover:underline" target="_blank" onClick={(e) => e.stopPropagation()} data-testid="link-signup-privacy">
                     Privacy Policy
                   </Link>
                 </span>
@@ -246,7 +246,7 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors font-medium border border-slate-700"
+                className="flex-1 bg-parchment hover:bg-cool-grey text-navy py-2.5 rounded transition-colors font-sans font-medium border border-navy/10"
                 data-testid="button-cancel"
               >
                 Cancel
@@ -254,7 +254,7 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
               <button
                 type="submit"
                 disabled={loading || (!isLogin && !agreedToTerms)}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-gold hover:bg-gold-light text-white py-2.5 rounded transition-colors font-sans font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="button-submit"
               >
                 {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
@@ -266,21 +266,21 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
         <div className="px-6 pb-2">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="w-full text-blue-400 hover:text-blue-300 text-sm transition-colors py-2"
+            className="w-full text-gold hover:text-gold-dark text-sm transition-colors py-2 font-sans"
             data-testid="button-toggle-auth"
           >
             {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </button>
         </div>
 
-        <div className="px-6 pb-4 pt-2 border-t border-slate-800">
-          <p className="text-slate-500 text-xs text-center">
+        <div className="px-6 pb-4 pt-2 border-t border-navy/5">
+          <p className="text-slate/40 text-xs text-center font-sans">
             powered by{' '}
             <a 
               href="https://www.ledewire.com/explore" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 transition-colors"
+              className="text-gold/60 hover:text-gold transition-colors"
               data-testid="link-ledewire-auth"
             >
               ledewire

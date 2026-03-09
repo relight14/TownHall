@@ -3,21 +3,21 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-parchment">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-8"
+          className="inline-flex items-center gap-2 text-gold hover:text-gold-dark mb-8 font-sans"
           data-testid="link-back-home"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Home
         </Link>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">LedeWire Terms of Service</h1>
-        <p className="text-gray-500 mb-8">Last updated: September 12, 2025</p>
+        <h1 className="text-4xl font-serif font-bold text-navy mb-2">LedeWire Terms of Service</h1>
+        <p className="text-slate mb-8 font-sans">Last updated: September 12, 2025</p>
 
-        <div className="prose prose-slate max-w-none">
+        <div className="prose prose-slate max-w-none font-body prose-headings:font-serif prose-headings:text-navy prose-a:text-gold hover:prose-a:text-gold-dark">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
             <p className="text-amber-800 text-sm font-medium">
               PLEASE READ THESE TERMS CAREFULLY BEFORE USING OUR SITE OR OUR SERVICES. BY AGREEING TO THESE TERMS, YOU WILL BECOME SUBJECT TO AN ARBITRATION PROVISION WITH CLASS ACTION AND JURY TRIAL WAIVERS.

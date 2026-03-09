@@ -169,14 +169,14 @@ export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="group relative bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800 hover:border-blue-500/50 transition-all duration-300 cursor-pointer hover:shadow-xl hover:shadow-blue-500/10"
+        className="group relative bg-white rounded-xl overflow-hidden border border-navy/8 hover:border-gold/40 transition-all duration-300 cursor-pointer hover:shadow-lg hover:shadow-navy/5"
         data-testid={`card-episode-${episode.id}`}
       >
         <div className="relative aspect-video overflow-hidden">
           <ImageWithFallback 
             src={episode.thumbnail} 
             alt={episode.title}
-            className={`w-full h-full object-cover transition-all duration-500 ${isHovered ? 'scale-110' : ''} ${showPreview ? 'opacity-0' : 'opacity-100'}`}
+            className={`w-full h-full object-cover transition-all duration-500 ${isHovered ? 'scale-105' : ''} ${showPreview ? 'opacity-0' : 'opacity-100'}`}
           />
           
           {showPreview && (
@@ -189,91 +189,97 @@ export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
             />
           )}
           
-          <div className={`absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent transition-opacity ${showPreview ? 'opacity-0' : 'opacity-60'}`} />
+          <div className={`absolute inset-0 bg-gradient-to-t from-navy/60 via-navy/20 to-transparent transition-opacity ${showPreview ? 'opacity-0' : 'opacity-60'}`} />
           
           {!showPreview && (
             <div className="absolute inset-0 flex items-center justify-center">
               {isPurchased ? (
-                <div className={`w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg shadow-blue-500/50 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
+                <div className={`w-12 h-12 bg-gold rounded-full flex items-center justify-center transition-all duration-300 shadow-lg shadow-gold/30 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
                   <Play className="w-6 h-6 text-white ml-1" fill="white" />
                 </div>
               ) : (
-                <div className="w-12 h-12 bg-slate-800/80 backdrop-blur-sm rounded-full flex items-center justify-center border border-slate-700 group-hover:border-slate-600 transition-colors">
-                  <Lock className="w-6 h-6 text-slate-400" />
+                <div className="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center border border-navy/10 group-hover:border-gold/30 transition-colors">
+                  <Lock className="w-5 h-5 text-navy/60" />
                 </div>
               )}
             </div>
           )}
 
           {!isPurchased && !showPreview && (
-            <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
+            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-navy px-3 py-1 rounded text-sm font-sans font-semibold shadow-sm">
               ${episode.price.toFixed(2)}
             </div>
           )}
           
           {showPreview && (
-            <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-xs text-white/80 backdrop-blur-sm">
+            <div className="absolute bottom-2 left-2 px-2 py-1 bg-navy/70 rounded text-xs text-white/80 backdrop-blur-sm font-sans">
               Preview
             </div>
           )}
         </div>
 
         <div className="p-4">
-          <h3 className="text-white mb-2 group-hover:text-blue-400 transition-colors font-medium">
+          <h3 className="text-navy font-serif font-semibold mb-2 group-hover:text-gold-dark transition-colors leading-snug">
             {episode.title}
           </h3>
-          <p className="text-slate-400 line-clamp-2 text-sm mb-3">
+          <p className="text-slate line-clamp-2 text-sm mb-3 font-body">
             {episode.description}
           </p>
           
+          {/* 75% trust signal */}
+          <div className="flex items-center gap-1.5 mb-3">
+            <span className="text-gold font-serif font-bold text-xs">75%</span>
+            <span className="text-slate/50 text-xs font-sans">goes to the writer</span>
+          </div>
+          
           {/* Social Share Section */}
           <div 
-            className="flex items-center gap-1 pt-3 border-t border-slate-700/50"
+            className="flex items-center gap-1 pt-3 border-t border-navy/5"
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="text-slate-500 text-xs mr-2">Share</span>
+            <span className="text-slate/40 text-xs mr-2 font-sans">Share</span>
             <button
               onClick={() => handleShare('twitter')}
-              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-lg hover:bg-parchment text-slate/40 hover:text-navy transition-colors"
               data-testid={`button-share-twitter-${episode.id}`}
               title="Share on X"
             >
-              <TwitterIcon className="w-4 h-4" />
+              <TwitterIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => handleShare('facebook')}
-              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-[#1877F2] transition-colors"
+              className="p-2 rounded-lg hover:bg-parchment text-slate/40 hover:text-[#1877F2] transition-colors"
               data-testid={`button-share-facebook-${episode.id}`}
               title="Share on Facebook"
             >
-              <FacebookIcon className="w-4 h-4" />
+              <FacebookIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => handleShare('linkedin')}
-              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-[#0A66C2] transition-colors"
+              className="p-2 rounded-lg hover:bg-parchment text-slate/40 hover:text-[#0A66C2] transition-colors"
               data-testid={`button-share-linkedin-${episode.id}`}
               title="Share on LinkedIn"
             >
-              <LinkedInIcon className="w-4 h-4" />
+              <LinkedInIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => handleShare('whatsapp')}
-              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-[#25D366] transition-colors"
+              className="p-2 rounded-lg hover:bg-parchment text-slate/40 hover:text-[#25D366] transition-colors"
               data-testid={`button-share-whatsapp-${episode.id}`}
               title="Share on WhatsApp"
             >
-              <WhatsAppIcon className="w-4 h-4" />
+              <WhatsAppIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleCopyLink}
-              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-blue-400 transition-colors relative"
+              className="p-2 rounded-lg hover:bg-parchment text-slate/40 hover:text-gold transition-colors relative"
               data-testid={`button-share-copy-${episode.id}`}
               title="Copy link"
             >
               {copied ? (
-                <Check className="w-4 h-4 text-green-400" />
+                <Check className="w-3.5 h-3.5 text-green-600" />
               ) : (
-                <LinkIcon className="w-4 h-4" />
+                <LinkIcon className="w-3.5 h-3.5" />
               )}
             </button>
           </div>

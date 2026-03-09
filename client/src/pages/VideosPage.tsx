@@ -9,32 +9,32 @@ function SeriesCard({ series }: { series: any }) {
   
   return (
     <Link to={`/series/${series.id}`} data-testid={`link-series-${series.id}`}>
-      <div className="group cursor-pointer bg-slate-900/50 backdrop-blur-sm rounded-xl overflow-hidden border border-slate-800 hover:border-slate-600 transition-all">
+      <div className="group cursor-pointer bg-white rounded-xl overflow-hidden border border-navy/8 hover:border-gold/40 transition-all hover:shadow-lg hover:shadow-navy/5">
         <div className="relative aspect-video overflow-hidden">
           <ImageWithFallback
             src={series.thumbnail}
             alt={series.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center">
-              <Play className="w-6 h-6 text-gray-900 ml-1" fill="currentColor" />
+          <div className="absolute inset-0 bg-navy/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="w-14 h-14 bg-gold/90 rounded-full flex items-center justify-center shadow-lg">
+              <Play className="w-6 h-6 text-white ml-1" fill="currentColor" />
             </div>
           </div>
           {episodeCount > 0 && (
-            <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+            <div className="absolute bottom-2 right-2 bg-navy/80 text-parchment text-xs font-sans px-2 py-1 rounded">
               {episodeCount} {episodeCount === 1 ? 'episode' : 'episodes'}
             </div>
           )}
         </div>
-        <div className="p-4">
-          <div className="inline-block mb-2 px-2 py-0.5 bg-blue-500/30 border border-blue-400/40 rounded-full">
-            <span className="text-blue-200 tracking-wide uppercase text-xs font-semibold">Series</span>
+        <div className="p-5">
+          <div className="inline-block mb-2 px-2 py-0.5 bg-gold-pale border border-gold/20 rounded">
+            <span className="text-gold-dark tracking-wide uppercase text-xs font-sans font-semibold">Series</span>
           </div>
-          <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2">
+          <h3 className="text-lg font-serif font-bold text-navy group-hover:text-gold-dark transition-colors line-clamp-2 leading-snug">
             {series.title}
           </h3>
-          <p className="text-slate-400 mt-2 text-sm line-clamp-2">
+          <p className="text-slate mt-2 text-sm line-clamp-2 font-body">
             {series.description}
           </p>
         </div>
@@ -47,38 +47,41 @@ export default function VideosPage() {
   const { data: series = [] } = useSeries();
 
   return (
-    <div className="relative min-h-screen pb-20">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/90 to-slate-950" />
-        <img 
-          src={capitolImage}
-          alt="US Capitol building"
-          className="w-full h-full object-cover opacity-20 fixed"
-        />
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Link to="/" className="inline-flex items-center gap-2 text-slate-300 hover:text-white mb-8 transition-colors bg-slate-900/50 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-600" data-testid="link-back-home">
-          <ArrowLeft className="w-4 h-4" />
-          Back to home
-        </Link>
-
-        <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl text-white font-bold tracking-tight mb-4">Video Series</h1>
-          <p className="text-lg text-slate-300 max-w-2xl">
+    <div className="min-h-screen bg-parchment pb-20">
+      {/* Hero banner */}
+      <div className="bg-navy relative overflow-hidden">
+        <div className="absolute inset-0">
+          <img 
+            src={capitolImage}
+            alt="US Capitol building"
+            className="w-full h-full object-cover opacity-15"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-navy/60 to-navy" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <Link to="/" className="inline-flex items-center gap-2 text-parchment/60 hover:text-gold mb-8 transition-colors font-sans text-sm" data-testid="link-back-home">
+            <ArrowLeft className="w-4 h-4" />
+            Back to home
+          </Link>
+          <span className="section-label block mb-3">Watch</span>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-white tracking-tight mb-3">Video Series</h1>
+          <p className="text-lg text-parchment/60 max-w-2xl font-body">
             Explore our collection of premium video content and documentary series.
           </p>
         </div>
+        <div className="h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {series.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {series.map(s => (
               <SeriesCard key={s.id} series={s} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
-            <p className="text-slate-400 text-lg">No video series available yet.</p>
+          <div className="text-center py-16 bg-white rounded-xl border border-navy/8">
+            <p className="text-slate text-lg font-body">No video series available yet.</p>
           </div>
         )}
       </div>

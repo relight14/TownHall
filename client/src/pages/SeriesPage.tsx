@@ -28,68 +28,65 @@ export default function SeriesPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-parchment">
       <Header onLoginClick={auth.openLogin} />
-      <div className="relative pb-20">
-      {/* Background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/90 to-slate-950" />
-        <img 
-          src="https://images.unsplash.com/photo-1553623717-752f8e160f81?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlcGljJTIwbW91bnRhaW4lMjBsYW5kc2NhcGV8ZW58MXx8fHwxNzY0NTMyNTE2fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-          alt="Mountain landscape"
-          className="w-full h-full object-cover opacity-20 fixed"
-        />
+      
+      {/* Hero section — navy background */}
+      <div className="bg-navy relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <Link to="/" className="inline-flex items-center gap-2 text-parchment/60 hover:text-gold mb-8 transition-colors font-sans text-sm">
+            <ArrowLeft className="w-4 h-4" />
+            Back to all series
+          </Link>
+
+          <div className="mb-0 max-w-4xl">
+            {currentSeries.trailerUrl && currentSeries.trailerType ? (
+              <>
+                {/* Trailer Video */}
+                <div className="relative rounded-xl overflow-hidden aspect-video shadow-2xl shadow-navy-dark/50 border border-white/10 mb-6">
+                  <VideoEmbed url={currentSeries.trailerUrl} type={currentSeries.trailerType} title={currentSeries.title} bare />
+                </div>
+                {/* Series Info below trailer */}
+                <div>
+                  <div className="inline-block mb-3 px-2.5 py-1 bg-gold-pale/10 border border-gold/20 rounded">
+                    <span className="text-gold tracking-wide uppercase text-xs font-sans font-semibold">Documentary Series</span>
+                  </div>
+                  <h1 className="text-3xl md:text-4xl text-white mb-3 font-serif font-bold tracking-tight">{currentSeries.title}</h1>
+                  <p className="text-lg text-parchment/60 max-w-2xl leading-relaxed font-body">
+                    {currentSeries.description}
+                  </p>
+                </div>
+              </>
+            ) : (
+              /* Thumbnail with overlay */
+              <div className="relative rounded-xl overflow-hidden aspect-video shadow-2xl shadow-navy-dark/50 border border-white/10">
+                <ImageWithFallback 
+                  src={currentSeries.thumbnail} 
+                  alt={currentSeries.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-8">
+                  <div className="inline-block mb-3 px-2.5 py-1 bg-gold-pale/10 border border-gold/20 rounded backdrop-blur-sm">
+                    <span className="text-gold tracking-wide uppercase text-xs font-sans font-semibold">Documentary Series</span>
+                  </div>
+                  <h1 className="text-3xl md:text-4xl text-white mb-3 font-serif font-bold tracking-tight">{currentSeries.title}</h1>
+                  <p className="text-lg text-parchment/80 max-w-2xl leading-relaxed font-body">
+                    {currentSeries.description}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Link to="/" className="inline-flex items-center gap-2 text-slate-300 hover:text-white mb-8 transition-colors bg-slate-900/50 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-600">
-          <ArrowLeft className="w-4 h-4" />
-          Back to all series
-        </Link>
-
-        <div className="mb-12 max-w-4xl">
-          {currentSeries.trailerUrl && currentSeries.trailerType ? (
-            <>
-              {/* Trailer Video */}
-              <div className="relative rounded-2xl overflow-hidden aspect-video shadow-2xl shadow-black/50 border border-slate-800 mb-6">
-                <VideoEmbed url={currentSeries.trailerUrl} type={currentSeries.trailerType} title={currentSeries.title} bare />
-              </div>
-              {/* Series Info below trailer */}
-              <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-                <div className="inline-block mb-3 px-3 py-1 bg-blue-500/30 border border-blue-400/40 rounded-full">
-                  <span className="text-blue-200 tracking-wide uppercase text-xs font-semibold">Documentary Series</span>
-                </div>
-                <h1 className="text-4xl md:text-5xl text-white mb-3 font-bold tracking-tight">{currentSeries.title}</h1>
-                <p className="text-lg md:text-xl text-slate-300 max-w-2xl leading-relaxed">
-                  {currentSeries.description}
-                </p>
-              </div>
-            </>
-          ) : (
-            /* Thumbnail with overlay */
-            <div className="relative rounded-2xl overflow-hidden aspect-video shadow-2xl shadow-black/50 border border-slate-800">
-              <ImageWithFallback 
-                src={currentSeries.thumbnail} 
-                alt={currentSeries.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-8">
-                <div className="inline-block mb-3 px-3 py-1 bg-blue-500/30 border border-blue-400/40 rounded-full backdrop-blur-sm">
-                  <span className="text-blue-200 tracking-wide uppercase text-xs font-semibold">Documentary Series</span>
-                </div>
-                <h1 className="text-4xl md:text-5xl text-white mb-3 font-bold tracking-tight">{currentSeries.title}</h1>
-                <p className="text-lg md:text-xl text-slate-200 max-w-2xl leading-relaxed">
-                  {currentSeries.description}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
+      {/* Episodes section — parchment background */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div>
-          <h2 className="text-3xl text-white mb-6 flex items-center gap-3 font-semibold">
-            <span className="w-1 h-8 bg-gradient-to-b from-blue-400 to-cyan-400 rounded-full" />
+          <h2 className="text-2xl font-serif font-bold text-navy mb-6 flex items-center gap-3">
+            <span className="w-1 h-7 bg-gold rounded-full" />
             Episodes
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -99,12 +96,11 @@ export default function SeriesPage() {
           </div>
 
           {currentSeries.episodes.length === 0 && (
-            <div className="text-center py-12 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700">
-              <p className="text-slate-400">No episodes available yet</p>
+            <div className="text-center py-12 bg-white rounded-xl border border-navy/8">
+              <p className="text-slate font-body">No episodes available yet</p>
             </div>
           )}
         </div>
-      </div>
       </div>
 
       <Footer />

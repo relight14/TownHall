@@ -650,25 +650,25 @@ export default function ArticlePage() {
           )}
 
           <div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate mb-3 sm:mb-4 font-sans">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span data-testid="text-article-date">{formatFullDate(article.publishedAt)}</span>
               </div>
-              <span className="text-gray-300">•</span>
+              <span className="text-navy/20">•</span>
               <div className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span data-testid="text-article-read-time">{calculateReadTime(article.content)} min read</span>
               </div>
-              <span className="text-gray-300 hidden sm:inline">•</span>
+              <span className="text-navy/20 hidden sm:inline">•</span>
               <div className="flex items-center gap-1">
                 <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span data-testid="text-article-view-count">{formatViewCount(article.viewCount)} views</span>
               </div>
               {article.price > 0 && (
                 <>
-                  <span className="text-gray-300">•</span>
-                  <div className="flex items-center gap-1">
+                  <span className="text-navy/20">•</span>
+                  <div className="flex items-center gap-1 text-gold">
                     <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span data-testid="text-article-price" className="font-semibold">{formatPrice(article.price)} to unlock</span>
                   </div>
@@ -676,30 +676,30 @@ export default function ArticlePage() {
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-gray-900 font-bold mb-2 sm:mb-3 leading-tight" data-testid="text-article-title">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-navy font-serif font-bold mb-2 sm:mb-3 leading-tight" data-testid="text-article-title">
               {article.title}
             </h1>
 
-            <p className="text-base sm:text-lg text-gray-600 font-medium mb-4 sm:mb-6 italic" data-testid="text-article-subheader">
+            <p className="text-base sm:text-lg text-slate font-body font-medium mb-4 sm:mb-6 italic" data-testid="text-article-subheader">
               {article.subheader}
             </p>
 
-            <div className="flex items-center gap-2 mb-6 pb-6 border-b border-gray-200">
-              <span className="text-gray-700 font-medium" data-testid="text-article-author">The Commons</span>
+            <div className="flex items-center gap-2 mb-6 pb-6 border-b border-navy/10">
+              <span className="text-navy font-sans font-medium" data-testid="text-article-author">The Commons</span>
             </div>
 
-            <p className="text-base text-gray-700 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">
+            <p className="text-base text-slate mb-8 leading-relaxed border-l-4 border-gold pl-6 font-body" data-testid="text-article-summary">
               {stripHtml(article.summary)}
             </p>
 
-            <div className="flex items-center gap-2 mb-8 pb-8 border-b border-gray-200">
-              <span className="text-gray-700 text-sm flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-8 pb-8 border-b border-navy/10">
+              <span className="text-slate text-sm flex items-center gap-2 font-sans">
                 <Share2 className="w-4 h-4" />
                 Share
               </span>
               <button
                 onClick={() => handleShare('twitter')}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-gray-900 transition-colors"
+                className="p-2 rounded-lg hover:bg-parchment text-slate hover:text-navy transition-colors"
                 data-testid="button-share-twitter"
                 title="Share on X"
               >
@@ -707,7 +707,7 @@ export default function ArticlePage() {
               </button>
               <button
                 onClick={() => handleShare('facebook')}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-[#1877F2] transition-colors"
+                className="p-2 rounded-lg hover:bg-parchment text-slate hover:text-[#1877F2] transition-colors"
                 data-testid="button-share-facebook"
                 title="Share on Facebook"
               >
@@ -715,7 +715,7 @@ export default function ArticlePage() {
               </button>
               <button
                 onClick={() => handleShare('linkedin')}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-[#0A66C2] transition-colors"
+                className="p-2 rounded-lg hover:bg-parchment text-slate hover:text-[#0A66C2] transition-colors"
                 data-testid="button-share-linkedin"
                 title="Share on LinkedIn"
               >
@@ -723,7 +723,7 @@ export default function ArticlePage() {
               </button>
               <button
                 onClick={handleCopyLink}
-                className="ml-auto px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors text-sm flex items-center gap-2"
+                className="ml-auto px-4 py-2 rounded-lg bg-parchment hover:bg-cool-grey text-navy transition-colors text-sm flex items-center gap-2 font-sans"
                 data-testid="button-copy-link"
               >
                 {copied ? (
@@ -740,61 +740,62 @@ export default function ArticlePage() {
             {canViewContent ? (
               <ArticleContent 
                 html={article.content}
-                className="prose prose-lg max-w-none
-                  prose-headings:text-gray-900 prose-headings:font-bold
+                className="prose prose-lg max-w-none font-body
+                  prose-headings:text-navy prose-headings:font-serif prose-headings:font-bold
                   prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-                  prose-p:text-gray-900 prose-p:leading-relaxed
-                  prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-                  prose-strong:text-gray-900
-                  prose-ul:text-gray-900 prose-ol:text-gray-900
-                  prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-900 prose-blockquote:italic
-                  prose-code:text-gray-900 prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded
-                  prose-pre:bg-gray-100 prose-pre:border prose-pre:border-gray-200
+                  prose-p:text-navy prose-p:leading-relaxed
+                  prose-a:text-gold prose-a:no-underline hover:prose-a:underline
+                  prose-strong:text-navy
+                  prose-ul:text-navy prose-ol:text-navy
+                  prose-blockquote:border-l-gold prose-blockquote:text-navy prose-blockquote:italic
+                  prose-code:text-navy prose-code:bg-parchment prose-code:px-1 prose-code:rounded
+                  prose-pre:bg-parchment prose-pre:border prose-pre:border-navy/10
                   prose-img:rounded-xl"
                 data-testid="text-article-content"
               />
             ) : (
               <div>
                 <div 
-                  className="prose prose-lg max-w-none
-                    prose-headings:text-gray-900 prose-headings:font-bold
+                  className="prose prose-lg max-w-none font-body
+                    prose-headings:text-navy prose-headings:font-serif prose-headings:font-bold
                     prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-                    prose-p:text-gray-900 prose-p:leading-relaxed
-                    prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-                    prose-strong:text-gray-900
-                    prose-blockquote:border-l-gray-900 prose-blockquote:text-gray-900 prose-blockquote:italic"
+                    prose-p:text-navy prose-p:leading-relaxed
+                    prose-a:text-gold prose-a:no-underline hover:prose-a:underline
+                    prose-strong:text-navy
+                    prose-blockquote:border-l-gold prose-blockquote:text-navy prose-blockquote:italic"
                   data-testid="text-article-preview"
                   dangerouslySetInnerHTML={{ __html: normalizeListHTML(article.isPreview ? article.content : extractPreviewParagraphs(article.content, 3)) }}
                 />
 
-                <div className="my-10 p-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl text-center">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Lock className="w-8 h-8 text-white" />
+                <div className="my-10 p-8 bg-navy rounded-xl text-center">
+                  <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-gold" />
                   </div>
                   
-                  <h3 className="text-2xl font-bold text-white mb-2">Support the work you want to see in the world</h3>
-                  <p className="text-slate-300 mb-6 max-w-md mx-auto">
+                  <h3 className="text-2xl font-serif font-bold text-white mb-2">Support the work you want to see in the world</h3>
+                  <p className="text-parchment/70 mb-2 max-w-md mx-auto font-body">
                     Unlock the full article for just {formatPrice(article.price)}
                   </p>
+                  <p className="text-gold/80 text-sm mb-6 font-sans">75% goes directly to the writer</p>
 
                   {checkingPurchase ? (
-                    <div className="flex items-center justify-center gap-2 text-slate-300">
+                    <div className="flex items-center justify-center gap-2 text-parchment/60">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Checking access...
                     </div>
                   ) : (
                     <button
                       onClick={handleBuyNow}
-                      className="bg-white text-slate-900 py-3 px-8 rounded-lg font-semibold hover:bg-slate-100 transition-colors inline-flex items-center gap-2"
+                      className="bg-gold hover:bg-gold-light text-white py-3 px-8 rounded-lg font-semibold transition-colors inline-flex items-center gap-2"
                       data-testid="button-buy-now"
                     >
                       <CreditCard className="w-5 h-5" />
-                      Buy Now - {formatPrice(article.price)}
+                      Unlock for {formatPrice(article.price)}
                     </button>
                   )}
 
-                  <p className="text-slate-500 text-xs mt-4">
-                    Powered by <span className="text-blue-400">Ledewire</span>
+                  <p className="text-parchment/40 text-xs mt-4 font-sans">
+                    Powered by <span className="text-gold/60">Ledewire</span>
                   </p>
                 </div>
               </div>
@@ -816,18 +817,18 @@ export default function ArticlePage() {
 
       {showPurchaseModal && article && !hasPurchased && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+          className="fixed inset-0 bg-navy/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
           onClick={() => setShowPurchaseModal(false)}
         >
           <div 
-            className="bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-xl max-w-lg w-full border border-navy/10 shadow-xl shadow-navy/20 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center p-6 border-b border-slate-800">
-              <h2 className="text-2xl text-white">Confirm Purchase</h2>
+            <div className="flex justify-between items-center p-6 border-b border-navy/10">
+              <h2 className="text-2xl text-navy font-serif font-bold">Unlock This Story</h2>
               <button 
                 onClick={() => setShowPurchaseModal(false)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate hover:text-navy transition-colors"
                 data-testid="button-close-purchase-modal"
               >
                 <X className="w-6 h-6" />
@@ -846,23 +847,27 @@ export default function ArticlePage() {
                   </div>
                 )}
                 <div>
-                  <h3 className="text-white mb-2 font-medium">{article.title}</h3>
-                  <p className="text-slate-400 line-clamp-2 text-sm">{stripHtml(article.summary)}</p>
+                  <h3 className="text-navy font-serif mb-2 font-medium">{article.title}</h3>
+                  <p className="text-slate line-clamp-2 text-sm font-body">{stripHtml(article.summary)}</p>
                 </div>
               </div>
 
-              <div className="bg-slate-800/50 rounded-lg p-4 mb-6 border border-slate-700">
+              <div className="bg-gold-pale/30 rounded-lg p-4 mb-4 border border-gold/20">
+                <p className="text-navy/80 text-sm font-sans">75% of your payment goes directly to the writer</p>
+              </div>
+
+              <div className="bg-parchment rounded-lg p-4 mb-6 border border-navy/8">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-slate-300">Article Price</span>
-                  <span className="text-white font-semibold">{formatPrice(article.price)}</span>
+                  <span className="text-slate font-sans text-sm">Article Price</span>
+                  <span className="text-navy font-serif font-semibold">{formatPrice(article.price)}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-slate-300">Your Balance</span>
-                  <span className="text-white font-semibold">${walletBalance.toFixed(2)}</span>
+                  <span className="text-slate font-sans text-sm">Your Balance</span>
+                  <span className="text-navy font-semibold">${walletBalance.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Payment Method</span>
-                  <span className="text-blue-400 flex items-center gap-2 font-medium">
+                  <span className="text-slate font-sans text-sm">Payment Method</span>
+                  <span className="text-gold flex items-center gap-2 font-medium text-sm">
                     <CreditCard className="w-4 h-4" />
                     Ledewire Micropayments
                   </span>
@@ -870,27 +875,27 @@ export default function ArticlePage() {
               </div>
 
               {purchaseError && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
-                  <p className="text-red-300 text-sm">{purchaseError}</p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <p className="text-red-600 text-sm">{purchaseError}</p>
                 </div>
               )}
 
               {walletBalance * 100 < article.price ? (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
-                  <p className="text-amber-300 text-sm mb-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                  <p className="text-amber-700 text-sm mb-3">
                     Insufficient balance. You need {formatPrice(article.price - walletBalance * 100)} more to purchase this article.
                   </p>
                   <button 
                     onClick={() => setShowAddFundsModal(true)}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg transition-colors text-center font-medium"
+                    className="w-full bg-gold hover:bg-gold-light text-white py-2 rounded-lg transition-colors text-center font-medium"
                     data-testid="button-add-funds-inline"
                   >
                     Add Funds to Wallet
                   </button>
                 </div>
               ) : (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-                  <p className="text-blue-300 text-sm">
+                <div className="bg-cool-grey rounded-lg p-4 mb-6 border border-navy/8">
+                  <p className="text-navy/70 text-sm font-body">
                     After purchase, you'll have unlimited access to this article
                   </p>
                 </div>
@@ -899,7 +904,7 @@ export default function ArticlePage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowPurchaseModal(false)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors font-medium"
+                  className="flex-1 bg-parchment hover:bg-cool-grey text-navy py-3 rounded-lg transition-colors font-medium border border-navy/10"
                   disabled={purchasing}
                   data-testid="button-cancel-purchase"
                 >
@@ -908,7 +913,7 @@ export default function ArticlePage() {
                 <button
                   onClick={handleConfirmPurchase}
                   disabled={purchasing || walletBalance * 100 < article.price}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 font-medium"
+                  className="flex-1 bg-gold hover:bg-gold-light text-white py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 font-medium"
                   data-testid="button-confirm-purchase"
                 >
                   {purchasing ? (
@@ -919,15 +924,15 @@ export default function ArticlePage() {
                   ) : (
                     <>
                       <Check className="w-5 h-5" />
-                      Confirm {formatPrice(article.price)}
+                      Unlock for {formatPrice(article.price)}
                     </>
                   )}
                 </button>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-800">
-                <p className="text-slate-500 text-xs text-center">
-                  powered by <a href="https://www.ledewire.com/explore" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors" data-testid="link-ledewire-article">ledewire</a>
+              <div className="mt-4 pt-4 border-t border-navy/8">
+                <p className="text-slate/50 text-xs text-center font-sans">
+                  powered by <a href="https://www.ledewire.com/explore" target="_blank" rel="noopener noreferrer" className="text-gold/60 hover:text-gold transition-colors" data-testid="link-ledewire-article">ledewire</a>
                 </p>
               </div>
             </div>

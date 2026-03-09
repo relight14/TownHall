@@ -3,21 +3,21 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-parchment">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-8"
+          className="inline-flex items-center gap-2 text-gold hover:text-gold-dark mb-8 font-sans"
           data-testid="link-back-home"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Home
         </Link>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">LedeWire Privacy Policy</h1>
-        <p className="text-gray-500 mb-8">Last Updated: September 16, 2025</p>
+        <h1 className="text-4xl font-serif font-bold text-navy mb-2">LedeWire Privacy Policy</h1>
+        <p className="text-slate mb-8 font-sans">Last Updated: September 16, 2025</p>
 
-        <div className="prose prose-slate max-w-none">
+        <div className="prose prose-slate max-w-none font-body prose-headings:font-serif prose-headings:text-navy prose-a:text-gold hover:prose-a:text-gold-dark">
           <p className="text-gray-700 mb-6">
             We are Relight Media Inc ("LedeWire", "Company", "we", "us", "our"), a company registered in Utah, United States at 3141 American Saddler Dr., Park City, UT 84060. This Privacy Policy describes how we collect, use, and disclose your information, including information that can be used to identify you, directly or indirectly, as defined by applicable laws ("Personal Information") in connection with our website at{' '}
             <a href="http://www.ledewire.com" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">

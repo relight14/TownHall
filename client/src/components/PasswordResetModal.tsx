@@ -85,25 +85,25 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
 
   return createPortal(
     <div 
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+      className="fixed inset-0 bg-navy/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-slate-900 rounded-2xl max-w-md w-full border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-xl max-w-md w-full border border-navy/10 shadow-xl shadow-navy/20 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-slate-800">
+        <div className="flex justify-between items-center p-6 border-b border-navy/10">
           <div className="flex items-center gap-3">
             {step !== 'success' && (
               <button
                 onClick={onBackToLogin}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate hover:text-navy transition-colors"
                 data-testid="button-back-to-login"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
-            <h2 className="text-2xl text-white font-bold">
+            <h2 className="text-2xl text-navy font-serif font-bold">
               {step === 'email' && 'Reset Password'}
               {step === 'code' && 'Enter Code'}
               {step === 'success' && 'Password Reset'}
@@ -111,7 +111,7 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
           </div>
           <button 
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-slate hover:text-navy transition-colors"
             data-testid="button-close-reset"
           >
             <X className="w-6 h-6" />
@@ -120,26 +120,26 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
 
         <div className="p-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm" data-testid="text-error">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm" data-testid="text-error">
               {error}
             </div>
           )}
 
           {step === 'email' && (
             <>
-              <p className="text-slate-400 mb-6">
+              <p className="text-slate mb-6 font-body">
                 Enter your email address and we'll send you a code to reset your password.
               </p>
               <form onSubmit={handleRequestCode}>
                 <div className="mb-6">
-                  <label className="block text-slate-300 mb-2 text-sm font-medium">Email</label>
+                  <label className="block text-navy mb-2 text-sm font-sans font-medium">Email</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      className="w-full bg-parchment border border-navy/10 rounded-lg px-10 py-3 text-navy focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                       placeholder="your@email.com"
                       required
                       data-testid="input-reset-email"
@@ -151,7 +151,7 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
                   <button
                     type="button"
                     onClick={onBackToLogin}
-                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors font-medium border border-slate-700"
+                    className="flex-1 bg-parchment hover:bg-cool-grey text-navy py-3 rounded-lg transition-colors font-medium border border-navy/10"
                     data-testid="button-cancel-reset"
                   >
                     Cancel
@@ -159,7 +159,7 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                    className="flex-1 bg-gold hover:bg-gold-light text-white py-3 rounded-lg transition-colors font-medium disabled:opacity-50"
                     data-testid="button-send-code"
                   >
                     {loading ? 'Sending...' : 'Send Code'}
@@ -171,18 +171,18 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
 
           {step === 'code' && (
             <>
-              <p className="text-slate-400 mb-6">
-                We've sent a 6-digit code to <span className="text-white">{email}</span>. Enter it below along with your new password.
+              <p className="text-slate mb-6 font-body">
+                We've sent a 6-digit code to <span className="text-navy font-medium">{email}</span>. Enter it below along with your new password.
               </p>
               <form onSubmit={handleResetPassword}>
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="block text-slate-300 mb-2 text-sm font-medium">Reset Code</label>
+                    <label className="block text-navy mb-2 text-sm font-sans font-medium">Reset Code</label>
                     <input
                       type="text"
                       value={resetCode}
                       onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white text-center text-2xl tracking-widest focus:outline-none focus:border-blue-500 transition-colors"
+                      className="w-full bg-parchment border border-navy/10 rounded-lg px-4 py-3 text-navy text-center text-2xl tracking-widest focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                       placeholder="000000"
                       maxLength={6}
                       required
@@ -191,14 +191,14 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 mb-2 text-sm font-medium">New Password</label>
+                    <label className="block text-navy mb-2 text-sm font-sans font-medium">New Password</label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate" />
                       <input
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        className="w-full bg-parchment border border-navy/10 rounded-lg px-10 py-3 text-navy focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                         placeholder="••••••••"
                         required
                         data-testid="input-new-password"
@@ -207,14 +207,14 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 mb-2 text-sm font-medium">Confirm Password</label>
+                    <label className="block text-navy mb-2 text-sm font-sans font-medium">Confirm Password</label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate" />
                       <input
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        className="w-full bg-parchment border border-navy/10 rounded-lg px-10 py-3 text-navy focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                         placeholder="••••••••"
                         required
                         data-testid="input-confirm-password"
@@ -227,7 +227,7 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
                   <button
                     type="button"
                     onClick={() => setStep('email')}
-                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg transition-colors font-medium border border-slate-700"
+                    className="flex-1 bg-parchment hover:bg-cool-grey text-navy py-3 rounded-lg transition-colors font-medium border border-navy/10"
                     data-testid="button-back"
                   >
                     Back
@@ -235,7 +235,7 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
                   <button
                     type="submit"
                     disabled={loading || resetCode.length !== 6}
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                    className="flex-1 bg-gold hover:bg-gold-light text-white py-3 rounded-lg transition-colors font-medium disabled:opacity-50"
                     data-testid="button-reset-password"
                   >
                     {loading ? 'Resetting...' : 'Reset Password'}
@@ -247,16 +247,16 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
 
           {step === 'success' && (
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-400" />
+              <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="text-xl text-white font-semibold mb-2">Password Reset Successful</h3>
-              <p className="text-slate-400 mb-6">
+              <h3 className="text-xl text-navy font-serif font-semibold mb-2">Password Reset Successful</h3>
+              <p className="text-slate mb-6 font-body">
                 Your password has been successfully reset. You can now sign in with your new password.
               </p>
               <button
                 onClick={onBackToLogin}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20"
+                className="w-full bg-gold hover:bg-gold-light text-white py-3 rounded-lg transition-colors font-medium"
                 data-testid="button-back-to-signin"
               >
                 Back to Sign In
@@ -265,9 +265,9 @@ export default function PasswordResetModal({ onClose, onBackToLogin }: PasswordR
           )}
         </div>
 
-        <div className="px-6 pb-4 pt-2 border-t border-slate-800">
-          <p className="text-slate-500 text-xs text-center">
-            powered by <span className="text-blue-400">ledewire</span>
+        <div className="px-6 pb-4 pt-2 border-t border-navy/8">
+          <p className="text-slate/50 text-xs text-center font-sans">
+            powered by <span className="text-gold/60">ledewire</span>
           </p>
         </div>
       </div>
