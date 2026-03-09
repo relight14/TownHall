@@ -1,35 +1,26 @@
 import { useParams, Link } from 'react-router-dom';
-import { lazy, Suspense, useState } from 'react';
 import { Eye, ArrowLeft } from 'lucide-react';
 import { VideoStoreProvider, useVideoStore } from '../context/VideoStoreContext';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { getStateName, isValidStateCode } from '../lib/states';
-import { useArticles } from '../hooks/articles';
+import { useArticlesByState } from '../hooks/articles';
+import { useAuthModals, AuthModals } from '../hooks/useAuthModals';
 import { formatShortDate, formatViewCount } from '../lib/formatters';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
-
-const AuthModal = lazy(() => import('../components/AuthModal'));
-const PasswordResetModal = lazy(() => import('../components/PasswordResetModal'));
 
 export default function StatePage() {
   const { stateCode } = useParams<{ stateCode: string }>();
   const code = stateCode?.toUpperCase() || '';
   const stateName = getStateName(code);
   const isValid = isValidStateCode(code);
-  const { data: allArticles = [], isLoading } = useArticles();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
-
-  // Filter articles for this state
-  const stateArticles = allArticles.filter(a => {
-    if (!(a as any).state) return false;
-    return (a as any).state.toUpperCase() === code;
-  });
+  const { data: stateArticles = [], isLoading } = useArticlesByState(isValid ? code : null);
+  const auth = useAuthModals();
 
   if (!isValid) {
     return (
       <div className="min-h-screen bg-white">
-        <Header onLoginClick={() => setShowAuthModal(true)} />
+        <Header onLoginClick={auth.openLogin} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">State Not Found</h1>
           <p className="text-gray-500 mb-8">"{stateCode}" is not a valid state code.</p>
@@ -43,7 +34,7 @@ export default function StatePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header onLoginClick={() => setShowAuthModal(true)} selectedState={code} />
+      <Header onLoginClick={auth.openLogin} selectedState={code} />
 
       {/* State Hero */}
       <div className="bg-gray-50 border-b border-gray-200">
@@ -131,42 +122,15 @@ export default function StatePage() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-cream py-12 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <span className="text-xl font-bold text-navy font-serif">The Commons</span>
-              <div className="flex items-center gap-4 text-sm">
-                <Link to="/terms" className="text-gray-500 hover:text-gray-700 transition-colors">Terms of Service</Link>
-                <span className="text-gray-300">|</span>
-                <Link to="/privacy" className="text-gray-500 hover:text-gray-700 transition-colors">Privacy Policy</Link>
-              </div>
-            </div>
-            <div className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} The Commons. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
-      {showAuthModal && (
-        <Suspense fallback={null}>
-          <AuthModal
-            onClose={() => setShowAuthModal(false)}
-            onForgotPassword={() => { setShowAuthModal(false); setShowPasswordReset(true); }}
-          />
-        </Suspense>
-      )}
-
-      {showPasswordReset && (
-        <Suspense fallback={null}>
-          <PasswordResetModal
-            onClose={() => setShowPasswordReset(false)}
-            onBackToLogin={() => { setShowPasswordReset(false); setShowAuthModal(true); }}
-          />
-        </Suspense>
-      )}
+      <AuthModals
+        showAuth={auth.showAuth}
+        showPasswordReset={auth.showPasswordReset}
+        onClose={auth.closeAll}
+        onForgotPassword={auth.switchToPasswordReset}
+        onBackToLogin={auth.switchToLogin}
+      />
     </div>
   );
 }

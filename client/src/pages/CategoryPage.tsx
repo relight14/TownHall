@@ -29,7 +29,7 @@ export default function CategoryPage() {
     return allArticles.filter(a => a.category === category);
   }, [articles, featuredArticles, category]);
   
-  const featuredInCategory = categoryArticles.filter(a => a.featured > 0).sort((a, b) => a.featured - b.featured);
+  const featuredInCategory = categoryArticles.filter(a => (a.featured ?? 0) > 0).sort((a, b) => (a.featured ?? 0) - (b.featured ?? 0));
   const latestInCategory = [...categoryArticles].sort((a, b) => 
     new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
@@ -114,7 +114,7 @@ export default function CategoryPage() {
                   )}
                 </div>
                 <div>
-                  {heroArticle.featured > 0 && (
+                  {(heroArticle.featured ?? 0) > 0 && (
                     <span className="inline-block bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
                       Featured
                     </span>

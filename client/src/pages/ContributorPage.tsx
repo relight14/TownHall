@@ -1,19 +1,16 @@
 import { useParams, Link } from 'react-router-dom';
-import { lazy, Suspense, useState } from 'react';
 import { Eye, ArrowLeft, MapPin } from 'lucide-react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { getStateName } from '../lib/states';
 import { useArticles } from '../hooks/articles';
+import { useAuthModals, AuthModals } from '../hooks/useAuthModals';
 import { formatShortDate, formatViewCount } from '../lib/formatters';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 
-const AuthModal = lazy(() => import('../components/AuthModal'));
-const PasswordResetModal = lazy(() => import('../components/PasswordResetModal'));
-
 export default function ContributorPage() {
   const { contributorId } = useParams<{ contributorId: string }>();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const auth = useAuthModals();
 
   // TODO: Fetch contributor data from API once contributor endpoints are built
   // For now this is a structural placeholder
@@ -34,7 +31,7 @@ export default function ContributorPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header onLoginClick={() => setShowAuthModal(true)} />
+      <Header onLoginClick={auth.openLogin} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors">
@@ -116,41 +113,15 @@ export default function ContributorPage() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-gray-50 py-12 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <span className="text-xl font-bold text-gray-900">TownHall</span>
-              <div className="flex items-center gap-4 text-sm">
-                <Link to="/terms" className="text-gray-500 hover:text-gray-700 transition-colors">Terms of Service</Link>
-                <span className="text-gray-300">|</span>
-                <Link to="/privacy" className="text-gray-500 hover:text-gray-700 transition-colors">Privacy Policy</Link>
-              </div>
-            </div>
-            <div className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} TownHall. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
-      {showAuthModal && (
-        <Suspense fallback={null}>
-          <AuthModal
-            onClose={() => setShowAuthModal(false)}
-            onForgotPassword={() => { setShowAuthModal(false); setShowPasswordReset(true); }}
-          />
-        </Suspense>
-      )}
-      {showPasswordReset && (
-        <Suspense fallback={null}>
-          <PasswordResetModal
-            onClose={() => setShowPasswordReset(false)}
-            onBackToLogin={() => { setShowPasswordReset(false); setShowAuthModal(true); }}
-          />
-        </Suspense>
-      )}
+      <AuthModals
+        showAuth={auth.showAuth}
+        showPasswordReset={auth.showPasswordReset}
+        onClose={auth.closeAll}
+        onForgotPassword={auth.switchToPasswordReset}
+        onBackToLogin={auth.switchToLogin}
+      />
     </div>
   );
 }

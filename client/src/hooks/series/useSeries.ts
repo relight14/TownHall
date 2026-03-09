@@ -2,27 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { seriesKeys } from './queryKeys';
 import { captureError, getRequestId } from '../../lib/errorTracking';
 import { useErrorContext } from '../useErrorContext';
+import type { ApiEpisode as Episode, ApiSeries as Series } from '@shared/types';
 
-export interface Episode {
-  id: string;
-  title: string;
-  description: string;
-  videoUrl: string;
-  videoType: 'vimeo' | 'youtube';
-  price: number;
-  thumbnail: string;
-  ledewireContentId?: string;
-}
-
-export interface Series {
-  id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  trailerUrl?: string;
-  trailerType?: 'vimeo' | 'youtube';
-  episodes: Episode[];
-}
+export type { Episode, Series };
 
 /**
  * Query hook to fetch all series

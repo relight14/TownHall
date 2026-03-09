@@ -1,14 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Play, BookOpen } from 'lucide-react';
 import { ImageWithFallback } from './ui/image-with-fallback';
+import type { ApiSeries } from '@shared/types';
 
-interface Series {
-  id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  episodes: any[];
-}
+type Series = Pick<ApiSeries, 'id' | 'title' | 'description' | 'thumbnail' | 'episodes'>;
 
 interface SeriesCardProps {
   series: Series;

@@ -2,24 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { articleKeys } from './queryKeys';
 import { captureError, getRequestId } from '../../lib/errorTracking';
 import { useErrorContext } from '../useErrorContext';
+import type { ApiArticle as Article } from '@shared/types';
 
-export interface Article {
-  id: string;
-  title: string;
-  summary: string;
-  content: string;
-  subheader: string;
-  thumbnail: string | null;
-  category: string;
-  viewCount: number;
-  readTimeMinutes: number;
-  featured: number;
-  publishedAt: string;
-  price: number;
-  author?: string;
-  ledewireContentId?: string | null;
-  isPreview?: boolean;
-}
+export type { Article };
 
 /**
  * Query hook to fetch all articles
@@ -139,6 +124,26 @@ export function useArticlesByCategory(category: string) {
   return allArticles
     .filter(a => a.category === category)
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+}
+
+/**
+ * Query hook to fetch articles for a specific state (server-side filtered)
+ */
+export function useArticlesByState(stateCode: string | null) {
+  const errorCtx = useErrorContext();
+  return useQuery<Article[]>({
+    queryKey: articleKeys.byState(stateCode || ''),
+    queryFn: async () => {
+      const res = await fetch(`/api/articles/state/${stateCode}`);
+      if (!res.ok) {
+        const error = new Error('Failed to fetch articles for state');
+        captureError(error, { component: 'useArticlesByState', action: 'fetch_by_state', requestId: getRequestId(res), ...errorCtx });
+        throw error;
+      }
+      return res.json();
+    },
+    enabled: !!stateCode,
+  });
 }
 
 interface PurchaseVerificationResponse {

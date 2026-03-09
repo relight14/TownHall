@@ -1,11 +1,7 @@
 import { X } from 'lucide-react';
+import type { ApiEpisode } from '@shared/types';
 
-interface Episode {
-  id: string;
-  title: string;
-  videoUrl: string;
-  videoType: 'vimeo' | 'youtube';
-}
+type Episode = Pick<ApiEpisode, 'id' | 'title' | 'videoUrl' | 'videoType'>;
 
 interface VideoPlayerProps {
   episode: Episode;

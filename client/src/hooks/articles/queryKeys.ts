@@ -9,6 +9,7 @@ export const articleKeys = {
   latest: () => [...articleKeys.all, 'latest'] as const,
   mostRead: () => [...articleKeys.all, 'most-read'] as const,
   byCategory: (category: string) => [...articleKeys.all, 'category', category] as const,
+  byState: (stateCode: string) => [...articleKeys.all, 'state', stateCode] as const,
   detail: (id: string) => [...articleKeys.all, 'detail', id] as const,
   // API-based keys (matching current API endpoint pattern)
   api: {

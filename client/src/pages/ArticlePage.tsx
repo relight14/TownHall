@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { trackEvent } from '../lib/analytics';
 import { ArrowLeft, Calendar, User, Share2, Check, Lock, CreditCard, Loader2, X, Clock, Eye } from 'lucide-react';
@@ -7,10 +7,11 @@ import { DynamicImage } from '../components/ui/dynamic-image';
 import { useQueryClient } from '@tanstack/react-query';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { useArticle, useArticlePurchaseVerification, articleKeys, type Article } from '../hooks/articles';
-import AuthModal from '../components/AuthModal';
-import PasswordResetModal from '../components/PasswordResetModal';
-import AddFundsModal from '../components/AddFundsModal';
-import { Tweet } from 'react-tweet';
+import { useAuthModals, AuthModals } from '../hooks/useAuthModals';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+const AddFundsModal = lazy(() => import('../components/AddFundsModal'));
+const Tweet = lazy(() => import('react-tweet').then(m => ({ default: m.Tweet })));
 import { formatFullDate, formatViewCount } from '../lib/formatters';
 
 function stripHtml(html: string): string {
@@ -351,7 +352,9 @@ function ArticleContent({ html, className, "data-testid": testId }: { html: stri
         if (segment.type === 'tweet') {
           return (
             <div key={index} className="my-4 flex justify-center not-prose">
-              <Tweet id={segment.tweetId} />
+              <Suspense fallback={<div className="animate-pulse h-48 bg-gray-100 rounded-lg" />}>
+                <Tweet id={segment.tweetId} />
+              </Suspense>
             </div>
           );
         }
@@ -464,9 +467,8 @@ export default function ArticlePage() {
   };
 
   const [copied, setCopied] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const auth = useAuthModals(() => setShowPurchaseModal(true));
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
@@ -495,7 +497,7 @@ export default function ArticlePage() {
 
   const handleBuyNow = () => {
     if (!user || !ledewireToken) {
-      setShowAuthModal(true);
+      auth.openLogin();
       return;
     }
     setShowPurchaseModal(true);
@@ -584,15 +586,21 @@ export default function ArticlePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-white">
+        <Header onLoginClick={auth.openLogin} />
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full" />
+        </div>
+        <Footer />
       </div>
     );
   }
 
   if (error || !article) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-white min-h-screen text-gray-900">
+      <div className="min-h-screen bg-white">
+        <Header onLoginClick={auth.openLogin} />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-gray-900">
         <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Back to home
@@ -601,6 +609,8 @@ export default function ArticlePage() {
           <p className="text-gray-500 text-xl">Article not found</p>
           <p className="text-gray-400 mt-2">The article you're looking for doesn't exist.</p>
         </div>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -611,7 +621,8 @@ export default function ArticlePage() {
   const canViewContent = !requiresPayment || hasPurchased;
 
   return (
-    <div className="min-h-screen bg-white pb-12 sm:pb-20 text-gray-900">
+    <div className="min-h-screen bg-white text-gray-900">
+      <Header onLoginClick={auth.openLogin} />
       <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12 text-gray-900">
         <Link 
           to="/" 
@@ -674,7 +685,7 @@ export default function ArticlePage() {
             </p>
 
             <div className="flex items-center gap-2 mb-6 pb-6 border-b border-gray-200">
-              <span className="text-gray-700 font-medium">The Commons</span>
+              <span className="text-gray-700 font-medium" data-testid="text-article-author">The Commons</span>
             </div>
 
             <p className="text-base text-gray-700 mb-8 leading-relaxed border-l-4 border-gray-900 pl-6" data-testid="text-article-summary">
@@ -792,29 +803,16 @@ export default function ArticlePage() {
         </article>
       </div>
 
-      {showAuthModal && (
-        <AuthModal
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={() => {
-            setShowAuthModal(false);
-            setShowPurchaseModal(true);
-          }}
-          onForgotPassword={() => {
-            setShowAuthModal(false);
-            setShowPasswordReset(true);
-          }}
-        />
-      )}
-      
-      {showPasswordReset && (
-        <PasswordResetModal 
-          onClose={() => setShowPasswordReset(false)}
-          onBackToLogin={() => {
-            setShowPasswordReset(false);
-            setShowAuthModal(true);
-          }}
-        />
-      )}
+      <Footer />
+
+      <AuthModals
+        showAuth={auth.showAuth}
+        showPasswordReset={auth.showPasswordReset}
+        onClose={auth.closeAll}
+        onAuthSuccess={auth.handleAuthSuccess}
+        onForgotPassword={auth.switchToPasswordReset}
+        onBackToLogin={auth.switchToLogin}
+      />
 
       {showPurchaseModal && article && !hasPurchased && (
         <div 
@@ -938,13 +936,15 @@ export default function ArticlePage() {
       )}
 
       {showAddFundsModal && article && (
-        <AddFundsModal
-          onClose={() => setShowAddFundsModal(false)}
-          onSuccess={() => {
-            setShowAddFundsModal(false);
-          }}
-          suggestedAmount={Math.ceil((article.price - walletBalance * 100) / 100) + 5}
-        />
+        <Suspense fallback={null}>
+          <AddFundsModal
+            onClose={() => setShowAddFundsModal(false)}
+            onSuccess={() => {
+              setShowAddFundsModal(false);
+            }}
+            suggestedAmount={Math.ceil((article.price - walletBalance * 100) / 100) + 5}
+          />
+        </Suspense>
       )}
     </div>
   );

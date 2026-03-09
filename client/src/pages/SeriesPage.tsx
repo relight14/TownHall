@@ -4,23 +4,33 @@ import EpisodeCard from '../components/EpisodeCard';
 import { ArrowLeft } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { VideoEmbed } from '../components/VideoEmbed';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import { useAuthModals, AuthModals } from '../hooks/useAuthModals';
 
 export default function SeriesPage() {
   const { seriesId } = useParams<{ seriesId: string }>();
   const { data: series = [] } = useSeries();
+  const auth = useAuthModals();
   
   const currentSeries = series.find(s => s.id === seriesId);
 
   if (!currentSeries) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <p className="text-slate-400 text-xl">Series not found</p>
+      <div className="min-h-screen bg-white">
+        <Header onLoginClick={auth.openLogin} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <p className="text-gray-500 text-xl">Series not found</p>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen pb-20">
+    <div className="min-h-screen">
+      <Header onLoginClick={auth.openLogin} />
+      <div className="relative pb-20">
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/90 to-slate-950" />
@@ -95,6 +105,17 @@ export default function SeriesPage() {
           )}
         </div>
       </div>
+      </div>
+
+      <Footer />
+
+      <AuthModals
+        showAuth={auth.showAuth}
+        showPasswordReset={auth.showPasswordReset}
+        onClose={auth.closeAll}
+        onForgotPassword={auth.switchToPasswordReset}
+        onBackToLogin={auth.switchToLogin}
+      />
     </div>
   );
 }

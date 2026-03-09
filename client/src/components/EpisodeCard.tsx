@@ -1,21 +1,13 @@
 import { useState, useRef } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
-import AuthModal from './AuthModal';
-import PasswordResetModal from './PasswordResetModal';
+import { useAuthModals, AuthModals } from '../hooks/useAuthModals';
 import PurchaseModal from './PurchaseModal';
 import VideoPlayer from './VideoPlayer';
 import { Lock, Play, Check } from 'lucide-react';
 import { ImageWithFallback } from './ui/image-with-fallback';
+import type { ApiEpisode } from '@shared/types';
 
-interface Episode {
-  id: string;
-  title: string;
-  description: string;
-  videoUrl: string;
-  videoType: 'vimeo' | 'youtube';
-  price: number;
-  thumbnail: string;
-}
+type Episode = Pick<ApiEpisode, 'id' | 'title' | 'description' | 'videoUrl' | 'videoType' | 'price' | 'thumbnail'>;
 
 interface EpisodeCardProps {
   episode: Episode;
@@ -80,9 +72,8 @@ function getYouTubeEmbedUrl(url: string): string {
 
 export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
   const { user, purchasedEpisodes } = useVideoStore();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const auth = useAuthModals(() => setShowPurchaseModal(true));
   const [showPlayer, setShowPlayer] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -142,7 +133,7 @@ export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
     if (isPurchased) {
       setShowPlayer(true);
     } else if (!user) {
-      setShowAuthModal(true);
+      auth.openLogin();
     } else {
       setShowPurchaseModal(true);
     }
@@ -289,29 +280,14 @@ export default function EpisodeCard({ episode, seriesId }: EpisodeCardProps) {
         </div>
       </div>
 
-      {showAuthModal && (
-        <AuthModal 
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={() => {
-            setShowAuthModal(false);
-            setShowPurchaseModal(true);
-          }}
-          onForgotPassword={() => {
-            setShowAuthModal(false);
-            setShowPasswordReset(true);
-          }}
-        />
-      )}
-      
-      {showPasswordReset && (
-        <PasswordResetModal 
-          onClose={() => setShowPasswordReset(false)}
-          onBackToLogin={() => {
-            setShowPasswordReset(false);
-            setShowAuthModal(true);
-          }}
-        />
-      )}
+      <AuthModals
+        showAuth={auth.showAuth}
+        showPasswordReset={auth.showPasswordReset}
+        onClose={auth.closeAll}
+        onAuthSuccess={auth.handleAuthSuccess}
+        onForgotPassword={auth.switchToPasswordReset}
+        onBackToLogin={auth.switchToLogin}
+      />
 
       {showPurchaseModal && (
         <PurchaseModal 

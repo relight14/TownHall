@@ -2,11 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { siteSettingsKeys } from './queryKeys';
 import { captureError, getRequestId } from '../../lib/errorTracking';
 import { useErrorContext } from '../useErrorContext';
+import type { ApiSiteSettings as SiteSettings } from '@shared/types';
 
-export interface SiteSettings {
-  heroHeading: string;
-  heroSubheading: string;
-}
+export type { SiteSettings };
 
 const defaultSiteSettings: SiteSettings = {
   heroHeading: "Nurturing artists.\nShaping culture.",

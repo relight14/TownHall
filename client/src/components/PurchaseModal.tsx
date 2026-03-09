@@ -2,14 +2,9 @@ import { useState } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { X, CreditCard, Check } from 'lucide-react';
 import { ImageWithFallback } from './ui/image-with-fallback';
+import type { ApiEpisode } from '@shared/types';
 
-interface Episode {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  thumbnail: string;
-}
+type Episode = Pick<ApiEpisode, 'id' | 'title' | 'description' | 'price' | 'thumbnail'>;
 
 interface PurchaseModalProps {
   episode: Episode;

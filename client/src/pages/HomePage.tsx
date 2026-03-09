@@ -1,8 +1,9 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useMemo } from 'react';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { useSeries } from '../hooks/series/useSeries';
-import { useArticles, useFeaturedArticles, useLatestArticles, useMostReadArticles, type Article } from '../hooks/articles';
+import { useArticles, useFeaturedArticles, type Article } from '../hooks/articles';
 import { useFeaturedEpisodes } from '../hooks/featuredEpisodes';
+import { useAuthModals, AuthModals } from '../hooks/useAuthModals';
 import { Link } from 'react-router-dom';
 import { Clock, Eye, Play, ChevronRight, MapPin } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
@@ -10,11 +11,8 @@ import { DynamicImage } from '../components/ui/dynamic-image';
 import { stripHtmlMemoized } from '../lib/utils';
 import { formatDate, formatShortDate, formatViewCount } from '../lib/formatters';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { STATE_NAMES, REGIONS, getHomeState } from '../lib/states';
-
-// Lazy load modals - only loaded when needed
-const AuthModal = lazy(() => import('../components/AuthModal'));
-const PasswordResetModal = lazy(() => import('../components/PasswordResetModal'));
 
 function ArticlesSkeleton() {
   return (
@@ -294,13 +292,10 @@ export default function HomePage() {
   // Article queries with loading states
   const { data: articles = [], isLoading: articlesLoading } = useArticles();
   const { data: featuredArticles = [], isLoading: featuredLoading } = useFeaturedArticles();
-  const { data: latestArticles = [], isLoading: latestLoading } = useLatestArticles(5);
-  const { data: mostReadArticles = [], isLoading: mostReadLoading } = useMostReadArticles(5);
   
-  const isLoading = articlesLoading || featuredLoading || latestLoading || mostReadLoading;
+  const isLoading = articlesLoading || featuredLoading;
   
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const auth = useAuthModals();
 
   const homeState = getHomeState();
 
@@ -324,7 +319,7 @@ export default function HomePage() {
   );
 
   const featuredSorted = useMemo(() =>
-    allArticles.filter(a => a.featured > 0).sort((a, b) => a.featured - b.featured),
+    allArticles.filter(a => (a.featured ?? 0) > 0).sort((a, b) => (a.featured ?? 0) - (b.featured ?? 0)),
     [allArticles]
   );
 
@@ -342,7 +337,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header onLoginClick={() => setShowAuthModal(true)} />
+      <Header onLoginClick={auth.openLogin} />
 
       {/* Topic Subheader */}
       <div className="border-b border-gray-100 bg-cream">
@@ -448,54 +443,15 @@ export default function HomePage() {
         <VideoAnalysisSection episodes={featuredEpisodes} series={series} />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-cream py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <span className="text-xl font-bold text-navy font-serif">The Commons</span>
-              <div className="flex items-center gap-4 text-sm">
-                <Link to="/terms" className="text-gray-500 hover:text-gray-700 transition-colors" data-testid="link-terms">
-                  Terms of Service
-                </Link>
-                <span className="text-gray-300">|</span>
-                <Link to="/privacy" className="text-gray-500 hover:text-gray-700 transition-colors" data-testid="link-privacy">
-                  Privacy Policy
-                </Link>
-              </div>
-            </div>
-            <div className="text-sm text-gray-500">
-              <span>&copy; {new Date().getFullYear()} The Commons. All rights reserved.</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
-      {/* Auth Modal - Lazy loaded */}
-      {showAuthModal && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full" /></div>}>
-          <AuthModal
-            onClose={() => setShowAuthModal(false)}
-            onForgotPassword={() => {
-              setShowAuthModal(false);
-              setShowPasswordReset(true);
-            }}
-          />
-        </Suspense>
-      )}
-
-      {/* Password Reset Modal - Lazy loaded */}
-      {showPasswordReset && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full" /></div>}>
-          <PasswordResetModal
-            onClose={() => setShowPasswordReset(false)}
-            onBackToLogin={() => {
-              setShowPasswordReset(false);
-              setShowAuthModal(true);
-            }}
-          />
-        </Suspense>
-      )}
+      <AuthModals
+        showAuth={auth.showAuth}
+        showPasswordReset={auth.showPasswordReset}
+        onClose={auth.closeAll}
+        onForgotPassword={auth.switchToPasswordReset}
+        onBackToLogin={auth.switchToLogin}
+      />
     </div>
   );
 }

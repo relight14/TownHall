@@ -2,22 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { featuredEpisodesKeys } from './queryKeys';
 import { captureError, getRequestId } from '../../lib/errorTracking';
 import { useErrorContext } from '../useErrorContext';
+import type { ApiEpisode as Episode, ApiFeaturedEpisode as FeaturedEpisode } from '@shared/types';
 
-export interface Episode {
-  id: string;
-  title: string;
-  description: string;
-  videoUrl: string;
-  videoType: 'vimeo' | 'youtube';
-  price: number;
-  thumbnail: string;
-  ledewireContentId?: string;
-}
-
-export interface FeaturedEpisode extends Episode {
-  displayOrder: number;
-  seriesId: string;
-}
+export type { Episode, FeaturedEpisode };
 
 /**
  * Query hook to fetch featured episodes

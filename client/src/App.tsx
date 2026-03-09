@@ -1,22 +1,23 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { VideoStoreProvider, useVideoStore } from './context/VideoStoreContext';
-import HomePage from './pages/HomePage';
-import StatePage from './pages/StatePage';
-import ContributorPage from './pages/ContributorPage';
-import SeriesPage from './pages/SeriesPage';
-import ArticlePage from './pages/ArticlePage';
-import CategoryPage from './pages/CategoryPage';
-import VideosPage from './pages/VideosPage';
-import AdminPage from './pages/AdminPage';
-import WalletPage from './pages/WalletPage';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
-import AuthModal from './components/AuthModal';
-import CookieConsent from './components/CookieConsent';
-import PasswordResetModal from './components/PasswordResetModal';
-import { Wallet, LogIn, LogOut, User } from 'lucide-react';
-import { useState, useEffect, createContext, useContext } from 'react';
+import { lazy, Suspense, useState, useEffect, createContext, useContext } from 'react';
+import { useAuthModals, AuthModals } from './hooks/useAuthModals';
+
+// Route-level code splitting — each page loads only when navigated to
+const HomePage = lazy(() => import('./pages/HomePage'));
+const StatePage = lazy(() => import('./pages/StatePage'));
+const ContributorPage = lazy(() => import('./pages/ContributorPage'));
+const SeriesPage = lazy(() => import('./pages/SeriesPage'));
+const ArticlePage = lazy(() => import('./pages/ArticlePage'));
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const VideosPage = lazy(() => import('./pages/VideosPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const WalletPage = lazy(() => import('./pages/WalletPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+
+const CookieConsent = lazy(() => import('./components/CookieConsent'));
 
 interface GoogleOAuthContextType {
   isAvailable: boolean;
@@ -34,46 +35,41 @@ export function useGoogleOAuthStatus() {
 
 function AppContent() {
   const { user, walletBalance, logout } = useVideoStore();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const auth = useAuthModals();
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/state/:stateCode" element={<StatePage />} />
-        <Route path="/contributor/:contributorId" element={<ContributorPage />} />
-        <Route path="/series/:seriesId" element={<SeriesPage />} />
-        <Route path="/article/:articleId" element={<ArticlePage />} />
-        <Route path="/category/:category" element={<CategoryPage />} />
-        <Route path="/videos" element={<VideosPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/wallet" element={<WalletPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-      </Routes>
+      <Suspense fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="animate-pulse text-gray-400">Loading...</div>
+        </div>
+      }>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/state/:stateCode" element={<StatePage />} />
+          <Route path="/contributor/:contributorId" element={<ContributorPage />} />
+          <Route path="/series/:seriesId" element={<SeriesPage />} />
+          <Route path="/article/:articleId" element={<ArticlePage />} />
+          <Route path="/category/:category" element={<CategoryPage />} />
+          <Route path="/videos" element={<VideosPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+        </Routes>
+      </Suspense>
 
-      <CookieConsent />
+      <Suspense fallback={null}>
+        <CookieConsent />
+      </Suspense>
 
-      {showAuthModal && (
-        <AuthModal 
-          onClose={() => setShowAuthModal(false)}
-          onForgotPassword={() => {
-            setShowAuthModal(false);
-            setShowPasswordReset(true);
-          }}
-        />
-      )}
-      
-      {showPasswordReset && (
-        <PasswordResetModal 
-          onClose={() => setShowPasswordReset(false)}
-          onBackToLogin={() => {
-            setShowPasswordReset(false);
-            setShowAuthModal(true);
-          }}
-        />
-      )}
+      <AuthModals
+        showAuth={auth.showAuth}
+        showPasswordReset={auth.showPasswordReset}
+        onClose={auth.closeAll}
+        onForgotPassword={auth.switchToPasswordReset}
+        onBackToLogin={auth.switchToLogin}
+      />
     </div>
   );
 }
