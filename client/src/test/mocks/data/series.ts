@@ -1,4 +1,4 @@
-import type { Series, Episode } from '@/hooks/series/useSeries';
+import type { ApiSeries as Series, ApiEpisode as Episode } from '@shared/types';
 
 export function createEpisode(overrides: Partial<Episode> = {}): Episode {
   return {

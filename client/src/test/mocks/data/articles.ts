@@ -1,4 +1,4 @@
-import type { Article } from '@/hooks/articles/useArticles';
+import type { ApiArticle as Article } from '@shared/types';
 
 let idCounter = 0;
 
@@ -12,10 +12,14 @@ export function createArticle(overrides: Partial<Article> = {}): Article {
     subheader: `Subheader ${idCounter}`,
     thumbnail: `https://example.com/thumb-${idCounter}.webp`,
     category: 'elections',
+    topic: 'politics',
+    state: null,
+    contributorId: null,
     viewCount: 100 * idCounter,
     readTimeMinutes: 5,
     featured: 0,
     publishedAt: new Date(2025, 5, idCounter).toISOString(),
+    createdAt: new Date(2025, 5, idCounter).toISOString(),
     price: 0,
     ...overrides,
   };

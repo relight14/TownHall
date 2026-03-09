@@ -92,18 +92,20 @@ describe('HomePage', () => {
 
     await waitForDataLoaded();
 
-    expect(screen.getByText('Most Read')).toBeInTheDocument();
+    expect(screen.getByText('Trending')).toBeInTheDocument();
     expect(screen.getByTestId('most-read-article-a1')).toBeInTheDocument();
   });
 
-  it('renders category sections for articles', async () => {
+  it('renders Browse by State section', async () => {
     setupHandlers();
     renderWithProviders(<HomePage />);
 
     await waitForDataLoaded();
 
-    // Elections section should exist with articles
-    expect(screen.getByTestId('view-all-elections')).toBeInTheDocument();
+    // Browse by State section should exist with state links
+    expect(screen.getByText('Browse by State')).toBeInTheDocument();
+    expect(screen.getByTestId('state-link-GA')).toBeInTheDocument();
+    expect(screen.getByTestId('state-link-NY')).toBeInTheDocument();
   });
 
   it('shows "Log in" button when unauthenticated', async () => {
@@ -114,15 +116,11 @@ describe('HomePage', () => {
     expect(screen.getByText('Log in')).toBeInTheDocument();
   });
 
-  it('renders category tabs', () => {
+  it('renders topic navigation', () => {
     setupHandlers();
     renderWithProviders(<HomePage />);
 
-    expect(screen.getByTestId('category-tab-all')).toBeInTheDocument();
-    expect(screen.getByTestId('category-tab-elections')).toBeInTheDocument();
-    expect(screen.getByTestId('category-tab-policy')).toBeInTheDocument();
-    expect(screen.getByTestId('category-tab-candidate-rankings')).toBeInTheDocument();
-    expect(screen.getByTestId('category-tab-speech-analysis')).toBeInTheDocument();
+    expect(screen.getByText('Politics')).toBeInTheDocument();
     expect(screen.getByTestId('category-tab-videos')).toBeInTheDocument();
   });
 
@@ -132,7 +130,6 @@ describe('HomePage', () => {
 
     expect(screen.getByTestId('link-terms')).toHaveTextContent('Terms of Service');
     expect(screen.getByTestId('link-privacy')).toHaveTextContent('Privacy Policy');
-    expect(screen.getByTestId('link-ledewire')).toBeInTheDocument();
   });
 
   it('renders logo', () => {
@@ -142,18 +139,14 @@ describe('HomePage', () => {
     expect(screen.getByTestId('logo')).toHaveTextContent('The Commons');
   });
 
-  it('clicking category tab filters content', async () => {
+  it('state links point to correct URLs', async () => {
     setupHandlers();
     renderWithProviders(<HomePage />);
-    const user = userEvent.setup();
 
     await waitForDataLoaded();
 
-    const policyTab = screen.getByTestId('category-tab-policy');
-    await user.click(policyTab);
-
-    // Policy tab should now have the active underline indicator
-    expect(policyTab.querySelector('span')).toBeInTheDocument();
+    const gaLink = screen.getByTestId('state-link-GA');
+    expect(gaLink.closest('a')).toHaveAttribute('href', '/state/ga');
   });
 
   it('shows empty state when no articles', async () => {
@@ -169,7 +162,7 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getByText('No articles available yet.')).toBeInTheDocument();
+      expect(screen.getByText('Welcome to The Commons')).toBeInTheDocument();
     });
   });
 
@@ -202,13 +195,14 @@ describe('HomePage', () => {
     expect(latestLink).toHaveAttribute('href', '/article/a1');
   });
 
-  it('renders "View all" links for category sections', async () => {
+  it('renders state links in Browse by State section', async () => {
     setupHandlers();
     renderWithProviders(<HomePage />);
 
     await waitForDataLoaded();
 
-    const viewAllElections = screen.getByTestId('view-all-elections');
-    expect(viewAllElections.closest('a')).toHaveAttribute('href', '/category/elections');
+    // State links should point to /state/:code routes
+    const nyLink = screen.getByTestId('state-link-NY');
+    expect(nyLink.closest('a')).toHaveAttribute('href', '/state/ny');
   });
 });

@@ -221,7 +221,8 @@ describe('ArticlePage', () => {
       renderArticlePage('free-1');
 
       await waitFor(() => {
-        expect(screen.getByText('The Commons')).toBeInTheDocument();
+        // Author byline within the article (not the header logo)
+        expect(screen.getByTestId('text-article-author')).toHaveTextContent('The Commons');
       });
     });
   });

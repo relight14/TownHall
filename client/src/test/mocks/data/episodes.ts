@@ -1,4 +1,4 @@
-import type { FeaturedEpisode } from '@/hooks/featuredEpisodes';
+import type { ApiFeaturedEpisode as FeaturedEpisode } from '@shared/types';
 
 export function createFeaturedEpisode(overrides: Partial<FeaturedEpisode> = {}): FeaturedEpisode {
   return {
