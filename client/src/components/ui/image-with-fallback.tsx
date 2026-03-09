@@ -20,8 +20,8 @@ export function ImageWithFallback({ src, alt, fallbackSrc, className, onAspectRa
 
   if (error || !src) {
     return (
-      <div className={`bg-slate-800 flex items-center justify-center ${className}`}>
-        <Image className="w-12 h-12 text-slate-600" />
+      <div className={`bg-parchment flex items-center justify-center ${className}`}>
+        <Image className="w-12 h-12 text-slate" />
       </div>
     );
   }

@@ -38,15 +38,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="min-h-screen bg-parchment flex items-center justify-center p-4">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
-            <p className="text-gray-600 mb-4">
+            <h1 className="text-2xl font-serif font-bold text-navy mb-2">Something went wrong</h1>
+            <p className="text-slate mb-4 font-body">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-gold text-white rounded-md hover:bg-gold-light"
             >
               Reload page
             </button>

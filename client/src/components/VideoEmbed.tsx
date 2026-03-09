@@ -37,7 +37,7 @@ export function VideoEmbed({ url, type, title = 'Video', bare = false }: VideoEm
   }
 
   return (
-    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-slate-800">
+    <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl shadow-navy/30 border border-navy/10">
       {iframe}
     </div>
   );

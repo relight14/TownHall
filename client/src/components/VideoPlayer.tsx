@@ -34,7 +34,7 @@ export default function VideoPlayer({ episode, onClose }: VideoPlayerProps) {
           <h2 className="text-2xl text-white font-medium">{episode.title}</h2>
           <button 
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-parchment/60 hover:text-white transition-colors"
           >
             <X className="w-8 h-8" />
           </button>
