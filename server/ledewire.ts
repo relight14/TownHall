@@ -262,16 +262,25 @@ class LedewireClient {
   }
 
   async signupBuyer(email: string, password: string, name: string): Promise<LedewireAuthResponse> {
-    const response = await fetch(`${LEDEWIRE_API_URL}/auth/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password, name }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${LEDEWIRE_API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, name }),
+      });
+    } catch (err: any) {
+      logLedewire('signupBuyer', { error: err.message, cause: err.cause?.code }, true);
+      throw new Error('Unable to reach the authentication service. Please try again in a moment.');
+    }
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
+      if (response.status === 409) {
+        throw new Error('An account with this email already exists. Try logging in instead.');
+      }
       throw new Error(`Ledewire signup failed: ${errorMsg}`);
     }
 
@@ -283,16 +292,25 @@ class LedewireClient {
   }
 
   async loginBuyer(email: string, password: string): Promise<LedewireAuthResponse> {
-    const response = await fetch(`${LEDEWIRE_API_URL}/auth/login/email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${LEDEWIRE_API_URL}/auth/login/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch (err: any) {
+      logLedewire('loginBuyer', { error: err.message, cause: err.cause?.code }, true);
+      throw new Error('Unable to reach the authentication service. Please try again in a moment.');
+    }
 
     if (!response.ok) {
       const errorMsg = await getErrorMessage(response);
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Invalid email or password. Please check your credentials and try again.');
+      }
       throw new Error(`Ledewire login failed: ${errorMsg}`);
     }
 

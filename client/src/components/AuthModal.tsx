@@ -6,6 +6,21 @@ import { useGoogleOAuthStatus } from '../App';
 import { X, Mail, Lock, User, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+/** Map cryptic backend errors to user-friendly messages */
+function friendlyAuthError(msg?: string): string {
+  if (!msg) return 'Something went wrong. Please try again.';
+  const m = msg.toLowerCase();
+  if (m.includes('fetch failed') || m.includes('unable to reach') || m.includes('networkerror'))
+    return 'Unable to reach the authentication service. Please check your connection and try again.';
+  if (m.includes('invalid email or password') || m.includes('invalid credentials'))
+    return 'Invalid email or password. Please check your credentials and try again.';
+  if (m.includes('already exists') || m.includes('already registered'))
+    return 'An account with this email already exists. Try logging in instead.';
+  if (m.includes('rate limit') || m.includes('too many'))
+    return 'Too many attempts. Please wait a moment and try again.';
+  return msg;
+}
+
 interface AuthModalProps {
   onClose: () => void;
   onSuccess?: (ledewireToken: string) => void;
@@ -70,7 +85,7 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
         onClose();
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      setError(friendlyAuthError(err.message));
     } finally {
       setLoading(false);
     }
@@ -87,7 +102,7 @@ export default function AuthModal({ onClose, onSuccess, onForgotPassword }: Auth
         onClose();
       }
     } catch (err: any) {
-      setError(err.message || 'Google authentication failed');
+      setError(friendlyAuthError(err.message));
     } finally {
       setLoading(false);
     }
