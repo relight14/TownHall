@@ -1,252 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVideoStore } from '../context/VideoStoreContext';
 import { useSeries } from '../hooks/series/useSeries';
 import { useCreateSeries, useUpdateSeries, useCreateEpisode, useUpdateEpisode, useDeleteEpisode } from '../hooks/series/useSeriesMutations';
 import { useFeaturedEpisodes, useSetFeaturedEpisodes } from '../hooks/featuredEpisodes';
 import { useSiteSettings, useUpdateSiteSettings } from '../hooks/siteSettings';
-import { Plus, Trash2, Video, Edit, X, Lock, LogOut, Key, Star, Check, FileText, ArrowLeft } from 'lucide-react';
-import { ArticleForm } from '../components/admin/ArticleForm';
-import { FeaturedEpisodesManager } from '../components/admin/FeaturedEpisodesManager';
+import { Plus, Trash2, Video, Edit, Key, LogOut, Star, FileText, ArrowLeft } from 'lucide-react';
+import { AdminLoginGate } from '../components/admin/AdminLoginGate';
+import { PasswordChangeForm } from '../components/admin/PasswordChangeForm';
+import { SeriesForm } from '../components/admin/SeriesForm';
+import { EpisodeForm } from '../components/admin/EpisodeForm';
 
-function AdminLoginGate({ onAuthenticated }: { onAuthenticated: (token: string) => void }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+// Lazy-load ArticleForm (heaviest component — includes TipTap rich text editor)
+const ArticleForm = lazy(() => import('../components/admin/ArticleForm').then(m => ({ default: m.ArticleForm })));
+const FeaturedEpisodesManager = lazy(() => import('../components/admin/FeaturedEpisodesManager').then(m => ({ default: m.FeaturedEpisodesManager })));
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Authentication failed');
-      }
-
-      const data = await response.json();
-      sessionStorage.setItem('adminAuthenticated', 'true');
-      sessionStorage.setItem('adminToken', data.adminToken);
-      onAuthenticated(data.adminToken);
-    } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function AdminFormFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl backdrop-blur-sm">
-        <div className="flex items-center justify-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <Lock className="w-8 h-8 text-white" />
-          </div>
-        </div>
-        <h2 className="text-2xl text-white mb-2 font-bold text-center">Admin Access</h2>
-        <p className="text-slate-400 text-center mb-6 text-sm">Enter your credentials to access the admin panel</p>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm" data-testid="text-admin-error">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-              placeholder="admin@example.com"
-              required
-              data-testid="input-admin-email"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-              placeholder="••••••••"
-              required
-              data-testid="input-admin-password"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-3 rounded-lg transition-all font-medium shadow-lg shadow-indigo-600/20 disabled:opacity-50 mt-6"
-            data-testid="button-admin-login"
-          >
-            {loading ? 'Authenticating...' : 'Access Admin Panel'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function PasswordChangeForm({ onClose }: { onClose: () => void }) {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const token = sessionStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/change-password', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Admin-Token': token || '',
-        },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to change password');
-      }
-
-      setSuccess('Password updated successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'Failed to change password');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Key className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-xl text-white font-semibold">Change Password</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-sm">
-            {success}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Current Password</label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-              placeholder="Enter current password"
-              required
-              data-testid="input-current-password"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">New Password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-              placeholder="Enter new password (min 6 characters)"
-              required
-              data-testid="input-new-password"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-300 mb-2 text-sm font-medium">Confirm New Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-              placeholder="Confirm new password"
-              required
-              data-testid="input-confirm-password"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg transition-colors border border-slate-700 font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-2.5 rounded-lg transition-all font-medium shadow-lg shadow-indigo-600/20 disabled:opacity-50"
-              data-testid="button-change-password"
-            >
-              {loading ? 'Updating...' : 'Update Password'}
-            </button>
-          </div>
-        </form>
-      </div>
+    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
+      <div className="animate-spin w-8 h-8 border-2 border-slate-600 border-t-white rounded-full mx-auto mb-4" />
+      <p className="text-slate-400">Loading editor...</p>
     </div>
   );
 }
@@ -345,19 +118,21 @@ export default function AdminPage() {
       )}
 
       {showFeaturedManager && (
-        <FeaturedEpisodesManager
-          allEpisodes={getAllEpisodes().map(ep => ({ ...ep, seriesId: (ep as any).seriesId || '' }))}
-          featuredEpisodeIds={featuredEpisodes.map(ep => ep.id)}
-          series={series.map(s => ({ id: s.id, title: s.title }))}
-          onSave={(episodeIds) => {
-            setFeaturedEpisodesMutation.mutate(episodeIds, {
-              onSuccess: () => {
-                setShowFeaturedManager(false);
-              },
-            });
-          }}
-          onClose={() => setShowFeaturedManager(false)}
-        />
+        <Suspense fallback={<AdminFormFallback />}>
+          <FeaturedEpisodesManager
+            allEpisodes={getAllEpisodes().map(ep => ({ ...ep, seriesId: (ep as any).seriesId || '' }))}
+            featuredEpisodeIds={featuredEpisodes.map(ep => ep.id)}
+            series={series.map(s => ({ id: s.id, title: s.title }))}
+            onSave={(episodeIds) => {
+              setFeaturedEpisodesMutation.mutate(episodeIds, {
+                onSuccess: () => {
+                  setShowFeaturedManager(false);
+                },
+              });
+            }}
+            onClose={() => setShowFeaturedManager(false)}
+          />
+        </Suspense>
       )}
       
       <div className="mb-8 flex justify-between items-start">
@@ -603,23 +378,25 @@ export default function AdminPage() {
       {adminTab === 'articles' && (
       <>
       {(showArticleForm || editingArticleId) && adminArticlesLoaded && (
-        <ArticleForm
-          key={editingArticleId ? `edit-${editingArticleId}-${adminArticles.find(a => a.id.toString() === editingArticleId)?.content?.length || 0}` : 'new'}
-          article={editingArticleId ? adminArticles.find(a => a.id.toString() === editingArticleId) : undefined}
-          onClose={() => {
-            setShowArticleForm(false);
-            setEditingArticleId(null);
-          }}
-          onSubmit={async (data) => {
-            if (editingArticleId) {
-              await updateArticle(editingArticleId, data);
-            } else {
-              await addArticle(data);
-            }
-            setShowArticleForm(false);
-            setEditingArticleId(null);
-          }}
-        />
+        <Suspense fallback={<AdminFormFallback />}>
+          <ArticleForm
+            key={editingArticleId ? `edit-${editingArticleId}-${adminArticles.find(a => a.id.toString() === editingArticleId)?.content?.length || 0}` : 'new'}
+            article={editingArticleId ? adminArticles.find(a => a.id.toString() === editingArticleId) : undefined}
+            onClose={() => {
+              setShowArticleForm(false);
+              setEditingArticleId(null);
+            }}
+            onSubmit={async (data) => {
+              if (editingArticleId) {
+                await updateArticle(editingArticleId, data);
+              } else {
+                await addArticle(data);
+              }
+              setShowArticleForm(false);
+              setEditingArticleId(null);
+            }}
+          />
+        </Suspense>
       )}
 
       <div className="space-y-4">
@@ -702,332 +479,6 @@ export default function AdminPage() {
       </div>
       </>
       )}
-    </div>
-  );
-}
-
-function SeriesForm({ series, onClose, onSubmit }: { series?: any; onClose: () => void; onSubmit: (series: any) => void | Promise<void> }) {
-  const [title, setTitle] = useState(series?.title || '');
-  const [description, setDescription] = useState(series?.description || '');
-  const [thumbnail, setThumbnail] = useState(series?.thumbnail || '');
-  const [useFile, setUseFile] = useState(false);
-  const [trailerUrl, setTrailerUrl] = useState(series?.trailerUrl || '');
-  const [trailerType, setTrailerType] = useState<'vimeo' | 'youtube'>(series?.trailerType || 'vimeo');
-  
-  const isEditing = !!series;
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setThumbnail(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSubmit({ 
-      title, 
-      description, 
-      thumbnail,
-      trailerUrl: trailerUrl || null,
-      trailerType: trailerUrl ? trailerType : null
-    });
-    if (!isEditing) {
-      onClose();
-    }
-  };
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-top-2">
-      <h3 className="text-xl text-white mb-4 font-semibold">{isEditing ? 'Edit Series' : 'New Series'}</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-slate-300 mb-2 text-sm font-medium">Series Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-slate-300 mb-2 text-sm font-medium">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all h-24"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-slate-300 mb-2 text-sm font-medium">Thumbnail</label>
-          <div className="flex items-center gap-3 mb-3">
-            <button
-              type="button"
-              onClick={() => setUseFile(false)}
-              className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                !useFile 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
-              }`}
-            >
-              URL
-            </button>
-            <button
-              type="button"
-              onClick={() => setUseFile(true)}
-              className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                useFile 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
-              }`}
-            >
-              Upload File
-            </button>
-          </div>
-          {!useFile ? (
-            <input
-              type="url"
-              value={thumbnail}
-              onChange={(e) => setThumbnail(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              placeholder="https://..."
-              required
-            />
-          ) : (
-            <div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer file:font-medium"
-                required={!thumbnail}
-              />
-              {thumbnail && (
-                <div className="mt-3">
-                  <img src={thumbnail} alt="Preview" className="w-32 h-20 object-cover rounded-lg border border-slate-700" />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div>
-          <label className="block text-slate-300 mb-2 text-sm font-medium">Series Trailer (Optional)</label>
-          <div>
-            <input
-              type="url"
-              value={trailerUrl}
-              onChange={(e) => setTrailerUrl(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all mb-2"
-              placeholder="https://vimeo.com/... or https://youtube.com/..."
-            />
-          </div>
-          {trailerUrl && (
-            <div>
-              <label className="block text-slate-300 mb-2 text-sm font-medium">Trailer Type</label>
-              <select
-                value={trailerType}
-                onChange={(e) => setTrailerType(e.target.value as 'vimeo' | 'youtube')}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              >
-                <option value="vimeo">Vimeo</option>
-                <option value="youtube">YouTube</option>
-              </select>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg transition-colors border border-slate-700 font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20"
-          >
-            {isEditing ? 'Save Changes' : 'Create Series'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-function EpisodeForm({ seriesId, episode, onSubmit, onCancel }: { 
-  seriesId: string; 
-  episode?: any;
-  onSubmit: (episode: any) => void; 
-  onCancel: () => void;
-}) {
-  const [title, setTitle] = useState(episode?.title || '');
-  const [description, setDescription] = useState(episode?.description || '');
-  const [videoUrl, setVideoUrl] = useState(episode?.videoUrl || '');
-  const [videoType, setVideoType] = useState<'vimeo' | 'youtube'>(episode?.videoType || 'vimeo');
-  const [price, setPrice] = useState(episode?.price !== undefined ? episode.price.toFixed(2) : '9.99');
-  const [thumbnail, setThumbnail] = useState(episode?.thumbnail || '');
-  const [useFile, setUseFile] = useState(false);
-  
-  const isEditing = !!episode;
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setThumbnail(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({
-      title,
-      description,
-      videoUrl,
-      videoType,
-      price: parseFloat(price),
-      thumbnail
-    });
-  };
-
-  return (
-    <div className="bg-slate-800/50 rounded-lg p-6 mt-4 border border-slate-700 animate-in fade-in slide-in-from-top-2">
-      <h4 className="text-white mb-4 font-semibold">{isEditing ? 'Edit Episode' : 'Add Episode'}</h4>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-slate-300 mb-1 text-sm font-medium">Episode Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-slate-300 mb-1 text-sm font-medium">Price ($)</label>
-            <input
-              type="number"
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              required
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-slate-300 mb-1 text-sm font-medium">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all h-20"
-            required
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-slate-300 mb-1 text-sm font-medium">Video URL</label>
-            <input
-              type="url"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              placeholder="https://vimeo.com/... or https://youtube.com/..."
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-slate-300 mb-1 text-sm font-medium">Video Type</label>
-            <select
-              value={videoType}
-              onChange={(e) => setVideoType(e.target.value as 'vimeo' | 'youtube')}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-            >
-              <option value="vimeo">Vimeo</option>
-              <option value="youtube">YouTube</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="block text-slate-300 mb-1 text-sm font-medium">Thumbnail</label>
-          <div className="flex items-center gap-2 mb-2">
-            <button
-              type="button"
-              onClick={() => setUseFile(false)}
-              className={`px-3 py-1 rounded transition-colors text-sm font-medium ${
-                !useFile 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700'
-              }`}
-            >
-              URL
-            </button>
-            <button
-              type="button"
-              onClick={() => setUseFile(true)}
-              className={`px-3 py-1 rounded transition-colors text-sm font-medium ${
-                useFile 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700'
-              }`}
-            >
-              Upload File
-            </button>
-          </div>
-          {!useFile ? (
-            <input
-              type="url"
-              value={thumbnail}
-              onChange={(e) => setThumbnail(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              placeholder="https://..."
-              required
-            />
-          ) : (
-            <div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer file:text-sm"
-                required={!thumbnail}
-              />
-              {thumbnail && (
-                <div className="mt-2">
-                  <img src={thumbnail} alt="Preview" className="w-32 h-20 object-cover rounded border border-slate-700" />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg transition-colors border border-slate-700 font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg transition-colors font-medium shadow-lg shadow-blue-600/20"
-          >
-            {isEditing ? 'Save Changes' : 'Save Episode'}
-          </button>
-        </div>
-      </form>
     </div>
   );
 }

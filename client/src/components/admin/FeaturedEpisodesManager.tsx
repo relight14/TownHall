@@ -1,17 +1,9 @@
 import { useState } from 'react';
 import { X, Star, Plus, GripVertical } from 'lucide-react';
+import type { ApiEpisode, ApiSeries } from '@shared/types';
 
-interface Episode {
-  id: string;
-  title: string;
-  thumbnail: string;
-  seriesId: string;
-}
-
-interface Series {
-  id: string;
-  title: string;
-}
+type Episode = Pick<ApiEpisode, 'id' | 'title' | 'thumbnail'> & { seriesId: string };
+type Series = Pick<ApiSeries, 'id' | 'title'>;
 
 interface FeaturedEpisodesManagerProps {
   allEpisodes: Episode[];
