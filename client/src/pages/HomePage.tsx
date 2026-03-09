@@ -5,7 +5,7 @@ import { useArticles, useFeaturedArticles, type Article } from '../hooks/article
 import { useFeaturedEpisodes } from '../hooks/featuredEpisodes';
 import { useAuthModals, AuthModals } from '../hooks/useAuthModals';
 import { Link } from 'react-router-dom';
-import { Clock, Eye, Play, ChevronRight, MapPin, ArrowRight } from 'lucide-react';
+import { Clock, Eye, Play, ChevronRight } from 'lucide-react';
 import { ImageWithFallback } from '../components/ui/image-with-fallback';
 import { DynamicImage } from '../components/ui/dynamic-image';
 import { stripHtmlMemoized } from '../lib/utils';
@@ -326,79 +326,46 @@ export default function HomePage() {
   const featuredArticle = featuredSorted[0] || latestSorted[0];
 
   const displayedLatest = useMemo(() =>
-    latestSorted.filter(a => a.id !== featuredArticle?.id).slice(0, 4),
+    latestSorted.filter(a => a.id !== featuredArticle?.id).slice(0, 6),
     [latestSorted, featuredArticle]
   );
 
   const displayedMostRead = useMemo(() =>
-    mostReadSorted.slice(0, 4),
+    mostReadSorted.slice(0, 5),
     [mostReadSorted]
   );
 
   return (
-    <div className="min-h-screen bg-parchment">
+    <div className="min-h-screen bg-white">
       <Header onLoginClick={auth.openLogin} />
+      <h1 className="sr-only">The Commons — Local Journalism</h1>
 
-      {/* Hero Section — Navy background, editorial gravity */}
-      <section className="bg-navy relative overflow-hidden">
-        {/* Subtle texture overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-navy-dark/40 to-transparent" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="py-16 sm:py-20 lg:py-24 text-center max-w-3xl mx-auto">
-            <span className="section-label text-gold/90 mb-4 block">Reader-Funded Journalism</span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-white leading-tight tracking-tight">
-              Local Reporting.{' '}
-              <span className="text-gold">National Reach.</span>
-            </h1>
-            <p className="mt-6 text-lg sm:text-xl text-parchment/70 font-body leading-relaxed max-w-2xl mx-auto">
-              On-the-ground journalism from reporters across all 50 states. Every story you unlock directly supports the writer who reported it.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={auth.openLogin}
-                className="bg-gold hover:bg-gold-light text-white px-8 py-3 rounded font-sans font-semibold transition-colors text-base tracking-wide"
-              >
-                Start Reading
-              </button>
-              <Link
-                to="/videos"
-                className="border border-parchment/30 text-parchment/80 hover:text-white hover:border-parchment/50 px-8 py-3 rounded font-sans font-medium transition-colors text-base"
-              >
-                Watch Video Analysis
-              </Link>
-            </div>
-            {/* 75% trust signal */}
-            <div className="mt-10 inline-flex items-center gap-3 px-4 py-2.5 rounded-lg bg-white/5 border border-gold/20">
-              <span className="text-gold font-serif font-bold text-2xl">75%</span>
-              <span className="text-parchment/60 text-sm text-left leading-tight font-sans">of every purchase<br />goes directly to the writer</span>
-            </div>
-          </div>
-        </div>
-        {/* Bottom gradient transition */}
-        <div className="h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-      </section>
-
-      {/* Topic Subheader */}
+      {/* Edition bar — dateline + section nav */}
       <div className="border-b border-navy/10 bg-white sticky top-12 sm:top-14 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex items-center gap-8 h-11 overflow-x-auto">
-            <span className="text-sm font-sans font-medium text-navy relative py-3">
-              Politics
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
-            </span>
-            <Link
-              to="/videos"
-              className="text-sm font-sans font-medium whitespace-nowrap transition-colors relative py-3 text-slate hover:text-navy"
-              data-testid="category-tab-videos"
-            >
-              Videos
-            </Link>
-          </nav>
+          <div className="flex items-center justify-between h-11">
+            <time className="text-xs font-sans text-slate/50 hidden sm:block" dateTime={new Date().toISOString().slice(0, 10)}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </time>
+            <nav className="flex items-center gap-8 overflow-x-auto">
+              <span className="text-sm font-sans font-medium text-navy relative py-3">
+                Politics
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+              </span>
+              <Link
+                to="/videos"
+                className="text-sm font-sans font-medium whitespace-nowrap transition-colors relative py-3 text-slate hover:text-navy"
+                data-testid="category-tab-videos"
+              >
+                Videos
+              </Link>
+            </nav>
+          </div>
         </div>
       </div>
 
       {/* Main Content — Parchment background */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
         {/* Loading State */}
         {isLoading && <ArticlesSkeleton />}
 
@@ -450,12 +417,7 @@ export default function HomePage() {
       {/* Browse by State — Cool grey background for rhythm */}
       <section className="bg-cool-grey py-14 sm:py-16 border-t border-navy/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <span className="section-label block mb-2">Explore</span>
-              <h2 className="text-2xl sm:text-3xl font-bold font-serif text-navy">Browse by State</h2>
-            </div>
-          </div>
+          <h2 className="section-label pb-3 border-b border-navy/10 mb-8">Browse by State</h2>
           <div className="space-y-8">
             {Object.entries(REGIONS).map(([regionKey, region]) => (
               <div key={regionKey}>
@@ -482,17 +444,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Video Analysis Section — Navy background for rhythm */}
+      {/* Video Analysis Section */}
       {featuredEpisodes.length > 0 && (
-        <section className="bg-navy py-14 sm:py-16">
+        <section className="border-t border-navy/10 py-14 sm:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                <span className="section-label block mb-2">Watch</span>
-                <h2 className="text-2xl sm:text-3xl font-bold font-serif text-white">Video Analysis</h2>
-              </div>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="section-label pb-3 border-b border-navy/10">Video Analysis</h2>
               <Link to="/videos">
-                <span className="text-sm text-parchment/60 hover:text-gold flex items-center gap-1 transition-colors font-sans" data-testid="view-all-videos">
+                <span className="text-sm text-slate hover:text-gold flex items-center gap-1 transition-colors font-sans" data-testid="view-all-videos">
                   View all <ChevronRight className="w-4 h-4" />
                 </span>
               </Link>
@@ -503,7 +462,7 @@ export default function HomePage() {
                 return (
                   <Link key={episode.id} to={`/series/${episode.seriesId}`}>
                     <div className="group cursor-pointer" data-testid={`video-card-${episode.id}`}>
-                      <div className="relative aspect-video overflow-hidden rounded-lg border border-white/10">
+                      <div className="relative aspect-video overflow-hidden rounded-lg border border-navy/10">
                         <ImageWithFallback
                           src={episode.thumbnail}
                           alt={episode.title}
@@ -520,13 +479,13 @@ export default function HomePage() {
                           </div>
                         )}
                       </div>
-                      <h3 className="text-lg font-serif font-bold text-white mt-4 group-hover:text-gold transition-colors line-clamp-2">
+                      <h3 className="text-lg font-serif font-bold text-navy mt-4 group-hover:text-gold-dark transition-colors line-clamp-2">
                         {episode.title}
                       </h3>
-                      <p className="text-parchment/50 mt-2 text-sm line-clamp-2 font-body">
+                      <p className="text-slate/70 mt-2 text-sm line-clamp-2 font-body">
                         {episode.description}
                       </p>
-                      <span className="text-xs text-parchment/40 mt-2 block font-sans">{seriesTitle}</span>
+                      <span className="text-xs text-slate/50 mt-2 block font-sans">{seriesTitle}</span>
                     </div>
                   </Link>
                 );

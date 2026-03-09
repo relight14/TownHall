@@ -145,7 +145,7 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
 
           {/* Center: Logo */}
           <Link to="/" className="absolute left-1/2 -translate-x-1/2">
-            <span className={`font-serif font-bold text-white transition-all duration-300 ${isCompact ? 'text-lg sm:text-xl tracking-tight' : 'text-xl sm:text-2xl tracking-wide'}`} data-testid="logo">
+            <span className={`font-serif font-bold text-white transition-all duration-300 ${isCompact ? 'text-lg sm:text-xl tracking-tight' : 'text-2xl sm:text-3xl tracking-wide'}`} data-testid="logo">
               The Commons
             </span>
           </Link>
