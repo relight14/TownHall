@@ -169,7 +169,7 @@ describe('ArticlePage - Preview content security', () => {
     });
 
     expect(screen.getByText(/Unlock the full article for just \$1\.99/)).toBeInTheDocument();
-    expect(screen.getByTestId('button-buy-now')).toHaveTextContent('Buy Now - $1.99');
+    expect(screen.getByTestId('button-buy-now')).toHaveTextContent('Unlock for $1.99');
   });
 });
 

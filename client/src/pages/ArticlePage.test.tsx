@@ -245,7 +245,7 @@ describe('ArticlePage', () => {
         expect(screen.getByTestId('button-buy-now')).toBeInTheDocument();
       });
 
-      expect(screen.getByTestId('button-buy-now')).toHaveTextContent('Buy Now - $1.99');
+      expect(screen.getByTestId('button-buy-now')).toHaveTextContent('Unlock for $1.99');
     });
 
     it('shows preview content, not full content', async () => {
