@@ -91,6 +91,7 @@ export interface IStorage {
   deleteArticle(id: string): Promise<void>;
   getFeaturedArticles(): Promise<Article[]>;
   getArticlesByCategory(category: string): Promise<Article[]>;
+  getArticlesByState(stateCode: string): Promise<Article[]>;
   getMostReadArticles(limit?: number): Promise<Article[]>;
   getLatestArticles(limit?: number): Promise<Article[]>;
   incrementArticleViewCount(id: string): Promise<void>;
@@ -374,6 +375,13 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(articlesTable)
       .where(eq(articlesTable.category, category))
+      .orderBy(desc(articlesTable.publishedAt));
+  }
+
+  async getArticlesByState(stateCode: string): Promise<Article[]> {
+    return await db.select()
+      .from(articlesTable)
+      .where(eq(articlesTable.state, stateCode.toUpperCase()))
       .orderBy(desc(articlesTable.publishedAt));
   }
 
