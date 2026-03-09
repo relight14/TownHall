@@ -128,7 +128,12 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsCompact(window.scrollY > 60);
+      setIsCompact(prev => {
+        // Hysteresis: collapse at 60px, only re-expand below 10px
+        if (!prev && window.scrollY > 60) return true;
+        if (prev && window.scrollY < 10) return false;
+        return prev;
+      });
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
