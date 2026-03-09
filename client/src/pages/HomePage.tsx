@@ -62,16 +62,19 @@ function StateBadge({ state }: { state?: string | null }) {
 function LatestArticleItem({ article }: { article: Article }) {
   return (
     <Link to={`/article/${article.id}`}>
-      <div className="group py-4 last:border-b-0 hover:bg-gold-pale/30 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`latest-article-${article.id}`}>
-        <div className="flex items-start justify-between">
-          <StateBadge state={(article as any).state} />
-          {article.price > 0 && (
-            <span className="text-xs font-sans font-semibold text-slate bg-parchment px-2 py-0.5 rounded" data-testid={`price-badge-${article.id}`}>
-              ${(article.price / 100).toFixed(2)}
-            </span>
-          )}
-        </div>
-        <h3 className="text-base font-serif font-semibold text-navy mt-2 group-hover:text-gold-dark transition-colors line-clamp-2 leading-snug">
+      <div className="group py-5 last:border-b-0 hover:bg-gold-pale/30 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`latest-article-${article.id}`}>
+        {/* Thumbnail */}
+        {article.thumbnail && (
+          <div className="relative aspect-[3/2] overflow-hidden rounded mb-3">
+            <ImageWithFallback
+              src={article.thumbnail}
+              alt={article.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+        )}
+        <StateBadge state={(article as any).state} />
+        <h3 className="text-lg font-serif font-bold text-navy mt-2 group-hover:text-gold-dark transition-colors line-clamp-3 leading-snug">
           {article.title}
         </h3>
         <div className="flex items-center gap-2 mt-2 text-xs font-sans text-slate">
@@ -91,24 +94,26 @@ function MostReadArticleItem({ article, rank }: { article: Article; rank: number
   return (
     <Link to={`/article/${article.id}`}>
       <div className="group py-4 last:border-b-0 hover:bg-gold-pale/30 -mx-2 px-2 rounded transition-colors cursor-pointer" data-testid={`most-read-article-${article.id}`}>
-        <div className="flex items-start justify-between">
-          <StateBadge state={(article as any).state} />
-          {article.price > 0 && (
-            <span className="text-xs font-sans font-semibold text-slate bg-parchment px-2 py-0.5 rounded" data-testid={`price-badge-${article.id}`}>
-              ${(article.price / 100).toFixed(2)}
-            </span>
-          )}
-        </div>
-        <h3 className="text-base font-serif font-semibold text-navy mt-2 group-hover:text-gold-dark transition-colors line-clamp-2 leading-snug">
-          {article.title}
-        </h3>
-        <div className="flex items-center gap-2 mt-2 text-xs font-sans text-slate">
-          <span>{formatShortDate(article.publishedAt)}</span>
-          <span className="text-slate/30">·</span>
-          <div className="flex items-center gap-1">
-            <Eye className="w-3 h-3" />
-            <span>{formatViewCount(article.viewCount)}</span>
+        <div className="flex gap-3">
+          {/* Text */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-serif font-bold text-navy group-hover:text-gold-dark transition-colors line-clamp-3 leading-snug">
+              {article.title}
+            </h3>
+            <div className="flex items-center gap-2 mt-2 text-xs font-sans text-slate/60 uppercase tracking-wide">
+              <span>{(article as any).state ? STATE_NAMES[(article as any).state.toUpperCase()] || (article as any).state : 'National'}</span>
+            </div>
           </div>
+          {/* Small thumbnail */}
+          {article.thumbnail && (
+            <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden">
+              <ImageWithFallback
+                src={article.thumbnail}
+                alt={article.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
         </div>
       </div>
     </Link>
@@ -326,7 +331,7 @@ export default function HomePage() {
   const featuredArticle = featuredSorted[0] || latestSorted[0];
 
   const displayedLatest = useMemo(() =>
-    latestSorted.filter(a => a.id !== featuredArticle?.id).slice(0, 6),
+    latestSorted.filter(a => a.id !== featuredArticle?.id).slice(0, 4),
     [latestSorted, featuredArticle]
   );
 
@@ -341,7 +346,7 @@ export default function HomePage() {
       <h1 className="sr-only">The Commons — Local Journalism</h1>
 
       {/* Edition bar — dateline + section nav */}
-      <div className="border-b border-navy/10 bg-white sticky top-12 sm:top-14 z-40">
+      <div className="border-b border-navy/10 bg-white sticky top-12 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-11">
             <time className="text-xs font-sans text-slate/50 hidden sm:block" dateTime={new Date().toISOString().slice(0, 10)}>
@@ -371,9 +376,9 @@ export default function HomePage() {
 
         {/* Hero Section - 3 Column Layout */}
         {!isLoading && featuredArticle && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-            {/* Left Column - Latest */}
-            <div className="lg:col-span-3 order-2 lg:order-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+            {/* Left Column - Latest (wider, with thumbnails) */}
+            <div className="lg:col-span-4 order-2 lg:order-1 lg:border-r lg:border-navy/5 lg:pr-8">
               <h2 className="section-label pb-3 border-b border-navy/10 mb-1">Latest</h2>
               <div className="divide-y divide-navy/5">
                 {displayedLatest.map(article => (
@@ -386,12 +391,12 @@ export default function HomePage() {
             </div>
 
             {/* Center Column - Featured */}
-            <div className="lg:col-span-6 order-1 lg:order-2">
+            <div className="lg:col-span-5 order-1 lg:order-2">
               <FeaturedHeroArticle article={featuredArticle} />
             </div>
 
-            {/* Right Column - Most Read */}
-            <div className="lg:col-span-3 order-3">
+            {/* Right Column - Most Read (compact, text-focused) */}
+            <div className="lg:col-span-3 order-3 lg:border-l lg:border-navy/5 lg:pl-8">
               <h2 className="section-label pb-3 border-b border-navy/10 mb-1">Trending</h2>
               <div className="divide-y divide-navy/5">
                 {displayedMostRead.map((article, index) => (

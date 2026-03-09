@@ -128,68 +128,125 @@ export default function Header({ onLoginClick, selectedState }: HeaderProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsCompact(window.scrollY > 40);
+      setIsCompact(window.scrollY > 60);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <header className={`bg-navy sticky top-0 z-50 transition-all duration-300 ${isCompact ? 'shadow-lg shadow-navy-dark/30' : ''}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex items-center justify-between transition-all duration-300 ${isCompact ? 'h-12' : 'h-14 sm:h-16'}`}>
-          {/* Left: State selector */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <StateSelector selectedState={selectedState} />
-          </div>
-
-          {/* Center: Logo */}
-          <Link to="/" className="absolute left-1/2 -translate-x-1/2">
-            <span className={`font-serif font-bold text-white transition-all duration-300 ${isCompact ? 'text-lg sm:text-xl tracking-tight' : 'text-2xl sm:text-3xl tracking-wide'}`} data-testid="logo">
-              The Commons
-            </span>
-          </Link>
-
-          {/* Right: Search + Auth */}
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-parchment/60 hover:text-gold transition-colors"
-              data-testid="button-search"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-            {user ? (
-              <div className="flex items-center gap-1 sm:gap-2">
-                <Link to="/wallet">
-                  <button className="bg-white/5 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-sans font-medium hover:bg-white/10 transition-colors flex items-center gap-1 sm:gap-2 text-sm border border-white/10" data-testid="button-wallet">
-                    <span className="text-gold font-semibold">${walletBalance.toFixed(2)}</span>
-                    <span className="text-white/20 hidden sm:inline">|</span>
-                    <span className="hidden sm:inline text-parchment/70 text-xs">{user.email?.split('@')[0] || 'Account'}</span>
-                  </button>
-                </Link>
-                <button
-                  onClick={logout}
-                  className="p-1.5 sm:p-2 text-parchment/40 hover:text-parchment transition-colors"
-                  title="Log out"
-                  data-testid="button-logout"
-                >
-                  <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={onLoginClick}
-                className="bg-gold text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded font-sans font-semibold hover:bg-gold-light transition-colors text-sm tracking-wide" 
-                data-testid="button-login"
+    <header className="bg-navy sticky top-0 z-50">
+      {/* Expanded masthead — visible only at top */}
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isCompact ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-10 text-sm">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <StateSelector selectedState={selectedState} />
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="p-2 text-parchment/60 hover:text-gold transition-colors"
+                data-testid="button-search"
               >
-                Log in
+                <Search className="w-4 h-4" />
               </button>
+              {user ? (
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Link to="/wallet">
+                    <button className="bg-white/5 text-white px-2 sm:px-3 py-1 rounded-lg font-sans font-medium hover:bg-white/10 transition-colors flex items-center gap-1 sm:gap-2 text-xs border border-white/10" data-testid="button-wallet">
+                      <span className="text-gold font-semibold">${walletBalance.toFixed(2)}</span>
+                      <span className="text-white/20 hidden sm:inline">|</span>
+                      <span className="hidden sm:inline text-parchment/70">{user.email?.split('@')[0] || 'Account'}</span>
+                    </button>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="p-1.5 text-parchment/40 hover:text-parchment transition-colors"
+                    title="Log out"
+                    data-testid="button-logout"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={onLoginClick}
+                  className="text-parchment/70 hover:text-white px-3 py-1 font-sans font-medium transition-colors text-sm" 
+                  data-testid="button-login"
+                >
+                  Log in
+                </button>
+              )}
+            </div>
+          </div>
+          {/* Large centered logo */}
+          <div className="flex items-center justify-center pb-4 pt-1">
+            <Link to="/">
+              <span className="font-serif font-bold text-white text-4xl sm:text-5xl tracking-wide" data-testid="logo">
+                The Commons
+              </span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Compact nav bar — always rendered, becomes the visible header on scroll */}
+      <div className={`transition-all duration-300 ease-in-out ${isCompact ? 'border-t-0' : 'border-t border-white/10'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-12">
+            {/* Left: State selector (compact only) / nav links */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {isCompact && <StateSelector selectedState={selectedState} />}
+            </div>
+
+            {/* Center: Logo (compact only) */}
+            {isCompact && (
+              <Link to="/" className="absolute left-1/2 -translate-x-1/2">
+                <span className="font-serif font-bold text-white text-lg sm:text-xl tracking-tight" data-testid="logo-compact">
+                  The Commons
+                </span>
+              </Link>
+            )}
+
+            {/* Right: Search + Auth (compact) */}
+            {isCompact && (
+              <div className="flex items-center gap-2 sm:gap-4">
+                <button
+                  onClick={() => setSearchOpen(!searchOpen)}
+                  className="p-2 text-parchment/60 hover:text-gold transition-colors"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+                {user ? (
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Link to="/wallet">
+                      <button className="bg-white/5 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-sans font-medium hover:bg-white/10 transition-colors flex items-center gap-1 sm:gap-2 text-sm border border-white/10">
+                        <span className="text-gold font-semibold">${walletBalance.toFixed(2)}</span>
+                      </button>
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="p-1.5 sm:p-2 text-parchment/40 hover:text-parchment transition-colors"
+                      title="Log out"
+                    >
+                      <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={onLoginClick}
+                    className="bg-gold text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded font-sans font-semibold hover:bg-gold-light transition-colors text-sm tracking-wide"
+                  >
+                    Log in
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
-      {/* Subtle gold accent line — publication feel */}
+      {/* Subtle gold accent line */}
       <div className="h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
     </header>
   );

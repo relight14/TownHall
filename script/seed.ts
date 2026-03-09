@@ -8,6 +8,7 @@ import {
   episodes as episodesTable,
   featuredEpisodes,
   articles as articlesTable,
+  contributors as contributorsTable,
   users,
 } from "../shared/schema";
 
@@ -40,6 +41,9 @@ async function clearDatabase() {
 
   await db.delete(articlesTable);
   console.log("  ✓ Cleared articles");
+
+  await db.delete(contributorsTable);
+  console.log("  ✓ Cleared contributors");
 
   await db.delete(seriesTable);
   console.log("  ✓ Cleared series");
@@ -238,152 +242,270 @@ async function seedFeaturedEpisodes(episodes: any[]) {
 }
 
 async function seedArticles() {
+  console.log("📝 Seeding contributors...");
+
+  const contribs = await db.insert(contributorsTable).values([
+    { name: "Maria Gonzalez", bio: "Covers state government and elections in Texas.", state: "TX" },
+    { name: "James Chen", bio: "Investigative reporter covering New York politics.", state: "NY" },
+    { name: "Destiny Howard", bio: "State Capitol reporter in Georgia.", state: "GA" },
+    { name: "Patrick Sullivan", bio: "Covers Michigan politics and the auto industry.", state: "MI" },
+    { name: "Rachel Kim", bio: "West Coast correspondent covering California policy.", state: "CA" },
+    { name: "Tom Whitfield", bio: "National political correspondent.", state: "DC" },
+  ]).returning();
+
+  const [maria, james, destiny, patrick, rachel, tom] = contribs;
+  console.log(`  ✅ Created ${contribs.length} contributors\n`);
+
   console.log("📝 Seeding articles...");
 
-  // Article 1 - PAID
-  const [article1] = await db
-    .insert(articlesTable)
-    .values({
-      title: "2024 Election: The Battleground State Map",
-      subheader: "Understanding the states that will decide the election",
-      summary: "A comprehensive analysis of battleground states, their demographics, recent voting patterns, and what candidates need to win in November.",
-      content: `
-        <p>The path to 270 electoral votes runs through a handful of battleground states that will determine the outcome of the 2024 election.</p>
-        <p>This analysis breaks down each state's demographics, recent voting patterns, and what both parties need to do to win.</p>
-        <p>Understanding these states is essential to understanding how this election will be decided.</p>
-        <p>We examine polling data, voter registration trends, and the issues that matter most in each battleground state.</p>
-      `,
-      category: "elections",
-      price: 99, // $0.99
-      ledewireContentId: "led_article_battleground_2024",
-      thumbnail: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800",
-      readTimeMinutes: 8,
-      featured: 1,
-      publishedAt: new Date(),
-    })
-    .returning();
+  // Helper: stagger dates so "Latest" column works
+  const daysAgo = (d: number) => new Date(Date.now() - d * 86400000);
 
-  // Article 2 - PAID
-  const [article2] = await db
-    .insert(articlesTable)
-    .values({
-      title: "Healthcare in 2024: What Both Sides Propose",
-      subheader: "Comparing healthcare policy platforms",
-      summary: "A detailed comparison of healthcare proposals from both parties - examining costs, coverage, and what the plans would mean for American families.",
-      content: `
-        <p>Healthcare remains a defining issue in American politics and a key concern for voters across the political spectrum.</p>
-        <p>This article provides an in-depth comparison of the healthcare proposals from both major parties.</p>
-        <p>We break down the policy details, cost estimates, and real-world implications for different groups of Americans.</p>
-        <p>Understanding these proposals is crucial for informed voting and understanding what's at stake in this election.</p>
-      `,
+  const articleData = [
+    // ── FEATURED #1 — the hero ──
+    {
+      title: "Texas Legislature Passes Sweeping Water Rights Bill as Drought Worsens",
+      subheader: "The measure would reshape how the state allocates groundwater for the first time in a century",
+      summary: "After three weeks of contentious debate, the Texas House voted 89-54 to overhaul the state's century-old groundwater allocation framework, setting up a clash with agricultural interests that have long controlled water policy.",
+      content: `<p>AUSTIN — After three weeks of contentious debate on the House floor, the Texas Legislature on Thursday passed a sweeping overhaul of the state's groundwater allocation framework — a move that supporters say is essential to the state's future but that opponents warn could devastate rural communities.</p><p>The bill, HB 1247, passed the House 89-54 along largely urban-rural lines and now heads to the Senate, where its fate is less certain. Governor Abbott has not indicated whether he would sign the measure.</p><p>The legislation would, for the first time since the landmark 1917 Water Code, impose state-level caps on groundwater pumping in regions where aquifer levels have dropped below sustainability thresholds. It also creates a $2.1 billion fund for water infrastructure improvements, financed through a redirected portion of the state's oil and gas severance tax.</p><p>"We can't keep pretending this problem will solve itself," said Rep. Elena Garza, the bill's primary sponsor. "The Ogallala Aquifer has dropped forty feet in some areas. Entire communities are running out of water."</p>`,
       category: "policy",
-      price: 199, // $1.99
-      ledewireContentId: "led_article_healthcare_2024",
-      thumbnail: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800",
-      readTimeMinutes: 12,
+      state: "TX",
+      contributorId: maria.id,
+      price: 199,
+      viewCount: 4280,
+      readTimeMinutes: 11,
+      featured: 1,
+      publishedAt: daysAgo(0),
+      thumbnail: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=800",
+    },
+    // ── FEATURED #2 ──
+    {
+      title: "New York's Congestion Pricing Generates $100M in First Quarter, Exceeding Projections",
+      subheader: "Revenue surge raises questions about whether tolls could eventually be reduced",
+      summary: "Three months into the program, Manhattan's congestion pricing zone has generated significantly more revenue than expected while cutting traffic volumes by 18 percent.",
+      content: `<p>NEW YORK — Manhattan's congestion pricing program generated $103 million in its first full quarter, outpacing initial projections by roughly 22 percent, according to data released Tuesday by the Metropolitan Transportation Authority.</p><p>The figures bolster the case made by program supporters that the tolling system—the first of its kind in the United States—can deliver both traffic relief and a reliable revenue stream for mass transit improvements.</p><p>Traffic entering the zone south of 60th Street fell 18 percent compared with the same period last year, while average vehicle speeds rose by nearly one-third during peak hours.</p>`,
+      category: "policy",
+      state: "NY",
+      contributorId: james.id,
+      price: 149,
+      viewCount: 7620,
+      readTimeMinutes: 9,
       featured: 2,
-      publishedAt: new Date(),
-    })
-    .returning();
-
-  // Article 3 - FREE (explicit free article)
-  const [article3] = await db
-    .insert(articlesTable)
-    .values({
-      title: "(FREE ARTICLE) Ranking the 2024 Presidential Candidates",
-      subheader: "Who's up, who's down, and why it matters",
-      summary: "Chris Cillizza's latest rankings of presidential candidates based on campaign strength, polling, fundraising, and momentum.",
-      content: `
-        <p>Every week brings new developments that shift the dynamics of the presidential race.</p>
-        <p>These rankings reflect the current state of each candidate's campaign, considering multiple factors beyond just polling.</p>
-        <p>We analyze campaign infrastructure, fundraising, media presence, and political fundamentals to determine who's really leading.</p>
-        <p>Rankings will be updated regularly as the race evolves and new information becomes available.</p>
-      `,
-      category: "candidate-rankings",
-      price: 0, // Free article - no ledewireContentId needed
-      thumbnail: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800",
-      readTimeMinutes: 6,
-      featured: 0,
-      publishedAt: new Date(),
-    })
-    .returning();
-
-  // Article 4 - PAID
-  const [article4] = await db
-    .insert(articlesTable)
-    .values({
-      title: "Breaking Down the State of the Union",
-      subheader: "Key themes and what they reveal about priorities",
-      summary: "Analyzing the president's State of the Union address - examining the rhetoric, policy signals, and political strategy behind the speech.",
-      content: `
-        <p>The State of the Union address is more than just a speech - it's a roadmap of the administration's priorities and political strategy.</p>
-        <p>This analysis breaks down the key themes, rhetorical choices, and policy signals embedded in this year's address.</p>
-        <p>We examine what the speech tells us about the administration's agenda and how it fits into the broader political landscape.</p>
-        <p>Understanding these elements helps us predict where the administration will focus energy and political capital in the months ahead.</p>
-      `,
-      category: "speech-analysis",
-      price: 149, // $1.49
-      ledewireContentId: "led_article_sotu_2024",
-      thumbnail: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800",
-      readTimeMinutes: 10,
-      featured: 0,
-      publishedAt: new Date(),
-    })
-    .returning();
-
-  // Article 5 - PAID
-  const [article5] = await db
-    .insert(articlesTable)
-    .values({
-      title: "Primary Calendar Strategy: What You Need to Know",
-      subheader: "Understanding the primary process in 2024",
-      summary: "A guide to the 2024 primary calendar, delegate allocation rules, and how candidates are strategizing to win the nomination.",
-      content: `
-        <p>The primary calendar shapes campaign strategy in ways that many voters don't fully understand.</p>
-        <p>This article explains how the primary process works, which states matter most, and how candidates allocate resources.</p>
-        <p>We break down the delegate math and explain what candidates need to do to secure the nomination.</p>
-        <p>Understanding the primary process is essential to understanding how nominees are chosen and what factors drive campaign decisions.</p>
-      `,
+      publishedAt: daysAgo(1),
+      thumbnail: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800",
+    },
+    // ── FEATURED #3 ──
+    {
+      title: "Georgia Voter Registration Surges Ahead of Special Election",
+      subheader: "Both parties pour resources into suburban Atlanta district seen as bellwether",
+      summary: "Voter registration in Georgia's 7th Congressional District has jumped 14 percent since January, fueled by organizing efforts on both sides ahead of a June special election.",
+      content: `<p>LAWRENCEVILLE, Ga. — Voter registration in Georgia's 7th Congressional District has surged 14 percent since January, according to new data from the Secretary of State's office, as both parties pour money and organizing resources into a suburban Atlanta race that each side views as a preview of the midterm landscape.</p><p>The district, which stretches from the northeastern Atlanta suburbs into exurban Gwinnett County, has become one of the most closely watched races in the country.</p>`,
       category: "elections",
-      price: 199, // $1.99
-      ledewireContentId: "led_article_primary_2024",
-      thumbnail: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800",
+      state: "GA",
+      contributorId: destiny.id,
+      price: 99,
+      viewCount: 5150,
       readTimeMinutes: 7,
       featured: 3,
-      publishedAt: new Date(),
-    })
-    .returning();
-
-  // Article 6 - PAID
-  const [article6] = await db
-    .insert(articlesTable)
-    .values({
-      title: "Climate Policy in the 2024 Race",
-      subheader: "Examining environmental proposals and their feasibility",
-      summary: "A comprehensive analysis of climate policy proposals, their costs, benefits, and what they would mean for the economy and environment.",
-      content: `
-        <p>Climate change has emerged as a defining policy issue, with both parties offering very different visions for addressing it.</p>
-        <p>This article provides an objective analysis of the climate proposals on the table, examining their feasibility and impact.</p>
-        <p>We look at cost estimates, economic effects, environmental benefits, and political realities surrounding each proposal.</p>
-        <p>Understanding the details of these policies helps voters make informed decisions about one of the most important issues facing the country.</p>
-      `,
+      publishedAt: daysAgo(1),
+      thumbnail: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=800",
+    },
+    // ── Latest articles ──
+    {
+      title: "Michigan Auto Workers Brace for EV Transition as Three Plants Announce Retooling",
+      subheader: "Union leaders negotiate retraining agreements as traditional assembly lines go quiet",
+      summary: "Three major assembly plants in southeastern Michigan will shut down for retooling this summer, displacing roughly 8,000 workers as automakers accelerate the shift to electric vehicle production.",
+      content: `<p>DETROIT — Three major auto assembly plants in southeastern Michigan will temporarily close for retooling this summer as part of the industry's accelerating pivot to electric vehicle production, displacing roughly 8,000 workers and testing newly negotiated union retraining agreements.</p>`,
       category: "policy",
-      price: 249, // $2.49
-      ledewireContentId: "led_article_climate_2024",
-      thumbnail: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800",
-      readTimeMinutes: 14,
+      state: "MI",
+      contributorId: patrick.id,
+      price: 199,
+      viewCount: 3400,
+      readTimeMinutes: 10,
       featured: 0,
-      publishedAt: new Date(),
-    })
-    .returning();
+      publishedAt: daysAgo(2),
+      thumbnail: "https://images.unsplash.com/photo-1565043666747-69f6646db940?w=800",
+    },
+    {
+      title: "California Wildfire Season Starts Early, Straining Already Thin Resources",
+      subheader: "Three major fires burning simultaneously in Southern California",
+      summary: "An unusually dry winter has pushed California's fire season weeks ahead of normal, with three major wildfires burning simultaneously in Los Angeles and San Bernardino counties.",
+      content: `<p>LOS ANGELES — Three major wildfires are burning simultaneously across Southern California, straining firefighting resources and underscoring warnings from climate scientists that the state's fire season is arriving earlier and lasting longer.</p>`,
+      category: "policy",
+      state: "CA",
+      contributorId: rachel.id,
+      price: 149,
+      viewCount: 8900,
+      readTimeMinutes: 8,
+      featured: 0,
+      publishedAt: daysAgo(2),
+      thumbnail: "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=800",
+    },
+    {
+      title: "Senate Infrastructure Bill Clears Key Committee Vote on Party Lines",
+      subheader: "Full Senate vote expected next week as negotiations on broadband provisions continue",
+      summary: "The Senate Commerce Committee approved a $94 billion infrastructure package on a 14-12 party-line vote, sending the measure to the full chamber amid ongoing disputes over rural broadband funding.",
+      content: `<p>WASHINGTON — The Senate Commerce Committee approved a $94 billion infrastructure package Thursday on a 14-12 party-line vote, advancing the measure to the full chamber where its path remains uncertain.</p>`,
+      category: "policy",
+      state: "DC",
+      contributorId: tom.id,
+      price: 199,
+      viewCount: 6200,
+      readTimeMinutes: 7,
+      featured: 0,
+      publishedAt: daysAgo(3),
+      thumbnail: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800",
+    },
+    {
+      title: "Rural Hospital Closures Accelerate Across the South, New Report Finds",
+      subheader: "Fourteen rural hospitals have closed or stopped offering inpatient care this year alone",
+      summary: "A new report from the Chartis Center for Rural Health documents 14 rural hospital closures so far this year, with Georgia, Tennessee, and Alabama accounting for more than half.",
+      content: `<p>ATLANTA — Fourteen rural hospitals across the South have either closed entirely or stopped offering inpatient services this year, according to a new report that highlights the accelerating crisis in rural healthcare access.</p>`,
+      category: "policy",
+      state: "GA",
+      contributorId: destiny.id,
+      price: 99,
+      viewCount: 3800,
+      readTimeMinutes: 9,
+      featured: 0,
+      publishedAt: daysAgo(3),
+      thumbnail: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800",
+    },
+    {
+      title: "New York City Council Advances Landmark AI Hiring Law",
+      subheader: "Measure would require companies to disclose when AI is used in hiring decisions",
+      summary: "The New York City Council voted 38-7 to advance a first-of-its-kind law requiring employers to disclose the use of artificial intelligence in hiring and promotion decisions.",
+      content: `<p>NEW YORK — The New York City Council advanced a first-of-its-kind law Thursday that would require employers to publicly disclose when they use artificial intelligence tools in hiring and promotion decisions.</p>`,
+      category: "policy",
+      state: "NY",
+      contributorId: james.id,
+      price: 149,
+      viewCount: 5600,
+      readTimeMinutes: 6,
+      featured: 0,
+      publishedAt: daysAgo(4),
+      thumbnail: "https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800",
+    },
+    {
+      title: "Texas Border Counties See Dramatic Drop in Migrant Crossings",
+      subheader: "New federal agreement with Mexico credited with changing migration patterns",
+      summary: "Border Patrol data shows a 42 percent decline in migrant encounters across Texas's Rio Grande Valley sector, though officials caution the numbers may reflect seasonal patterns.",
+      content: `<p>McALLEN, Texas — Migrant encounters across the Rio Grande Valley sector have dropped 42 percent since February, according to new Border Patrol data, a decline that officials attribute to a combination of a new federal agreement with Mexico and seasonal migration patterns.</p>`,
+      category: "policy",
+      state: "TX",
+      contributorId: maria.id,
+      price: 99,
+      viewCount: 9400,
+      readTimeMinutes: 8,
+      featured: 0,
+      publishedAt: daysAgo(4),
+      thumbnail: "https://images.unsplash.com/photo-1578931005019-3fba4687e3bb?w=800",
+    },
+    {
+      title: "Michigan Governor Signs Bipartisan Skilled Trades Package into Law",
+      subheader: "New programs aim to address 90,000-worker shortage in construction and manufacturing",
+      summary: "Governor Whitmer signed a bipartisan package of bills creating apprenticeship tax credits and high school skilled trades academies, targeting a projected 90,000-worker shortfall.",
+      content: `<p>LANSING — Governor Gretchen Whitmer on Wednesday signed a bipartisan package of bills aimed at addressing Michigan's growing skilled trades shortage, creating new apprenticeship tax credits and establishing a network of high school skilled trades academies.</p>`,
+      category: "policy",
+      state: "MI",
+      contributorId: patrick.id,
+      price: 149,
+      viewCount: 2100,
+      readTimeMinutes: 6,
+      featured: 0,
+      publishedAt: daysAgo(5),
+      thumbnail: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=800",
+    },
+    {
+      title: "California Passes Nation's First AI Safety Regulation Framework",
+      subheader: "Tech industry divided over bill requiring safety assessments for large AI models",
+      summary: "California became the first state to pass comprehensive AI safety regulations, requiring developers of large-scale models to conduct independent safety assessments before deployment.",
+      content: `<p>SACRAMENTO — California on Thursday became the first state in the nation to pass a comprehensive regulatory framework for artificial intelligence, requiring developers of large AI models to conduct independent safety assessments before commercial deployment.</p>`,
+      category: "policy",
+      state: "CA",
+      contributorId: rachel.id,
+      price: 199,
+      viewCount: 11200,
+      readTimeMinutes: 12,
+      featured: 0,
+      publishedAt: daysAgo(5),
+      thumbnail: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800",
+    },
+    {
+      title: "Georgia Redistricting Case Heads to Supreme Court in October Term",
+      subheader: "Justices will weigh whether state legislature violated Voting Rights Act",
+      summary: "The Supreme Court agreed Monday to hear a challenge to Georgia's congressional map, a case that could reshape how courts evaluate racial gerrymandering claims nationwide.",
+      content: `<p>WASHINGTON — The Supreme Court on Monday agreed to hear a challenge to Georgia's congressional district map, taking up a case that could significantly reshape how federal courts evaluate claims of racial gerrymandering under the Voting Rights Act.</p>`,
+      category: "elections",
+      state: "GA",
+      contributorId: destiny.id,
+      price: 99,
+      viewCount: 4700,
+      readTimeMinutes: 8,
+      featured: 0,
+      publishedAt: daysAgo(6),
+      thumbnail: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800",
+    },
+    // FREE article
+    {
+      title: "Where the 2026 Senate Map Stands: A State-by-State Guide",
+      subheader: "Which seats are competitive, which are safe, and where the surprises might come from",
+      summary: "An updated look at all 34 Senate seats up for election in 2026, with ratings for each race and analysis of the factors that could flip control of the chamber.",
+      content: `<p>The 2026 Senate map presents a rare opportunity for both parties, with competitive races scattered across traditionally safe territory.</p><p>Here is our updated state-by-state guide to every Senate race on the ballot, with competitiveness ratings and key dynamics driving each contest.</p><p>Democrats are defending 21 seats, including several in states that have trended rightward in recent cycles. Republicans are defending 13 seats, but face credible challengers in at least four states they assumed were safe.</p>`,
+      category: "elections",
+      state: "DC",
+      contributorId: tom.id,
+      price: 0,
+      viewCount: 15300,
+      readTimeMinutes: 15,
+      featured: 0,
+      publishedAt: daysAgo(7),
+      thumbnail: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800",
+    },
+    {
+      title: "New York Pension Fund Divests $1.2 Billion from Fossil Fuels",
+      subheader: "State comptroller calls it the largest public pension divestment in U.S. history",
+      summary: "New York's state pension fund completed a $1.2 billion divestment from fossil fuel companies, the largest such action by a public pension fund in U.S. history.",
+      content: `<p>ALBANY — New York State Comptroller Thomas DiNapoli announced Thursday that the state pension fund has completed a $1.2 billion divestment from fossil fuel companies, a move he called "the largest public pension divestment in American history."</p>`,
+      category: "policy",
+      state: "NY",
+      contributorId: james.id,
+      price: 149,
+      viewCount: 3200,
+      readTimeMinutes: 7,
+      featured: 0,
+      publishedAt: daysAgo(8),
+      thumbnail: "https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=800",
+    },
+    {
+      title: "Texas Attorney General Sues Federal Government Over Wind Energy Permits",
+      subheader: "Lawsuit challenges Bureau of Land Management authority over West Texas wind farms",
+      summary: "Texas Attorney General Ken Paxton filed a lawsuit challenging federal authority to approve wind energy projects on public lands in West Texas, arguing the permits violate state sovereignty.",
+      content: `<p>AUSTIN — Texas Attorney General Ken Paxton filed a federal lawsuit Wednesday challenging the Bureau of Land Management's authority to approve wind energy projects on public lands in West Texas, opening a new front in the ongoing battle between state and federal authority over energy policy.</p>`,
+      category: "policy",
+      state: "TX",
+      contributorId: maria.id,
+      price: 99,
+      viewCount: 2800,
+      readTimeMinutes: 6,
+      featured: 0,
+      publishedAt: daysAgo(9),
+      thumbnail: "https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800",
+    },
+  ];
 
-  console.log(`  ✅ Created 6 articles across all categories`);
-  console.log(`     - Elections: 2 articles`);
-  console.log(`     - Policy: 2 articles`);
-  console.log(`     - Candidate Rankings: 1 article`);
-  console.log(`     - Speech Analysis: 1 article`);
-  console.log(`     - Free articles: 1 (17%)`);
-  console.log(`     - Paid articles: 5 (83%) with ledewireContentId\n`);
+  for (const article of articleData) {
+    await db.insert(articlesTable).values(article);
+  }
+
+  const freeCount = articleData.filter(a => a.price === 0).length;
+  const paidCount = articleData.length - freeCount;
+  const states = [...new Set(articleData.map(a => a.state))];
+
+  console.log(`  ✅ Created ${articleData.length} articles`);
+  console.log(`     - States: ${states.join(', ')}`);
+  console.log(`     - Free: ${freeCount}, Paid: ${paidCount}`);
+  console.log(`     - Featured: ${articleData.filter(a => a.featured! > 0).length}\n`);
 }
 
 async function seed() {
@@ -408,7 +530,8 @@ async function seed() {
     console.log("  ✓ 3 series created");
     console.log("  ✓ 5 episodes created");
     console.log("  ✓ 3 featured episodes");
-    console.log("  ✓ 6 articles created (all categories)\n");
+    console.log("  ✓ 6 contributors");
+    console.log("  ✓ 15 articles (local journalism, 5 states)\n");
     console.log("💡 Test User Credentials:");
     console.log("   - test@example.com / password123");
     console.log("   - demo@example.com / password123");
